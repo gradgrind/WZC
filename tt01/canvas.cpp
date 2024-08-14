@@ -1,5 +1,6 @@
 #include "canvas.h"
 #include <QGraphicsSceneMouseEvent>
+#include <QMenu>
 
 const int minutesPerHour = 60;
 const qreal CHIP_MARGIN = 1.5;
@@ -35,7 +36,8 @@ void HoverRectItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event) {
 // a graphical element! The QGraphicsView handled here is passed in as a
 // parameter.
 // The actual canvas is implemented as a "scene".
-Canvas::Canvas(QGraphicsView *gview) {
+Canvas::Canvas(QGraphicsView *gview) : QObject()
+{
     view = gview;
 // Change update mode: The default, MinimalViewportUpdate, seems
 // to cause artefacts to be left, i.e. it updates too little.
@@ -61,8 +63,6 @@ Canvas::Canvas(QGraphicsView *gview) {
     view->setScene(scene);
     //self.items = {}
 
-    //make_context_menu()
-
     //-- Testing code:
     QGraphicsRectItem *r1 = new QGraphicsRectItem(20, 50, 300, 10);
     view->scene()->addItem(r1);
@@ -77,9 +77,17 @@ qreal Canvas::px2mm(int px) {
     return px * 25.4 / ldpi;
 }
 
+/*
+ * void Canvas::context_1() {
+    qDebug() << "-> context_1";
+}
+*/
+
 // *******************
 
-Scene::Scene() : QGraphicsScene() {}
+Scene::Scene() : QGraphicsScene() {
+    make_context_menu();
+}
 
 void Scene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     if (event->button() == Qt::MouseButton::LeftButton) {
@@ -135,8 +143,52 @@ void Scene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     }
 }
 
-void Scene::contextMenuEvent(QGraphicsSceneContextMenuEvent *)
-{
-    qDebug() << "Context Menu";
+void Scene::make_context_menu() {
+    context_menu = new QMenu();
+    QAction *action = context_menu->addAction("I am context Action 1");
+    //connect(action, &QAction::triggered, &Canvas::context_1);
+    connect(action, &QAction::triggered, [=](bool b) {qDebug() << "-> lambda";});
 }
 
+void Scene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
+{
+    auto point = event->scenePos();
+    auto gitems = items(point);
+    // Choose the topmost reacting item
+    for(auto gitem : gitems) {
+        Chip *gtitem = qgraphicsitem_cast<Chip *>(gitem);
+        if (gtitem) {
+            qDebug() << "Chip";
+            return;
+        }
+    }
+    if (context_menu) {
+        context_menu->exec(event->screenPos());
+    } else {
+        qDebug() << "Context Menu";
+    }
+}
+/*
+    def context_menu_event(self, event):
+        point = event.scenePos()
+        items = self._scene.items(point)
+        if items:
+            for item in items:
+                try:
+                    # See if the topmost item is a tile
+                    self.context_tag = item.tag
+                except AttributeError:
+                    # Not a tile. Otherwise there should only be a cell,
+                    # but give all items a chance to react. An item can
+                    # break the chain by returning a false value.
+                    try:
+                        fn = item.contextmenu
+                    except AttributeError:
+                        continue
+                    if not fn(event.screenPos()):
+                        return
+                else:
+                    self.context_menu.exec(event.screenPos())
+#                    self.tile_context_menu(event.screenPos())
+                    return
+*/

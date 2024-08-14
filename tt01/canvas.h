@@ -17,6 +17,8 @@ class Scene : public QGraphicsScene
 
 public:
     Scene();
+    QMenu *context_menu;
+    void make_context_menu();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -41,8 +43,10 @@ private:
 
 // *******************
 
-class Canvas
+class Canvas : QObject
 {
+    Q_OBJECT
+
 public:
     Canvas(QGraphicsView *gview);
     virtual ~Canvas () = default;
@@ -53,8 +57,26 @@ public:
     int pt2px(int pt);
     qreal px2mm(int px);
 
-//private:
+private:
     Scene *scene;
+
+//private slots:
+//    static void context_1();
+};
+
+// *******************
+
+class Chip : public QGraphicsRectItem
+{
+public:
+    enum { Type = UserType + 1 };
+
+    int type() const override
+    {
+        // Enable the use of qgraphicsitem_cast with this item.
+        return Type;
+    }
+
 };
 
 #endif // CANVAS_H
