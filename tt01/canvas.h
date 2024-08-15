@@ -4,7 +4,7 @@
 #include <QApplication>
 #include <QWidget>
 #include <QGraphicsView>
-#include <QGraphicsItem>
+#include <QGraphicsScene>
 #include <QEvent>
 
 // Sizes in points
@@ -27,22 +27,6 @@ protected:
 
 // *******************
 
-class HoverRectItem : public QGraphicsRectItem
-{
-public:
-    HoverRectItem(void (* handler)(QGraphicsRectItem*, bool),
-        QGraphicsItem *parent = nullptr);
-
-protected:
-    void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
-    void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
-
-private:
-    void (* hover_handler)(QGraphicsRectItem*, bool);
-};
-
-// *******************
-
 class Canvas : QObject
 {
     Q_OBJECT
@@ -59,24 +43,6 @@ public:
 
 private:
     Scene *scene;
-
-//private slots:
-//    static void context_1();
-};
-
-// *******************
-
-class Chip : public QGraphicsRectItem
-{
-public:
-    enum { Type = UserType + 1 };
-
-    int type() const override
-    {
-        // Enable the use of qgraphicsitem_cast with this item.
-        return Type;
-    }
-
 };
 
 #endif // CANVAS_H

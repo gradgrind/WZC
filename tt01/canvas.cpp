@@ -1,5 +1,5 @@
 #include "canvas.h"
-#include <QGraphicsSceneMouseEvent>
+#include "chip.h"
 #include <QMenu>
 
 const int minutesPerHour = 60;
@@ -12,25 +12,11 @@ const qreal PT2MM = 0.3527778;
 
 // *******************
 
-HoverRectItem::HoverRectItem(void (* handler)(QGraphicsRectItem*, bool),
-        QGraphicsItem *parent)
-    : QGraphicsRectItem(parent)
+void on_hover(QGraphicsRectItem* item, bool enter)
 {
-    hover_handler = handler;
-    if (handler) {
-        setAcceptHoverEvents(true);
-    }
+    qDebug() << (enter ? "ENTER" : "EXIT");
 }
 
-void HoverRectItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event) {
-    hover_handler(this, true);
-}
-
-void HoverRectItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event) {
-    hover_handler(this, false);
-}
-
-// *******************
 
 // Canvas: This is the "view" widget for the canvas – though it is not itself
 // a graphical element! The QGraphicsView handled here is passed in as a
@@ -65,8 +51,12 @@ Canvas::Canvas(QGraphicsView *gview) : QObject()
 
     //-- Testing code:
     QGraphicsRectItem *r1 = new QGraphicsRectItem(20, 50, 300, 10);
-    view->scene()->addItem(r1);
-    view->scene()->addRect(QRectF(200, 300, 100, 100), QPen(Qt::black), QBrush(Qt::red));
+    scene->addItem(r1);
+    scene->addRect(QRectF(200, 300, 100, 100), QPen(Qt::black), QBrush(Qt::red));
+    auto chip1 = new Chip(200, 40);
+    scene->addItem(chip1);
+    chip1->setPos(-50, 300);
+    chip1->setHoverHandler(on_hover);
 }
 
 int Canvas::pt2px(int pt) {
@@ -155,40 +145,21 @@ void Scene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
     auto point = event->scenePos();
     auto gitems = items(point);
     // Choose the topmost reacting item
+    QMenu *cm = context_menu;
     for(auto gitem : gitems) {
         Chip *gtitem = qgraphicsitem_cast<Chip *>(gitem);
         if (gtitem) {
             qDebug() << "Chip";
-            return;
+            //return;
+            // Get the context menu from the item.
+            // What info do the handlers need? Item (the scene is available
+            // from the item, if it is passed as pointer)?
+            cm = gtitem->context_menu;
         }
     }
-    if (context_menu) {
-        context_menu->exec(event->screenPos());
+    if (cm) {
+        cm->exec(event->screenPos());
     } else {
         qDebug() << "Context Menu";
     }
 }
-/*
-    def context_menu_event(self, event):
-        point = event.scenePos()
-        items = self._scene.items(point)
-        if items:
-            for item in items:
-                try:
-                    # See if the topmost item is a tile
-                    self.context_tag = item.tag
-                except AttributeError:
-                    # Not a tile. Otherwise there should only be a cell,
-                    # but give all items a chance to react. An item can
-                    # break the chain by returning a false value.
-                    try:
-                        fn = item.contextmenu
-                    except AttributeError:
-                        continue
-                    if not fn(event.screenPos()):
-                        return
-                else:
-                    self.context_menu.exec(event.screenPos())
-#                    self.tile_context_menu(event.screenPos())
-                    return
-*/
