@@ -1,8 +1,10 @@
 #ifndef CHIP_H
 #define CHIP_H
 
+#include <QGraphicsScene>
 #include <QGraphicsRectItem>
 #include <QGraphicsSceneMouseEvent>
+#include <QRegularExpression>
 
 // *******************
 
@@ -41,7 +43,31 @@ public:
 
     Chip(qreal width, qreal height);
 
+    void set_background(QString colour);
+    void set_border(qreal width, QString colour = "");
+    void set_text(QString middle = "", int m_align = 0,
+        QString tl = "", QString tr = "",
+        QString bl = "", QString br = "",
+        qreal m_size = 0, bool m_bold = true, qreal c_size = 0
+    );
     QMenu *context_menu = nullptr;
+
+private:
+    QGraphicsSimpleTextItem *set_item(
+        QGraphicsSimpleTextItem *item,
+        QString itext,
+        int isize,
+        bool ibold = false);
+    QGraphicsSimpleTextItem *m_item = nullptr;
+    QGraphicsSimpleTextItem *tl_item = nullptr;
+    QGraphicsSimpleTextItem *tr_item = nullptr;
+    QGraphicsSimpleTextItem *bl_item = nullptr;
+    QGraphicsSimpleTextItem *br_item = nullptr;
+
+    //QFont central;
+    //QFont corner;
 };
+
+static QRegularExpression re_colour("^[0-9a-fA-F]{6}$");
 
 #endif // CHIP_H

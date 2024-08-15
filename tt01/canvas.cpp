@@ -53,10 +53,17 @@ Canvas::Canvas(QGraphicsView *gview) : QObject()
     QGraphicsRectItem *r1 = new QGraphicsRectItem(20, 50, 300, 10);
     scene->addItem(r1);
     scene->addRect(QRectF(200, 300, 100, 100), QPen(Qt::black), QBrush(Qt::red));
-    auto chip1 = new Chip(200, 40);
+    Chip *chip1 = new Chip(200, 40);
     scene->addItem(chip1);
     chip1->setPos(-50, 300);
     chip1->setHoverHandler(on_hover);
+    chip1->set_background("f0f000");
+    chip1->set_border(3, "ff0000");
+    Chip *chip2 = new Chip(40,100);
+    scene->addItem(chip2);
+    chip2->setPos(-20, 250);
+    chip2->set_background("e0e0ff");
+    chip2->set_border(0);
 }
 
 int Canvas::pt2px(int pt) {
