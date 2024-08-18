@@ -3,6 +3,8 @@
 #include <QPen>
 #include <QFont>
 
+static QRegularExpression re_colour("^[0-9a-fA-F]{6}$");
+
 HoverRectItem::HoverRectItem(QGraphicsItem *parent)
     : QGraphicsRectItem(parent) {}
 
@@ -77,101 +79,100 @@ void Chip::set_border(qreal width, QString colour) {
 
 const qreal CHIP_MARGIN = 1.5;
 
-/* Set all the text items within the chip.
- * This also caters for rewriting the chip's text.
+/* Set the text items within the chip.
+ * This also supports rewriting the chip's text.
+ * Unfortunately C++ doesn't support passing parameters by name,
+ * so there are various methods to set up these text items.
 */
-//TODO: Unfortunately C++ doesn't support passing parameters by name,
-// so I use JSON ... which will be needed later anyway.
-void Chip::set_text(QJsonObject jsonobj)
-{
-    setitem(m_item, jsonobj, "middle", "middle_size", "middle_bold");
-    setitem(tl_item, jsonobj, "tl", "corner_size");
-    setitem(tr_item, jsonobj, "tr", "corner_size");
-    setitem(bl_item, jsonobj, "bl", "corner_size");
-    setitem(br_item, jsonobj, "br", "corner_size");
 
-//TODO: manage sizes and place items
-    // Get chip dimensions
-    QRectF bbr = rect();
-    qreal hr = bbr.height();
-    qreal wr = bbr.width();
-    // Central item ("middle")
-    if (m_item) {
-        // Reset scale
-        m_item->setScale(1);
-        QRectF bb = m_item->boundingRect();
-        qreal h = bb.height();
-        qreal w = bb.width();
-        qreal scale = (wr - CHIP_MARGIN * 2) * 0.9 / w;
-        if (scale < 1.0) {
-            m_item->setScale(scale);
-            w *= scale;
-            h *= scale;
-        }
-        // Deal with alignment
-        QJsonValue item_j = jsonobj.value("middle_align");
-        QString text_a;
-        if (item_j != QJsonValue::Undefined) {
-            text_a = item_j.toString();
-        }
-        qreal x;
-        if (text_a == "l") {
-            x = CHIP_MARGIN;
-        } else if (text_a == "r") {
-            x = wr - CHIP_MARGIN - w;
-        } else {
-            x = (wr - w) / 2;
-        }
-        m_item->setPos(x, (hr - h) / 2);
+void Chip::config_text(qreal tsize, bool tbold, int align, QString colour)
+{
+    QFont f;
+    if (tsize > 0.01) {
+        f.setPointSizeF(tsize);
     }
-    // Top items
-    place_pair(tl_item, tr_item, true);
-    // Bottom items
-    place_pair(bl_item, br_item, false);
+    f.setBold(tbold);
+    central_font = f;
+    central_align = align;
+    if (re_colour.match(colour).hasMatch()) {
+        central_colour = "#FF" + colour;
+    }
 }
 
-void Chip::setitem(
-    QGraphicsSimpleTextItem *&t_item,
-    QJsonObject jsonobj,
-    QString itext,
-    QString isize,
-    QString ibold)
-{
-    QJsonValue item_j = jsonobj.value(itext);
-    QString text_i;
-    if (item_j != QJsonValue::Undefined) {
-        text_i = item_j.toString();
+void Chip::set_subtext_size(qreal tsize) {
+    QFont f;
+    if (tsize > 0.01) {
+        f.setPointSizeF(tsize);
     }
-    if (text_i.isEmpty()) {
-        if (t_item) {
-            scene()->removeItem(t_item);
-            delete t_item;
-            t_item = nullptr;
+    corner_font = f;
+}
+
+void Chip::set_text(QString text) {
+    set_item(m_item, text, central_font);
+    if (m_item) {
+        if (!central_colour.isEmpty()) {
+            qDebug() << "?? " << central_colour;
+            m_item->setBrush(QBrush(QColor(central_colour)));
+        }
+        // Get chip dimensions
+        QRectF bb = rect();
+        qreal h0 = bb.height();
+        qreal w0 = bb.width();
+        // Measure the text
+        bb = m_item->boundingRect();
+        qreal h = bb.height();
+        qreal w = bb.width();
+        qreal scale = (w0 - CHIP_MARGIN * 2) * 0.9 / w;
+        if (scale < 1.0) {
+            w *= scale;
+            h *= scale;
+        } else {
+            scale = 1.0;
+        }
+        m_item->setScale(scale);
+        // Deal with alignment
+        qreal x;
+        if (central_align < 0) {
+            // align left
+            x = CHIP_MARGIN;
+        } else if (central_align == 0) {
+            // centred
+            x = (w0 - w) / 2;
+        } else {
+            // align right
+            x = w0 - CHIP_MARGIN - w;
+        }
+        m_item->setPos(x, (h0 - h) / 2);
+    }
+}
+
+void Chip::set_item(QGraphicsSimpleTextItem *&item, QString text, QFont font)
+{
+    if (text.isEmpty()) {
+        if (item) {
+            scene()->removeItem(item);
+            delete item;
+            item = nullptr;
         }
         return;
     }
-    if (!t_item) {
-        t_item = new QGraphicsSimpleTextItem(this);
+    if (!item) {
+        item = new QGraphicsSimpleTextItem(this);
     }
-    t_item->setText(text_i);
-    item_j = jsonobj.value(isize);
-    QFont f;
-    qreal size_i = 0.0;
-    if (item_j != QJsonValue::Undefined) {
-        size_i = item_j.toDouble();
-    }
-    if (size_i > 0.01) {
-        f.setPointSizeF(size_i);
-    }
-    bool bold_i = false;
-    if (!ibold.isEmpty()) {
-        item_j = jsonobj.value(ibold);
-        if (item_j != QJsonValue::Undefined) {
-            bold_i = item_j.toBool();
-        }
-    }
-    f.setBold(bold_i);
-    t_item->setFont(f);
+    item->setText(text);
+    item->setFont(font);
+}
+
+void Chip::set_toptext(QString text_l, QString text_r) {
+    set_item(tl_item, text_l, corner_font);
+    set_item(tr_item, text_r, corner_font);
+    place_pair(tl_item, tr_item, true);
+}
+
+void Chip::set_bottomtext(QString text_l, QString text_r) {
+    set_item(bl_item, text_l, corner_font);
+    set_item(br_item, text_r, corner_font);
+    place_pair(bl_item, br_item, false);
 }
 
 void Chip::place_pair(

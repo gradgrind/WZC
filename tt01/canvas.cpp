@@ -59,28 +59,17 @@ Canvas::Canvas(QGraphicsView *gview) : QObject()
     chip1->setHoverHandler(on_hover);
     chip1->set_background("f0f000");
     chip1->set_border(3, "ff0000");
-    QJsonObject jo {
-        {"middle", "Central"},
-        {"middle_size", 18},
-        {"middle_bold", true},
-        //{"middle_align", "r"},
-        //{"corner_size", 10},
-        {"tl", "TL"},
-        {"tr", "An extremely long entry which will need shrinking"},
-        {"bl", "BL"},
-        {"br", "BR"},
-    };
-    chip1->set_text(jo);
+    chip1->config_text(14, true, 0, "00E0FF");
+    chip1->set_subtext_size(10);
+    chip1->set_text("Central");
+    chip1->set_toptext("TL", "An extremely long entry which will need shrinking");
+    chip1->set_bottomtext("BL", "BR");
     Chip *chip2 = new Chip(40,100);
     scene->addItem(chip2);
     chip2->setPos(-20, 250);
     chip2->set_background("e0e0ff");
     chip2->set_border(0);
-    jo = {
-        {"middle", "Middle"},
-        {"middle_size", 14},
-    };
-    chip2->set_text(jo);
+    chip2->set_text("Middle");
 }
 
 int Canvas::pt2px(int pt) {

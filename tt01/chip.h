@@ -46,16 +46,19 @@ public:
 
     void set_background(QString colour);
     void set_border(qreal width, QString colour = "");
-    void set_text(QJsonObject jsonobj);
+    void config_text(
+        qreal tsize,
+        bool tbold = false,
+        int align = 0,
+        QString colour = "");
+    void set_subtext_size(qreal tsize);
+    void set_text(QString text);
+    void set_toptext(QString text_l, QString text_r);
+    void set_bottomtext(QString text_l, QString text_r);
     QMenu *context_menu = nullptr;
 
 private:
-    void setitem(
-        QGraphicsSimpleTextItem *&t_item,
-        QJsonObject jsonobj,
-        QString itext,
-        QString isize,
-        QString ibold = "");
+    void set_item(QGraphicsSimpleTextItem *&item, QString text, QFont font);
     QGraphicsSimpleTextItem *m_item = nullptr;
     QGraphicsSimpleTextItem *tl_item = nullptr;
     QGraphicsSimpleTextItem *tr_item = nullptr;
@@ -66,10 +69,10 @@ private:
         QGraphicsSimpleTextItem *r,
         bool top);
 
-    //QFont central;
-    //QFont corner;
+    QFont central_font;
+    int central_align = 0; // <0 => left, 0 => centre, >0 => right
+    QString central_colour;
+    QFont corner_font;
 };
-
-static QRegularExpression re_colour("^[0-9a-fA-F]{6}$");
 
 #endif // CHIP_H
