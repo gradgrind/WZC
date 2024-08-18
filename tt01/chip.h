@@ -5,6 +5,7 @@
 #include <QGraphicsRectItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QRegularExpression>
+#include <QJsonObject>
 
 // *******************
 
@@ -45,24 +46,25 @@ public:
 
     void set_background(QString colour);
     void set_border(qreal width, QString colour = "");
-    void set_text(QString middle = "", int m_align = 0,
-        QString tl = "", QString tr = "",
-        QString bl = "", QString br = "",
-        qreal m_size = 0, bool m_bold = true, qreal c_size = 0
-    );
+    void set_text(QJsonObject jsonobj);
     QMenu *context_menu = nullptr;
 
 private:
-    QGraphicsSimpleTextItem *set_item(
-        QGraphicsSimpleTextItem *item,
+    void setitem(
+        QGraphicsSimpleTextItem *&t_item,
+        QJsonObject jsonobj,
         QString itext,
-        int isize,
-        bool ibold = false);
+        QString isize,
+        QString ibold = "");
     QGraphicsSimpleTextItem *m_item = nullptr;
     QGraphicsSimpleTextItem *tl_item = nullptr;
     QGraphicsSimpleTextItem *tr_item = nullptr;
     QGraphicsSimpleTextItem *bl_item = nullptr;
     QGraphicsSimpleTextItem *br_item = nullptr;
+    void place_pair(
+        QGraphicsSimpleTextItem *l,
+        QGraphicsSimpleTextItem *r,
+        bool top);
 
     //QFont central;
     //QFont corner;
