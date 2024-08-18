@@ -111,7 +111,6 @@ void Chip::set_text(QString text) {
     set_item(m_item, text, central_font);
     if (m_item) {
         if (!central_colour.isEmpty()) {
-            qDebug() << "?? " << central_colour;
             m_item->setBrush(QBrush(QColor(central_colour)));
         }
         // Get chip dimensions

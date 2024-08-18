@@ -41,7 +41,6 @@ public:
     int pt2px(int pt);
     qreal px2mm(int px);
 
-private:
     Scene *scene;
 };
 

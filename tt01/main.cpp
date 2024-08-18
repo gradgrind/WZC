@@ -1,4 +1,5 @@
 #include "canvas.h"
+#include "tt_grid.h"
 #include <QBoxLayout>
 
 int main(int argc, char *argv[])
@@ -19,7 +20,10 @@ int main(int argc, char *argv[])
     hb.addWidget(&view);
     hb.addWidget(&right);
 
-    Canvas canv(&view);
+//    Canvas canv(&view);
+    TT_Grid grid(&view,
+        {"Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"},
+        {"HU A", "HU B", "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7"});
 
     view.setFixedSize(A4.toSize());
 

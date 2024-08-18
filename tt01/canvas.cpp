@@ -45,7 +45,7 @@ Canvas::Canvas(QGraphicsView *gview) : QObject()
     pdpi = view->physicalDpiX();
     // Scaling the scene by pdpi/ldpi should display the correct size ...
 
-    Scene *scene = new Scene();
+    scene = new Scene();
     view->setScene(scene);
     //self.items = {}
 

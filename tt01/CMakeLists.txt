@@ -18,8 +18,8 @@ set(PROJECT_SOURCES
         canvas.cpp
         chip.h
         chip.cpp
-
-
+        tt_grid.h
+        tt_grid.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
