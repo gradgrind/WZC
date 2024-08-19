@@ -3,8 +3,6 @@
 #include <QPen>
 #include <QFont>
 
-static QRegularExpression re_colour("^[0-9a-fA-F]{6}$");
-
 HoverRectItem::HoverRectItem(QGraphicsItem *parent)
     : QGraphicsRectItem(parent) {}
 

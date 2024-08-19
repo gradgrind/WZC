@@ -23,7 +23,8 @@ int main(int argc, char *argv[])
 //    Canvas canv(&view);
     TT_Grid grid(&view,
         {"Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"},
-        {"HU A", "HU B", "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7"});
+        {"HU A", "HU B", "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7"},
+        {2, 4, 6});
 
     view.setFixedSize(A4.toSize());
 

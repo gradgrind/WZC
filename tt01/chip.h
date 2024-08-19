@@ -75,4 +75,6 @@ private:
     QFont corner_font;
 };
 
+static const QRegularExpression re_colour("^[0-9a-fA-F]{6}$");
+
 #endif // CHIP_H

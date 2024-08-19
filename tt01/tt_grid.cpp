@@ -1,6 +1,10 @@
 #include "tt_grid.h"
 
-TT_Grid::TT_Grid(QGraphicsView *view, QStringList days, QStringList hours) {
+TT_Grid::TT_Grid(
+    QGraphicsView *view,
+    QStringList days,
+    QStringList hours,
+    QList<int> breaks) {
     canvas = new Canvas(view);
     scene = canvas->scene;
 
@@ -42,4 +46,22 @@ TT_Grid::TT_Grid(QGraphicsView *view, QStringList days, QStringList hours) {
         cols.append(rows);
         x += DAY_WIDTH;
     }
+    // Add emphasis on breaks
+    int x0 = -VHEADERWIDTH;
+    int x1 = days.length() * DAY_WIDTH;
+    if (re_colour.match(BREAKLINECOLOUR).hasMatch()) {
+        QPen pen(QBrush(QColor("#FF" + BREAKLINECOLOUR)), GRIDLINEWIDTH);
+        for(const int &b : std::as_const(breaks)) {
+            int y = b * HOUR_HEIGHT;
+            QGraphicsLineItem *l = new QGraphicsLineItem(x0, y, x1, y);
+            l->setPen(pen);
+            scene->addItem(l);
+        }
+    }
+}
+
+TT_Grid::~TT_Grid()
+{
+    delete canvas;
+    // TODO: more?
 }
