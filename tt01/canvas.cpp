@@ -110,9 +110,16 @@ void Scene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
             }
         }
         QPointF point = event->scenePos();
-    //QList<QGraphicsItem *> allitems = items(point);
+
+        QList<QGraphicsItem *> allitems = items(point);
+
         qDebug() << "Items" << keymod
-                 << " @ " << point << " : " << items(point);
+                 << " @ " << point << " : " << allitems;
+
+        if (click_handler) {
+            click_handler(allitems);
+        }
+
 
 /*
                 cell = None
@@ -175,4 +182,10 @@ void Scene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
     } else {
         qDebug() << "Context Menu";
     }
+}
+
+//TODO: At present I am just using this for testing
+void Scene::set_click_handler(std::function<void (const QList<QGraphicsItem *>)> handler)
+{
+    click_handler = handler;
 }

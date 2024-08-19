@@ -16,8 +16,15 @@ public:
         QList<int> breaks);
     ~TT_Grid();
 
+    static void test(TT_Grid * grid, QList<QGraphicsItem *> items);
+
     Canvas *canvas;
     Scene *scene;
+    QStringList daylist;
+    QStringList hourlist;
+    QList<int> breaklist;
+
+    void setup_grid();
     QList<QList<Chip *>> cols;
 
     qreal DAY_WIDTH = 140.0;

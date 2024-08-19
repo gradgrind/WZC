@@ -6,6 +6,7 @@
 #include <QGraphicsView>
 #include <QGraphicsScene>
 #include <QEvent>
+#include <QList>
 
 // Sizes in points
 const QSizeF A4(841.995, 595.35);
@@ -20,9 +21,15 @@ public:
     QMenu *context_menu;
     void make_context_menu();
 
+    void set_click_handler(
+        std::function<void(const QList<QGraphicsItem *>)> handler);
+
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
+
+private:
+    std::function<void (const QList<QGraphicsItem *>)> click_handler;
 };
 
 // *******************
