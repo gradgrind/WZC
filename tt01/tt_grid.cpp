@@ -13,18 +13,17 @@ TT_Grid::TT_Grid(
     breaklist = breaks;
     setup_grid();
 
-    //TODO: use lambda?
     scene->set_click_handler([this](const QList<QGraphicsItem *> items) {
-        test(this, items);
+        test(items);
     });
 }
 
 //[&] (const std::string& message)
 
-void TT_Grid::test(TT_Grid *grid, QList<QGraphicsItem *> items)
+void TT_Grid::test(QList<QGraphicsItem *> items)
 {
-    grid->scene->clear();
-    grid->setup_grid();
+    scene->clear();
+    setup_grid();
 }
 
 void TT_Grid::setup_grid()
@@ -87,4 +86,53 @@ TT_Grid::~TT_Grid()
 {
     delete canvas;
     // TODO: more?
+}
+
+
+Tile::Tile(TT_Grid *grid, QJsonObject data) : Chip()
+{
+    grid->scene->addItem(this);
+    tag = data.value("TAG").toString();
+    length = data.value("LENGTH").toInt();
+    divs = data.value("DIVS").toInt();
+    div0 = data.value("DIV0").toInt();
+    ndivs = data.value("NDIVS").toInt();
+    middle = data.value("TEXT").toString();
+    tl = data.value("TL").toString();
+    tr = data.value("TR").toString();
+    bl = data.value("BL").toString();
+    br = data.value("BR").toString();
+
+    QString bg = data.value("BACKGROUND").toString("FFFFFF");
+    set_background(bg);
+    QJsonObject settings = grid->settings;
+    set_border(settings.value(
+        "TILE_BORDER_WIDTH").toDouble(TILE_BORDER_WIDTH));
+
+    config_text(
+        settings.value("TEXT_SIZE").toDouble(),
+        settings.value("TEXT_BOLD").toBool(TEXT_BOLD),
+        settings.value("TEXT_ALIGN").toInt(TEXT_ALIGN),
+        settings.value("TEXT_COLOUR").toString());
+    set_subtext_size(settings.value("SUBTEXT_SIZE").toDouble());
+}
+
+void Tile::place(qreal x, qreal y, qreal w, qreal h)
+{
+    /* The QGraphicsItem method "setPos" takes "float" coordinates,
+     * either as setPos(x, y) or as setPos(QPointF). It sets the position
+     * of the item in parent coordinates. For items with no parent, scene
+     * coordinates are used.
+     * The position of the item describes its origin (local coordinate
+     * (0, 0)) in parent coordinates.
+     * The size of the tile can be changed by supplying new width and
+     * height values.
+     * If no change of size is desired, just call the "setPos" method.
+     */
+    setRect(0, 0, w, h);
+    setPos(x, y);
+    // Handle the text field placement and potential shrinking
+    set_text(middle);
+    set_toptext(tl, tr);
+    set_bottomtext(bl, br);
 }

@@ -45,6 +45,13 @@ Chip::Chip(qreal width, qreal height) : HoverRectItem() {
     setRect(0.0, 0.0, width, height);
 }
 
+Chip::Chip() : HoverRectItem() {}
+
+void Chip::set_size(qreal width, qreal height)
+{
+    setRect(0.0, 0.0, width, height);
+}
+
 // setPos(x, y); built in
 
 /* Colour the background, which is initially transparent.

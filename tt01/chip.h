@@ -42,10 +42,12 @@ public:
         return Type;
     }
 
+    Chip();
     Chip(qreal width, qreal height);
 
+    void set_size(qreal width, qreal height);
     void set_background(QString colour);
-    void set_border(qreal width, QString colour = "");
+    void set_border(qreal width, QString colour = "000000");
     void config_text(
         qreal tsize,
         bool tbold = false,

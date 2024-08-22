@@ -7,6 +7,7 @@
 #include <QGraphicsScene>
 #include <QEvent>
 #include <QList>
+#include <QJsonObject>
 
 // Sizes in points
 const QSizeF A4(841.995, 595.35);

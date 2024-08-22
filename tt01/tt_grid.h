@@ -16,7 +16,7 @@ public:
         QList<int> breaks);
     ~TT_Grid();
 
-    static void test(TT_Grid * grid, QList<QGraphicsItem *> items);
+    void test(QList<QGraphicsItem *> items);
 
     Canvas *canvas;
     Scene *scene;
@@ -36,6 +36,39 @@ public:
     QString BREAKLINECOLOUR = "404080";
     qreal FONT_CENTRE_SIZE = 12.0;
     qreal FONT_CORNER_SIZE = 8.0;
+
+    QJsonObject settings;
+};
+
+class Tile : public Chip
+{
+public:
+    enum { Type = UserType + 3 };
+    int type() const override
+    {
+        // Enable the use of qgraphicsitem_cast with this item.
+        return Type;
+    }
+
+    Tile(TT_Grid *grid, QJsonObject data);
+
+    void place(qreal x, qreal y, qreal w, qreal h);
+
+    QString tag;
+    int length;
+    int divs;
+    int div0;
+    int ndivs;
+    QString middle;
+    QString tl;
+    QString tr;
+    QString bl;
+    QString br;
+
+    const qreal TILE_BORDER_WIDTH = 2.0;
+    const bool TEXT_BOLD = true;
+    const int TEXT_ALIGN = 0; // centred
 };
 
 #endif // TT_GRID_H
+
