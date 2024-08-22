@@ -29,21 +29,27 @@ int main(int argc, char *argv[])
         {"HU A", "HU B", "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7"},
         {2, 4, 6});
 
+    qDebug() << "@ (3, 1): " << grid.cols[4][2]->rect();
+    qDebug() << "  ... " << grid.cols[4][2]->pos();
+
     Tile *t = new Tile(&grid,
         QJsonObject {
             {"TEXT", "Centre"},
-            {"TR", "rtop"},
+            {"TR", "rTop"},
+            {"LENGTH", 2},
         }
     );
-    t->place(200, 300, 150, 150);
+    grid.place_tile(t, 3, 1);
+    //t->place(200, 300, 150, 150);
 
     t = new Tile(&grid,
         QJsonObject {
             {"TEXT", "Second"},
-            {"BL", "lbottom"},
+            {"BL", "lBottom"},
         }
     );
-    t->place(500, 250, 150, 150);
+    grid.place_tile(t, 4, 6);
+    //t->place(500, 250, 150, 150);
 
     view.setFixedSize(A4.toSize());
 

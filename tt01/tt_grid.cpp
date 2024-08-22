@@ -88,6 +88,27 @@ TT_Grid::~TT_Grid()
     // TODO: more?
 }
 
+void TT_Grid::place_tile(Tile *tile, int col, int row)
+{
+    Chip *cell = cols[col + 1][row + 1];
+    QRectF r = cell->rect();
+    qreal cellw = r.width();
+    QPointF p = cell->pos();
+    qreal x0 = p.x();
+    qreal y0 = p.y();
+    qreal h = r.height();
+    if (tile->length > 1) {
+        cell = cols[col + 1][row + tile->length];
+        h = cell->pos().y() + cell->rect().height() - y0;
+    }
+
+    //TODO: calculate width
+
+    tile->place(
+        x0 + GRIDLINEWIDTH, y0 + GRIDLINEWIDTH,
+        cellw - 2*GRIDLINEWIDTH, h - 2*GRIDLINEWIDTH);
+}
+
 
 Tile::Tile(TT_Grid *grid, QJsonObject data) : Chip()
 {
