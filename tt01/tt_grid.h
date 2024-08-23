@@ -33,7 +33,7 @@ public:
     QString bl;
     QString br;
 
-    const qreal TILE_BORDER_WIDTH = 2.0;
+    const qreal TILE_BORDER_WIDTH = 1.0;
     const bool TEXT_BOLD = true;
     const int TEXT_ALIGN = 0; // centred
 };

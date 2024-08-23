@@ -18,8 +18,6 @@ TT_Grid::TT_Grid(
     });
 }
 
-//[&] (const std::string& message)
-
 void TT_Grid::test(QList<QGraphicsItem *> items)
 {
     scene->clear();
@@ -92,7 +90,7 @@ void TT_Grid::place_tile(Tile *tile, int col, int row)
 {
     Chip *cell = cols[col + 1][row + 1];
     QRectF r = cell->rect();
-    qreal cellw = r.width();
+    qreal cellw = r.width() - 2*GRIDLINEWIDTH;
     QPointF p = cell->pos();
     qreal x0 = p.x();
     qreal y0 = p.y();
@@ -101,12 +99,12 @@ void TT_Grid::place_tile(Tile *tile, int col, int row)
         cell = cols[col + 1][row + tile->length];
         h = cell->pos().y() + cell->rect().height() - y0;
     }
-
-    //TODO: calculate width
-
+    // Calculate width
+    qreal w = cellw * tile->divs / tile->ndivs;
+    qreal dx = cellw * tile->div0 / tile->ndivs;
     tile->place(
-        x0 + GRIDLINEWIDTH, y0 + GRIDLINEWIDTH,
-        cellw - 2*GRIDLINEWIDTH, h - 2*GRIDLINEWIDTH);
+        x0 + GRIDLINEWIDTH + dx, y0 + GRIDLINEWIDTH,
+        w, h - 2*GRIDLINEWIDTH);
 }
 
 
@@ -114,10 +112,10 @@ Tile::Tile(TT_Grid *grid, QJsonObject data) : Chip()
 {
     grid->scene->addItem(this);
     tag = data.value("TAG").toString();
-    length = data.value("LENGTH").toInt();
-    divs = data.value("DIVS").toInt();
-    div0 = data.value("DIV0").toInt();
-    ndivs = data.value("NDIVS").toInt();
+    length = data.value("LENGTH").toInt(1);
+    divs = data.value("DIVS").toInt(1);
+    div0 = data.value("DIV0").toInt(0);
+    ndivs = data.value("NDIVS").toInt(1);
     middle = data.value("TEXT").toString();
     tl = data.value("TL").toString();
     tr = data.value("TR").toString();
@@ -146,8 +144,7 @@ void Tile::place(qreal x, qreal y, qreal w, qreal h)
      * coordinates are used.
      * The position of the item describes its origin (local coordinate
      * (0, 0)) in parent coordinates.
-     * The size of the tile can be changed by supplying new width and
-     * height values.
+     * The size of the tile is set by means of the width and height values.
      * If no change of size is desired, just call the "setPos" method.
      */
     setRect(0, 0, w, h);

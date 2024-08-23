@@ -2,6 +2,7 @@
 #include "tt_grid.h"
 #include <QBoxLayout>
 //#include <QStyleFactory>
+#include "readfet.h"
 
 int main(int argc, char *argv[])
 {
@@ -32,11 +33,14 @@ int main(int argc, char *argv[])
     qDebug() << "@ (3, 1): " << grid.cols[4][2]->rect();
     qDebug() << "  ... " << grid.cols[4][2]->pos();
 
-    Tile *t = new Tile(&grid,
-        QJsonObject {
+    Tile *t = new Tile(&grid, QJsonObject
+        {
             {"TEXT", "Centre"},
             {"TR", "rTop"},
             {"LENGTH", 2},
+            {"DIV0", 2},
+            {"DIVS", 1},
+            {"NDIVS", 3},
         }
     );
     grid.place_tile(t, 3, 1);
@@ -52,6 +56,8 @@ int main(int argc, char *argv[])
     //t->place(500, 250, 150, 150);
 
     view.setFixedSize(A4.toSize());
+
+    ReadFet::test();
 
     mainwindow.show();
 
