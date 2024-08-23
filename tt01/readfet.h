@@ -2,13 +2,12 @@
 #define READFET_H
 
 #include <QString>
+#include <QVariant>
+#include <QList>
+#include <QMap>
 
-class ReadFet
-{
-public:
-    ReadFet(QString fetxml);
+QMap<QString, QList<QVariant>> readFet(QString fetxml);
 
-    static void test();
-};
+void readFet_test();
 
 #endif // READFET_H

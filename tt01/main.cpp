@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 
     view.setFixedSize(A4.toSize());
 
-    ReadFet::test();
+    readFet_test();
 
     mainwindow.show();
 

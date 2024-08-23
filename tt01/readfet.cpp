@@ -1,7 +1,11 @@
 #include "readfet.h"
-#include <QList>
 #include <QXmlStreamReader>
 #include <qdebug.h>
+
+struct child {
+    QString key;
+    QVariant val;
+};
 
 const QString TESTXML(
 R"(<?xml version="1.0" encoding="UTF-8"?>
@@ -20,18 +24,19 @@ R"(<?xml version="1.0" encoding="UTF-8"?>
 </Draw>
 )");
 
-/* Use a QVariantMap to store the nodes, saving only strings,
- * arrays and objects.
- */
-
 struct xmlnode {
-    QStringView name;
+    QString name;
     QXmlStreamAttributes attributes;
     QString text;
-    QList<xmlnode> children;
+    QList<child> children;
 };
 
-ReadFet::ReadFet(QString fetxml)
+//TODO: What about having ALL nodes as QMap<QString, QVariant> – also
+// the text ones (and the empty ones)? That way I could include
+// attributes, say as a mapping with key "__attributes__" and value
+// QMap<QString, QString>. Text could be with key "__text__".
+
+QMap<QString, QList<QVariant>> readFet(QString fetxml)
 {
     // This is not a general, comprehensive XML reader ...
     QList<xmlnode> stack;
@@ -48,27 +53,54 @@ ReadFet::ReadFet(QString fetxml)
             // Push current level
             stack.append(node);
             node = xmlnode{
-                .name = xml.name(),
+                .name = xml.name().toString(),
                 .attributes = xml.attributes()
             };
-            qDebug() << "Start" << xml.name();
+            //qDebug() << "Start" << xml.name();
         } else if (xml.isEndElement()) {
-            qDebug() << "End" << xml.name();
-            xmlnode node0 = node;
+            //qDebug() << "End" << xml.name();
+            auto name = node.name;
+            auto attr = node.attributes;
+            QVariant v;
+            if (!node.text.isEmpty()) {
+                auto t = node.text;
+                //qDebug() << " ++++ t:" << t;
+                v.setValue(t);
+            } else if (!node.children.isEmpty()) {
+                QMap<QString, QList<QVariant>> cmap;
+                for (const auto &c : node.children) {
+                    auto vlp = cmap.value(c.key);
+                    vlp.append(c.val);
+                    cmap.insert(c.key, vlp);
+                }
+                v.setValue(cmap);
+            }
+            for (const auto& a : attr) {
+                qDebug() << " ++" << name << ":" << a.name() << a.value();
+            }
+            //qDebug() << " ++" << name << ":" << attr;
             node = stack.takeLast();
-            node.children.append(node0);
+            node.children.append({name, v});
         } else if (xml.isCharacters()) {
             if (xml.isWhitespace()) {
                 continue;
             }
-            if (node.children.length() != 0) {
+            if (!node.children.isEmpty()) {
                 qFatal() << "XML-Element" << node.name
                          << "... new text, but has element(s) too"
                          << "@" << xml.lineNumber();
             }
-            qDebug() << "Text" << xml.text();
-            node.text += xml.text().toString();
-        } else if (xml.isStartDocument() or xml.isEndDocument()) {
+            if (!node.text.isEmpty()) {
+                qFatal() << "XML-Element" << node.name
+                         << "... new text, but has text already"
+                         << "@" << xml.lineNumber();
+            }
+            node.text = xml.text().toString();
+            //qDebug() << "Text" << node.text;
+        } else if (
+                xml.isStartDocument()
+                or xml.isEndDocument()
+                or xml.isComment()) {
             continue;
         } else {
             qFatal() << "Unexpected XML:" << xml.tokenString()
@@ -79,10 +111,19 @@ ReadFet::ReadFet(QString fetxml)
         qFatal() << "XML error: " << xml.errorString()
                  << "@" << xml.lineNumber();
     }
+    return node.children[0].val
+        .value<QMap<QString, QList<QVariant>>>();
 }
 
 
-void ReadFet::test()
+void readFet_test()
 {
-    ReadFet r(TESTXML);
+    auto fet = readFet(TESTXML);
+    auto c1v = fet["Input"];
+    for (const auto &cv : c1v) {
+        auto cvm = cv.value<QMap<QString, QList<QVariant>>>();
+        for (auto j = cvm.cbegin(), end = cvm.cend(); j != end; ++j) {
+            qDebug() << "$$$" << j.key() << ":" << j.value();
+        }
+    }
 }
