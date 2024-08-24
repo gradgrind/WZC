@@ -4,12 +4,11 @@
 #include <QString>
 #include <QVariant>
 #include <QList>
-#include <QXmlStreamReader>
 #include <QMap>
 
 struct XMLNode {
     QString name;
-    QXmlStreamAttributes attributes;
+    QMap<QString, QString> attributes;
     QList<QVariant> children;
 };
 
@@ -19,6 +18,6 @@ XMLNode readXMLTree(QString xmlin);
 
 QStringList printXMLNode(XMLNode node, QString pre = "");
 
-void readxml_test();
+void readxml_test(bool show = true);
 
 #endif // READXML_H

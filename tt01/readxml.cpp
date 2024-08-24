@@ -1,5 +1,6 @@
 #include "readxml.h"
-#include <qdebug.h>
+#include <iostream>
+#include <QXmlStreamReader>
 
 const QString TESTXML(
 R"(<?xml version="1.0" encoding="UTF-8"?>
@@ -29,9 +30,13 @@ XMLNode readXMLTree(QString xmlin)
         if (xml.isStartElement()) {
             // Push current level
             stack.append(node);
+            QMap<QString, QString> amap;
+            for (const QXmlStreamAttribute &a : xml.attributes()) {
+                amap[a.qualifiedName().toString()] = a.value().toString();
+            }
             node = XMLNode{
                 .name = xml.name().toString(),
-                .attributes = xml.attributes()
+                .attributes = amap
             };
         } else if (xml.isEndElement()) {
             //qDebug() << "End" << xml.name();
@@ -65,12 +70,11 @@ XMLNode readXMLTree(QString xmlin)
 QStringList printXMLNode(XMLNode node, QString pre)
 {
     QStringList slist;
-    slist.append(pre + node.name);
+    slist.append(pre + node.name + "::");
     pre += "  ";
-    for (const QXmlStreamAttribute &a : node.attributes) {
-        slist.append(pre + "@ "
-                       + a.qualifiedName().toString()
-                       + ": " + a.value().toString());
+    auto amap = node.attributes;
+    for (auto i = amap.cbegin(), end = amap.cend(); i != end; ++i) {
+        slist.append(pre + "@ " + i.key() + ": " + i.value());
     }
     for (const QVariant &v : node.children) {
         if (v.canConvert<QString>()) {
@@ -82,10 +86,12 @@ QStringList printXMLNode(XMLNode node, QString pre)
     return slist;
 }
 
-void readxml_test()
+void readxml_test(bool show)
 {
     auto xml = readXMLTree(TESTXML);
-    for (const auto &l : printXMLNode(xml)) {
-        qDebug() << l;
+    if (show) {
+        for (const auto &l : printXMLNode(xml)) {
+            std::cout << qPrintable(l) << std::endl;
+        }
     }
 }

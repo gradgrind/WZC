@@ -1,4 +1,7 @@
 #include "tt_grid.h"
+#include "readxml.h"
+#include <QFileDialog>
+#include <iostream>
 
 TT_Grid::TT_Grid(
     QGraphicsView *view,
@@ -22,6 +25,20 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
 {
     scene->clear();
     setup_grid();
+
+    auto fileName = QFileDialog::getOpenFileName(nullptr,
+        ("Open XML file"), "", ("XML Files (*.xml *.fet)"));
+    QFile data(fileName);
+    if (data.open(QFile::ReadOnly | QIODevice::Text)) {
+        QTextStream indat(&data);
+        QString tdat = indat.readAll();
+        XMLNode xml = readXMLTree(tdat);
+
+        for (const auto &l : printXMLNode(xml)) {
+            std::cout << qPrintable(l) << std::endl;
+        }
+
+    }
 }
 
 void TT_Grid::setup_grid()
