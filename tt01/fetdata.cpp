@@ -37,7 +37,6 @@ FetData::FetData(XMLNode xmlin)
     }
     qDebug() << fet_top["Institution_Name"][0].toString();
 
-    QMap<QString, Day> days;
     int i = 0;
     for (const auto &v : fet_top["Days_List"]) {
         auto n = v.value<XMLNode>();
@@ -49,12 +48,12 @@ FetData::FetData(XMLNode xmlin)
                 .Name = name,
                 .Long_Name = m.value("Long_Name")
             };
-            days[name] = d;
+            day_list.append(d);
+            days[name] = i;
             i++;
         }
     }
 
-    QMap<QString, Hour> hours;
     i = 0;
     for (const auto &v : fet_top["Hours_List"]) {
         auto n = v.value<XMLNode>();
@@ -76,8 +75,47 @@ FetData::FetData(XMLNode xmlin)
                     h.end = t[1];
                 }
             }
-            hours[name] = h;
+            hour_list.append(h);
+            hours[name] = i;
             i++;
         }
     }
+
+    i = 0;
+    for (const auto &v : fet_top["Subjects_List"]) {
+        auto n = v.value<XMLNode>();
+        if (n.name == "Subject") {
+            auto m = readSimpleItems(n);
+            auto name = m.value("Name");
+            Subject s{
+                .index = i,
+                .Name = name,
+                .Long_Name = m.value("Long_Name")
+            };
+            subject_list.append(s);
+            subjects[name] = i;
+            i++;
+        }
+    }
+
+    // <Activity_Tags_List> ???
+
+    i = 0;
+    for (const auto &v : fet_top["Teachers_List"]) {
+        auto n = v.value<XMLNode>();
+        if (n.name == "Teacher") {
+            auto m = readSimpleItems(n);
+            auto name = m.value("Name");
+            Teacher t{
+                .index = i,
+                .Name = name,
+                .Long_Name = m.value("Long_Name")
+            };
+            teacher_list.append(t);
+            teachers[name] = i;
+            i++;
+        }
+    }
+
+    //TODO: Students_List ...
 }
