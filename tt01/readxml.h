@@ -1,13 +1,24 @@
-#ifndef READFET_H
-#define READFET_H
+#ifndef READXML_H
+#define READXML_H
 
 #include <QString>
 #include <QVariant>
 #include <QList>
+#include <QXmlStreamReader>
 #include <QMap>
 
-QMap<QString, QList<QVariant>> readFet(QString fetxml);
+struct XMLNode {
+    QString name;
+    QXmlStreamAttributes attributes;
+    QList<QVariant> children;
+};
 
-void readFet_test();
+Q_DECLARE_METATYPE(XMLNode)
 
-#endif // READFET_H
+XMLNode readXMLTree(QString xmlin);
+
+QStringList printXMLNode(XMLNode node, QString pre = "");
+
+void readxml_test();
+
+#endif // READXML_H

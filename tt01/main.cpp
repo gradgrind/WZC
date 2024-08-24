@@ -2,7 +2,7 @@
 #include "tt_grid.h"
 #include <QBoxLayout>
 //#include <QStyleFactory>
-#include "readfet.h"
+#include "readxml.h"
 
 int main(int argc, char *argv[])
 {
@@ -57,7 +57,8 @@ int main(int argc, char *argv[])
 
     view.setFixedSize(A4.toSize());
 
-    readFet_test();
+    //readFet_test();
+    readxml_test();
 
     mainwindow.show();
 

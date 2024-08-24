@@ -26,7 +26,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(tt01
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        readfet.h readfet.cpp
+        readxml.h readxml.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET tt01 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
