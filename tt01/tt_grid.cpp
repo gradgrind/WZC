@@ -1,5 +1,6 @@
 #include "tt_grid.h"
 #include "readxml.h"
+#include "fetdata.h"
 #include <QFileDialog>
 #include <iostream>
 
@@ -33,6 +34,9 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
         QTextStream indat(&data);
         QString tdat = indat.readAll();
         XMLNode xml = readXMLTree(tdat);
+
+        FetData f(xml);
+        return;
 
         for (const auto &l : printXMLNode(xml)) {
             std::cout << qPrintable(l) << std::endl;
