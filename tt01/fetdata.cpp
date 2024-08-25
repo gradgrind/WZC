@@ -203,22 +203,44 @@ void readClasses(QList<DBNode> &node_list, QList<QVariant> item_list)
         if (n.name == "Year") {
             auto m = readSimpleItems(n);
             auto name = m.value("Name");
-            int id = node_list.length();
+            auto sep = m.value("Separator");
 
             QJsonArray categories;
+            QJsonArray groups;
             for (const auto &vc : n.children) {
                 auto nc = vc.value<XMLNode>();
                 if (nc.name == "Category") {
                     auto cdata = readSimpleItems(nc);
                     auto divs = cdata.values("Division");
                     std::reverse(divs.begin(), divs.end());
-                    categories.append(QJsonArray::fromStringList(divs));
+                    auto tag = QStringList(divs).join(",");
+                    categories.append(
+                        QJsonObject{
+                            {"Tag", tag},
+                            {"Groups", QJsonArray::fromStringList(divs)},
+                        });
                 } else if (nc.name == "Group") {
-//TODO
+                    QJsonArray subgroups;
+                    auto cdata = readSimpleItems(nc);
+                    for (const auto &vsg : nc.children) {
+                        auto nsg = vsg.value<XMLNode>();
+                        if (nsg.name == "Subgroup") {
+                            auto sgdata = readSimpleItems(nsg);
+                            subgroups.append(sgdata.value("Name"));
+                        }
+                    }
+                    auto gid = cdata.value("Name").split(sep);
+                    groups.append(QJsonObject{
+                        {"ID", gid[1]},
+                        {"CLASS", name},
+                        {"SUBGROUPS", subgroups},
+                        {"STUDENTS", QJsonArray()},
+                    });
                 }
-
             }
-
+//TODO: Add groups to DB so that their ids are available for the class
+// divisions.
+            int id = node_list.length();
             node_list.append({
                 .Id = id,
                 .DB_TABLE = "CLASSES",
@@ -231,6 +253,7 @@ void readClasses(QList<DBNode> &node_list, QList<QVariant> item_list)
             });
 
             qDebug() << id << node_list[id].DATA;
+            qDebug() << "§§GROUPS:" << groups;
             i++;
         }
     }
