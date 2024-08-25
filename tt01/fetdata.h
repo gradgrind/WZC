@@ -1,7 +1,14 @@
 #ifndef FETDATA_H
 #define FETDATA_H
 
+#include <QJsonObject>
 #include "readxml.h"
+
+struct DBNode {
+    int Id;
+    QString DB_TABLE;
+    QJsonObject DATA;
+};
 
 struct Day {
     int index;
@@ -33,6 +40,8 @@ class FetData
 {
 public:
     FetData(XMLNode xmlin);
+
+    QList<DBNode> nodeList;
 
     QMap<QString, int> days;
     QList<Day> day_list;
