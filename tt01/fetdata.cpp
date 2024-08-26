@@ -27,7 +27,15 @@ QMultiMap<QString, QString> readSimpleItems(XMLNode node) {
     return smap;
 }
 
-void readDays(QList<DBNode> &node_list, QList<QVariant> item_list)
+struct fetinfo{
+    QHash<QString, int> teachers;
+    QHash<QString, int> subjects;
+    QHash<QString, int> rooms;
+    QHash<QString, int> groups;
+    QList<DBNode> nodes;
+};
+
+void readDays(fetinfo &fet_info, QList<QVariant> item_list)
 {
     int i = 0;
     for (const auto &v : item_list) {
@@ -35,8 +43,8 @@ void readDays(QList<DBNode> &node_list, QList<QVariant> item_list)
         if (n.name == "Day") {
             auto m = readSimpleItems(n);
             auto name = m.value("Name");
-            int id = node_list.length();
-            node_list.append({
+            int id = fet_info.nodes.length();
+            fet_info.nodes.append({
                 .Id = id,
                 .DB_TABLE = "DAYS",
                 .DATA = {
@@ -45,13 +53,13 @@ void readDays(QList<DBNode> &node_list, QList<QVariant> item_list)
                     {"X", i}
                 }
             });
-            //qDebug() << id << node_list[id].DATA;
+            //qDebug() << id << fet_info.nodes[id].DATA;
             i++;
         }
     }
 }
 
-void readHours(QList<DBNode> &node_list, QList<QVariant> item_list)
+void readHours(fetinfo &fet_info, QList<QVariant> item_list)
 {
     int i = 0;
     for (const auto &v : item_list) {
@@ -70,8 +78,8 @@ void readHours(QList<DBNode> &node_list, QList<QVariant> item_list)
                     end = t[1];
                 }
             }
-            int id = node_list.length();
-            node_list.append({
+            int id = fet_info.nodes.length();
+            fet_info.nodes.append({
                 .Id = id,
                 .DB_TABLE = "HOURS",
                 .DATA = {
@@ -82,13 +90,13 @@ void readHours(QList<DBNode> &node_list, QList<QVariant> item_list)
                          {"END_TIME", end},
                          }
             });
-            //qDebug() << id << node_list[id].DATA;
+            //qDebug() << id << fet_info.nodes[id].DATA;
             i++;
         }
     }
 }
 
-void readSubjects(QList<DBNode> &node_list, QList<QVariant> item_list)
+void readSubjects(fetinfo &fet_info, QList<QVariant> item_list)
 {
     int i = 0;
     for (const auto &v : item_list) {
@@ -96,8 +104,8 @@ void readSubjects(QList<DBNode> &node_list, QList<QVariant> item_list)
         if (n.name == "Subject") {
             auto m = readSimpleItems(n);
             auto name = m.value("Name");
-            int id = node_list.length();
-            node_list.append({
+            int id = fet_info.nodes.length();
+            fet_info.nodes.append({
                 .Id = id,
                 .DB_TABLE = "SUBJECTS",
                 .DATA = {
@@ -106,13 +114,14 @@ void readSubjects(QList<DBNode> &node_list, QList<QVariant> item_list)
                     {"X", i}
                 }
             });
-            //qDebug() << id << node_list[id].DATA;
+            fet_info.subjects[name] = id;
+            //qDebug() << id << fet_info.nodes[id].DATA;
             i++;
         }
     }
 }
 
-void readTeachers(QList<DBNode> &node_list, QList<QVariant> item_list)
+void readTeachers(fetinfo &fet_info, QList<QVariant> item_list)
 {
     int i = 0;
     for (const auto &v : item_list) {
@@ -120,8 +129,8 @@ void readTeachers(QList<DBNode> &node_list, QList<QVariant> item_list)
         if (n.name == "Teacher") {
             auto m = readSimpleItems(n);
             auto name = m.value("Name");
-            int id = node_list.length();
-            node_list.append({
+            int id = fet_info.nodes.length();
+            fet_info.nodes.append({
                 .Id = id,
                 .DB_TABLE = "TEACHERS",
                 .DATA = {
@@ -130,32 +139,30 @@ void readTeachers(QList<DBNode> &node_list, QList<QVariant> item_list)
                     {"X", i}
                 }
             });
-            //qDebug() << id << node_list[id].DATA;
+            fet_info.teachers[name] = id;
+            //qDebug() << id << fet_info.nodes[id].DATA;
             i++;
         }
     }
 }
 
-void readRooms(QList<DBNode> &node_list, QList<QVariant> item_list)
+void readRooms(fetinfo &fet_info, QList<QVariant> item_list)
 {
-    // Need mapping to indexes for the "ID" fields – for the real rooms
-    // inside the virtual rooms.
     // Assume that the real rooms upon which the virtual rooms depend
     // appear before the virtual rooms which use them!
-    QHash<QString, int> tag2ix;
     int i = 0;
     for (const auto &v : item_list) {
         auto n = v.value<XMLNode>();
         if (n.name == "Room") {
             auto m = readSimpleItems(n);
             auto name = m.value("Name");
-            int id = node_list.length();
+            int id = fet_info.nodes.length();
             QJsonObject data{
                         {"ID", name},
                         {"NAME",  m.value("Long_Name")},
                         {"X", i}
             };
-            tag2ix[name] = id;
+            fet_info.rooms[name] = id;
             if (m.value("Virtual") == "true") {
                 QJsonArray vra;
                 for (const auto &vc : n.children) {
@@ -167,11 +174,11 @@ void readRooms(QList<DBNode> &node_list, QList<QVariant> item_list)
                             if (nr.name == "Real_Room") {
                                 auto r = nr.children[0].toString();
                                 // convert to index!
-                                if (!tag2ix.contains(r)) {
+                                if (!fet_info.rooms.contains(r)) {
                                     qFatal() << "Virtual Room contains room"
                                              << r << "(not yet defined)";
                                 }
-                                rra.append(tag2ix[r]);
+                                rra.append(fet_info.rooms[r]);
                             }
                         }
                         vra.append(rra);
@@ -184,19 +191,30 @@ void readRooms(QList<DBNode> &node_list, QList<QVariant> item_list)
             if (!c.isEmpty()) {
                 data["$REF"] = c;
             }
-            node_list.append({
+            fet_info.nodes.append({
                 .Id = id,
                 .DB_TABLE = "ROOMS",
                 .DATA = data
             });
-            //qDebug() << id << node_list[id].DATA;
+            //qDebug() << id << fet_info.nodes[id].DATA;
             i++;
         }
     }
 }
 
-void readClasses(QList<DBNode> &node_list, QList<QVariant> item_list)
+// Note that this assumes a certain structure for the class data:
+// The "Categories" are used to define the divisions.
+// All groups must have appropriate subgroups defined.
+// The subgroups are not used anywhere else in the fet-file, the
+// students participating in all activities are defined only using
+// classes (Years) and Groups.
+void readClasses(fetinfo &fet_info, QList<QVariant> item_list)
 {
+    struct category{
+        QString tag;
+        QList<QString> groups;
+    };
+
     int i = 0;
     for (const auto &v : item_list) {
         auto n = v.value<XMLNode>();
@@ -204,9 +222,13 @@ void readClasses(QList<DBNode> &node_list, QList<QVariant> item_list)
             auto m = readSimpleItems(n);
             auto name = m.value("Name");
             auto sep = m.value("Separator");
-
-            QJsonArray categories;
-            QJsonArray groups;
+            // Collect the groups
+            QList<category> categories;
+            // Collect group indexes (key without class part)
+            QMap<QString, int> group2index;
+            // Collect subgroups
+            QSet<QString> allsubgroups;
+            //QJsonArray groups;
             for (const auto &vc : n.children) {
                 auto nc = vc.value<XMLNode>();
                 if (nc.name == "Category") {
@@ -214,11 +236,10 @@ void readClasses(QList<DBNode> &node_list, QList<QVariant> item_list)
                     auto divs = cdata.values("Division");
                     std::reverse(divs.begin(), divs.end());
                     auto tag = QStringList(divs).join(",");
-                    categories.append(
-                        QJsonObject{
-                            {"Tag", tag},
-                            {"Groups", QJsonArray::fromStringList(divs)},
-                        });
+                    categories.append({
+                        .tag = tag,
+                        .groups = divs,
+                    });
                 } else if (nc.name == "Group") {
                     QJsonArray subgroups;
                     auto cdata = readSimpleItems(nc);
@@ -226,35 +247,147 @@ void readClasses(QList<DBNode> &node_list, QList<QVariant> item_list)
                         auto nsg = vsg.value<XMLNode>();
                         if (nsg.name == "Subgroup") {
                             auto sgdata = readSimpleItems(nsg);
-                            subgroups.append(sgdata.value("Name"));
+                            auto sgname = sgdata.value("Name");
+                            subgroups.append(sgname);
+                            allsubgroups.insert(sgname);
                         }
                     }
-                    auto gid = cdata.value("Name").split(sep);
-                    groups.append(QJsonObject{
-                        {"ID", gid[1]},
-                        {"CLASS", name},
-                        {"SUBGROUPS", subgroups},
-                        {"STUDENTS", QJsonArray()},
+                    auto g0 = cdata.value("Name");
+                    auto gid = g0.split(sep);
+                    int id = fet_info.nodes.length();
+                    fet_info.nodes.append({
+                        .Id = id,
+                        .DB_TABLE = "GROUPS",
+                        .DATA = {
+                            {"ID", gid[1]},
+                            {"CLASS", name},
+                            {"SUBGROUPS", subgroups},
+                            {"STUDENTS", QJsonArray()},
+                        }
                     });
+                    fet_info.groups[g0] = id;
+                    group2index[gid[1]] = id;
                 }
             }
-//TODO: Add groups to DB so that their ids are available for the class
-// divisions.
-            int id = node_list.length();
-            node_list.append({
+            // Add a group entry for the full class
+            int id = fet_info.nodes.length();
+            auto sglist = allsubgroups.values();
+            std::sort(sglist.begin(), sglist.end());
+            fet_info.nodes.append({
+                .Id = id,
+                .DB_TABLE = "GROUPS",
+                .DATA = {
+                    {"ID", ""},
+                    {"CLASS", name},
+                    {"SUBGROUPS", QJsonArray::fromStringList(sglist)},
+                    {"STUDENTS", QJsonArray()},
+                }
+            });
+            fet_info.groups[name] = id;
+            // Convert the division members to indexes
+            QJsonArray divisions;
+            for (const auto &d : categories) {
+                QJsonArray glist;
+                for (const auto &g : d.groups) {
+                    int gid = group2index.value(g);
+                    if (gid) {
+                        glist.append(gid);
+                    } else {
+                        qFatal() << "Class" << name << "::"
+                                 << "Group" << g << "not defined!";
+                    }
+                }
+                divisions.append(QJsonObject{
+                    {"Tag", d.tag},
+                    {"Groups", glist},
+                });
+            }
+            id = fet_info.nodes.length();
+            fet_info.nodes.append({
                 .Id = id,
                 .DB_TABLE = "CLASSES",
                 .DATA = {
                     {"ID", name},
                     {"NAME",  m.value("Long_Name")},
                     {"X", i},
-                    {"DIVISIONS", categories},
+                    {"DIVISIONS", divisions},
                 }
             });
-
-            qDebug() << id << node_list[id].DATA;
-            qDebug() << "§§GROUPS:" << groups;
             i++;
+
+            /*
+            for (auto iter = group2index.cbegin(), end = group2index.cend();
+                    iter != end; ++iter) {
+                qDebug() << "  GROUP" << iter.key() << "::" << iter.value()
+                         << fet_info.nodes[iter.value()].DATA;
+            }
+            qDebug() << "  GROUP" << "*" << "::" << id-1
+                     << fet_info.nodes[id-1].DATA;
+            qDebug() << id << fet_info.nodes[id].DATA;
+            */
+        }
+    }
+}
+
+void readActivities(fetinfo &fet_info, QList<QVariant> item_list)
+{
+    // The Activity_Group_Id refers to a course. If it is 0
+    // that is a single-activity course. Otherwise there are
+    // multiple activities, so the course must be cached.
+    QHash<QString, int> coursemap;
+    for (const auto &v : item_list) {
+        auto n = v.value<XMLNode>();
+        if (n.name == "Activity") {
+            auto m = readSimpleItems(n);
+            auto cid = m.value("Activity_Group_Id");
+            int id = coursemap.value(cid);
+            if (id == 0) {
+                int id = fet_info.nodes.length();
+                qDebug() << "  ACTIVITY" << m.value("Id") << cid << id;
+                QJsonArray tlist;
+                for (const auto &t : m.values("Teacher")) {
+                    int tid = fet_info.teachers.value(t);
+                    if (tid) {
+                        tlist.append(tid);
+                    } else {
+                        qFatal() << "Activity" << m.value("Id")
+                                 << "has unknown teacher:" << t;
+                    }
+                }
+                auto s = m.value("Subject");
+                int sid = fet_info.subjects.value(s);
+                if (!sid) {
+                    qFatal() << "Activity" << m.value("Id")
+                    << "has unknown subject:" << s;
+                }
+                QJsonArray glist;
+                for (const auto &g : m.values("Students")) {
+                    int gid = fet_info.groups.value(g);
+                    if (gid) {
+                        glist.append(gid);
+                    } else {
+                        qFatal() << "Activity" << m.value("Id")
+                        << "has unknown group:" << g;
+                    }
+                }
+                fet_info.nodes.append({
+                    .Id = id,
+                    .DB_TABLE = "COURSES",
+                    .DATA = {
+                        {"TEACHERS", tlist},
+                        {"SUBJECT", sid},
+                        {"STUDENTS", glist},
+                    },
+                });
+                if (cid != "0") {
+                    coursemap[cid] = id;
+                }
+            } else {
+                qDebug() << "  ACTIVITY" << m.value("Id") << id;
+            }
+
+            //TODO: Make LESSONS
+
         }
     }
 }
@@ -270,15 +403,20 @@ FetData::FetData(XMLNode xmlin)
     }
     qDebug() << fet_top["Institution_Name"][0].toString();
 
+    fetinfo fetdata;
     // Start the node-list with a dummy entry (index 0 is invalid).
-    nodeList.append(DBNode{});
+    fetdata.nodes.append(DBNode{});
 
-    readDays(nodeList, fet_top["Days_List"]);
-    readHours(nodeList, fet_top["Hours_List"]);
-    readSubjects(nodeList, fet_top["Subjects_List"]);
-    readTeachers(nodeList, fet_top["Teachers_List"]);
-    readRooms(nodeList, fet_top["Rooms_List"]);
-    readClasses(nodeList, fet_top["Students_List"]);
+    readDays(fetdata, fet_top["Days_List"]);
+    readHours(fetdata, fet_top["Hours_List"]);
+    readSubjects(fetdata, fet_top["Subjects_List"]);
+    readTeachers(fetdata, fet_top["Teachers_List"]);
+    readRooms(fetdata, fet_top["Rooms_List"]);
+    readClasses(fetdata, fet_top["Students_List"]);
+
+    qDebug() << "§§§1" << fetdata.nodes.length();
+    readActivities(fetdata, fet_top["Activities_List"]);
+    qDebug() << "§§§2" << fetdata.nodes.length();
     // <Activity_Tags_List> ???
 }
 
