@@ -219,6 +219,17 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
             auto m = readSimpleItems(n);
             auto name = m.value("Name");
             auto sep = m.value("Separator");
+            int clid = fet_info.nodes.length();
+            fet_info.nodes.append({
+                .Id = clid,
+                .DB_TABLE = "CLASSES",
+                .DATA = {
+                    {"ID", name},
+                    {"NAME",  m.value("Long_Name")},
+                    {"X", i},
+                }
+            });
+            i++;
             // Collect the groups
             QList<category> categories;
             // Collect group indexes (key without class part)
@@ -256,7 +267,7 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
                         .DB_TABLE = "GROUPS",
                         .DATA = {
                             {"ID", gid[1]},
-                            {"CLASS", name},
+                            {"CLASS", clid},
                             {"SUBGROUPS", subgroups},
                             {"STUDENTS", QJsonArray()},
                         }
@@ -265,8 +276,8 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
                     group2index[gid[1]] = id;
                 }
             }
-            // Add a group entry for the full class
-            //TODO: at present this is not referrred to by the class node!
+            // Add a group entry for the full class.
+            // At present this is not referrred to by the class node!
             int id = fet_info.nodes.length();
             auto sglist = allsubgroups.values();
             std::sort(sglist.begin(), sglist.end());
@@ -275,7 +286,7 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
                 .DB_TABLE = "GROUPS",
                 .DATA = {
                     {"ID", ""},
-                    {"CLASS", name},
+                    {"CLASS", clid},
                     {"SUBGROUPS", QJsonArray::fromStringList(sglist)},
                     {"STUDENTS", QJsonArray()},
                 }
@@ -299,28 +310,16 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
                     {"Groups", glist},
                 });
             }
-            id = fet_info.nodes.length();
-            fet_info.nodes.append({
-                .Id = id,
-                .DB_TABLE = "CLASSES",
-                .DATA = {
-                    {"ID", name},
-                    {"NAME",  m.value("Long_Name")},
-                    {"X", i},
-                    {"DIVISIONS", divisions},
-                }
-            });
-            i++;
+            // Set the divisions on the class
+            auto node = &fet_info.nodes[clid];
+            node->DATA["DIVISIONS"] = divisions;
 
             /*
-            for (auto iter = group2index.cbegin(), end = group2index.cend();
-                    iter != end; ++iter) {
-                qDebug() << "  GROUP" << iter.key() << "::" << iter.value()
-                         << fet_info.nodes[iter.value()].DATA;
+            qDebug() << clid << "CLASS" << fet_info.nodes[clid].DATA;
+            while (clid < id) {
+                clid++;
+                qDebug() << clid << "  GROUP" << fet_info.nodes[clid].DATA;
             }
-            qDebug() << "  GROUP" << "*" << "::" << id-1
-                     << fet_info.nodes[id-1].DATA;
-            qDebug() << id << fet_info.nodes[id].DATA;
             */
         }
     }

@@ -22,3 +22,8 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
     }
 
 }
+
+// <Space_Constraints_List>
+// <ConstraintBasicCompulsorySpace>
+// <ConstraintActivityPreferredRooms>
+// ConstraintActivityPreferredRoom
