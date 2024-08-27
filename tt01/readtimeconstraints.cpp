@@ -54,8 +54,19 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             int tix = fet_info.teachers.value(tid);
             auto tnode = &fet_info.nodes[tix];
             tnode->DATA["NOT_AVAILABLE"] = daylist;
+        } else if (n.name == "ConstraintActivityPreferredStartingTime") {
+            auto m = readSimpleItems(n);
+            auto aid = m.value("Activity_Id");
+            auto day = m.value("Preferred_Day");
+            auto hour = m.value("Preferred_Hour");
+            bool fixed = m.value("Permanently_Locked") == "true";
+            int aix = fet_info.activity_lesson.value(aid);
+            auto anode = &fet_info.nodes[aix];
+            anode->DATA["DAY"] = fet_info.days.value(day);
+            anode->DATA["HOUR"] = fet_info.hours.value(hour);
+            anode->DATA["FIXED"] = fixed;
         }
-// ConstraintActivityPreferredStartingTime
+
 // ConstraintMinDaysBetweenActivities
 // ConstraintMinDaysBetweenActivities
 // ConstraintStudentsSetMaxGapsPerWeek
@@ -68,6 +79,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
 // ConstraintTeacherMaxGapsPerWeek
 // ConstraintActivitiesPreferredTimeSlots
 // ConstraintActivityPreferredStartingTimes
+// ConstraintActivitiesPreferredStartingTimes
 // ConstraintActivitiesSameStartingTime
 
 

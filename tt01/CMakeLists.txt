@@ -21,6 +21,7 @@ set(PROJECT_SOURCES
         fetdata.h       fetdata.cpp
         readtimeconstraints.cpp  readtimeconstraints.h
         readspaceconstraints.h   readspaceconstraints.cpp
+        lessontiles.h   lessontiles.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
