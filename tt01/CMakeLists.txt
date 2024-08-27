@@ -19,6 +19,8 @@ set(PROJECT_SOURCES
         tt_grid.h       tt_grid.cpp
         readxml.h       readxml.cpp
         fetdata.h       fetdata.cpp
+        readtimeconstraints.cpp  readtimeconstraints.h
+        readspaceconstraints.h   readspaceconstraints.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

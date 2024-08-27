@@ -1,5 +1,7 @@
 #include "fetdata.h"
 #include <QJsonArray>
+#include "readtimeconstraints.h"
+#include "readspaceconstraints.h"
 
 // Note that QMultiMap returns the values of entries with multiple values
 // in reverse order (as a QList)!
@@ -27,15 +29,7 @@ QMultiMap<QString, QString> readSimpleItems(XMLNode node) {
     return smap;
 }
 
-struct fetinfo{
-    QHash<QString, int> teachers;
-    QHash<QString, int> subjects;
-    QHash<QString, int> rooms;
-    QHash<QString, int> groups;
-    QList<DBNode> nodes;
-};
-
-void readDays(fetinfo &fet_info, QList<QVariant> item_list)
+void readDays(FetInfo &fet_info, QList<QVariant> item_list)
 {
     int i = 0;
     for (const auto &v : item_list) {
@@ -53,13 +47,14 @@ void readDays(fetinfo &fet_info, QList<QVariant> item_list)
                     {"X", i}
                 }
             });
+            fet_info.days[name] = id;
             //qDebug() << id << fet_info.nodes[id].DATA;
             i++;
         }
     }
 }
 
-void readHours(fetinfo &fet_info, QList<QVariant> item_list)
+void readHours(FetInfo &fet_info, QList<QVariant> item_list)
 {
     int i = 0;
     for (const auto &v : item_list) {
@@ -90,13 +85,14 @@ void readHours(fetinfo &fet_info, QList<QVariant> item_list)
                          {"END_TIME", end},
                          }
             });
+            fet_info.hours[name] = id;
             //qDebug() << id << fet_info.nodes[id].DATA;
             i++;
         }
     }
 }
 
-void readSubjects(fetinfo &fet_info, QList<QVariant> item_list)
+void readSubjects(FetInfo &fet_info, QList<QVariant> item_list)
 {
     int i = 0;
     for (const auto &v : item_list) {
@@ -121,7 +117,7 @@ void readSubjects(fetinfo &fet_info, QList<QVariant> item_list)
     }
 }
 
-void readTeachers(fetinfo &fet_info, QList<QVariant> item_list)
+void readTeachers(FetInfo &fet_info, QList<QVariant> item_list)
 {
     int i = 0;
     for (const auto &v : item_list) {
@@ -146,7 +142,7 @@ void readTeachers(fetinfo &fet_info, QList<QVariant> item_list)
     }
 }
 
-void readRooms(fetinfo &fet_info, QList<QVariant> item_list)
+void readRooms(FetInfo &fet_info, QList<QVariant> item_list)
 {
     // Assume that the real rooms upon which the virtual rooms depend
     // appear before the virtual rooms which use them!
@@ -204,11 +200,12 @@ void readRooms(fetinfo &fet_info, QList<QVariant> item_list)
 
 // Note that this assumes a certain structure for the class data:
 // The "Categories" are used to define the divisions.
-// All groups must have appropriate subgroups defined.
+// All groups must have appropriate subgroups defined, even if there is
+// only a single subgroup.
 // The subgroups are not used anywhere else in the fet-file, the
 // students participating in all activities are defined only using
 // classes (Years) and Groups.
-void readClasses(fetinfo &fet_info, QList<QVariant> item_list)
+void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
 {
     struct category{
         QString tag;
@@ -228,7 +225,6 @@ void readClasses(fetinfo &fet_info, QList<QVariant> item_list)
             QMap<QString, int> group2index;
             // Collect subgroups
             QSet<QString> allsubgroups;
-            //QJsonArray groups;
             for (const auto &vc : n.children) {
                 auto nc = vc.value<XMLNode>();
                 if (nc.name == "Category") {
@@ -270,6 +266,7 @@ void readClasses(fetinfo &fet_info, QList<QVariant> item_list)
                 }
             }
             // Add a group entry for the full class
+            //TODO: at present this is not referrred to by the class node!
             int id = fet_info.nodes.length();
             auto sglist = allsubgroups.values();
             std::sort(sglist.begin(), sglist.end());
@@ -329,7 +326,7 @@ void readClasses(fetinfo &fet_info, QList<QVariant> item_list)
     }
 }
 
-void readActivities(fetinfo &fet_info, QList<QVariant> item_list)
+void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
 {
     // The Activity_Group_Id refers to a course. If it is 0
     // that is a single-activity course. Otherwise there are
@@ -342,8 +339,7 @@ void readActivities(fetinfo &fet_info, QList<QVariant> item_list)
             auto cid = m.value("Activity_Group_Id");
             int id = coursemap.value(cid);
             if (id == 0) {
-                int id = fet_info.nodes.length();
-                qDebug() << "  ACTIVITY" << m.value("Id") << cid << id;
+                id = fet_info.nodes.length();
                 QJsonArray tlist;
                 for (const auto &t : m.values("Teacher")) {
                     int tid = fet_info.teachers.value(t);
@@ -382,12 +378,18 @@ void readActivities(fetinfo &fet_info, QList<QVariant> item_list)
                 if (cid != "0") {
                     coursemap[cid] = id;
                 }
-            } else {
-                qDebug() << "  ACTIVITY" << m.value("Id") << id;
             }
-
-            //TODO: Make LESSONS
-
+            // Make LESSONS node
+            int lid = fet_info.nodes.length();
+            fet_info.nodes.append({
+                .Id = lid,
+                .DB_TABLE = "LESSONS",
+                .DATA = {
+                    {"COURSE", id},
+                    {"LENGTH", m.value("Duration").toInt()},
+                },
+            });
+            fet_info.activity_lesson[m.value("Id")] = lid;
         }
     }
 }
@@ -403,7 +405,7 @@ FetData::FetData(XMLNode xmlin)
     }
     qDebug() << fet_top["Institution_Name"][0].toString();
 
-    fetinfo fetdata;
+    FetInfo fetdata;
     // Start the node-list with a dummy entry (index 0 is invalid).
     fetdata.nodes.append(DBNode{});
 
@@ -413,14 +415,8 @@ FetData::FetData(XMLNode xmlin)
     readTeachers(fetdata, fet_top["Teachers_List"]);
     readRooms(fetdata, fet_top["Rooms_List"]);
     readClasses(fetdata, fet_top["Students_List"]);
-
-    qDebug() << "§§§1" << fetdata.nodes.length();
     readActivities(fetdata, fet_top["Activities_List"]);
-    qDebug() << "§§§2" << fetdata.nodes.length();
+    readTimeConstraints(fetdata, fet_top["Time_Constraints_List"]);
+    readSpaceConstraints(fetdata, fet_top["Space_Constraints_List"]);
     // <Activity_Tags_List> ???
 }
-
-
-    //TODO: Activities_List
-    //TODO: Time_Constraints_List
-    //TODO: Space_Constraints_List

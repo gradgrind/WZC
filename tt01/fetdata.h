@@ -10,30 +10,17 @@ struct DBNode {
     QJsonObject DATA;
 };
 
-struct Day {
-    int index;
-    QString Name;
-    QString Long_Name;
-};
+QMultiMap<QString, QString> readSimpleItems(XMLNode node);
 
-struct Hour {
-    int index;
-    QString Name;
-    QString Long_Name;
-    QString start;
-    QString end;
-};
-
-struct Subject {
-    int index;
-    QString Name;
-    QString Long_Name;
-};
-
-struct Teacher {
-    int index;
-    QString Name;
-    QString Long_Name;
+struct FetInfo{
+    QHash<QString, int> days;
+    QHash<QString, int> hours;
+    QHash<QString, int> teachers;
+    QHash<QString, int> subjects;
+    QHash<QString, int> rooms;
+    QHash<QString, int> groups;
+    QHash<QString, int> activity_lesson;
+    QList<DBNode> nodes;
 };
 
 class FetData
@@ -42,16 +29,6 @@ public:
     FetData(XMLNode xmlin);
 
     QList<DBNode> nodeList;
-
-    QMap<QString, int> days;
-    QList<Day> day_list;
-    QMap<QString, int> hours;
-    QList<Hour> hour_list;
-    QMap<QString, int> subjects;
-    QList<Subject> subject_list;
-    QMap<QString, int> teachers;
-    QList<Teacher> teacher_list;
-
 };
 
 #endif // FETDATA_H
