@@ -3,6 +3,8 @@
 #include "readtimeconstraints.h"
 #include "readspaceconstraints.h"
 
+#include "lessontiles.h"
+
 // Note that QMultiMap returns the values of entries with multiple values
 // in reverse order (as a QList)!
 // It is possible to reverse such a list:
@@ -229,6 +231,7 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
                     {"X", i},
                 }
             });
+            fet_info.class_list.append(clid);
             i++;
             // Collect the groups
             QList<category> categories;
@@ -418,4 +421,7 @@ FetData::FetData(XMLNode xmlin)
     readTimeConstraints(fetdata, fet_top["Time_Constraints_List"]);
     readSpaceConstraints(fetdata, fet_top["Space_Constraints_List"]);
     // <Activity_Tags_List> ???
+
+
+    class_divisions(fetdata);
 }

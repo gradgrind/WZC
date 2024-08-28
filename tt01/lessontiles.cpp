@@ -1,20 +1,78 @@
 #include "lessontiles.h"
-#include "fetdata.h"
 #include <QJsonArray>
-#include <QList>
 
 // Given a list of group indexes.
 // Divide them into classes.
 // Determine which division is used.
 // Produce the fractional data, and potentially more than one tile per class.
 
-struct TileFraction {
-    int offset;
-    int fraction;
-    int total;
-};
+// Maybe it would be a good idea to build subgroup sets for all classes.
+// For each division a list of mappings: group -> subgroup-set.
+// Each class should also have a set of all its subgroups, perhaps as
+// first division?
 
-void class_divisions(FetInfo &fet_info, QJsonArray groups)
+// p_class_divs is only used for testing purposes.
+QString p_class_divs(class_divs cdivs)
+{
+    QStringList qsl0;
+    for (const auto & dl : cdivs) {
+        QStringList qsl1;
+        for (const auto &item : dl) {
+            auto qsl = QStringList(item.subgroups.values());
+            auto s = QString("{%1 -> %2}").arg(
+                QString::number(item.group), qsl.join(","));
+            qsl1.append(s);
+        }
+        qsl0.append(qsl1.join(","));
+    }
+    return qsl0.join("|");
+}
+
+void class_divisions(FetInfo &fet_info)
+{
+    // The division list contains lists of pairs: {gid, subgroup-set}.
+    // The first division contains a single pair, for the whole class.
+    QHash<int, class_divs> class_groups;
+    // Loop through all classes
+    for (int c : fet_info.class_list) {
+        class_divs divs;
+        auto cdata = fet_info.nodes.value(c).DATA;
+        auto cname = cdata["ID"].toString();
+        //qDebug() << "CLASS" << cname;
+        // Whole class
+        int gid = fet_info.groups.value(cname);
+        auto sglist = fet_info.nodes.value(gid).DATA["SUBGROUPS"].toArray();
+        QSet<QString> gset;
+        for (const auto &sg : sglist) {
+            gset.insert(sg.toString());
+        }
+        division_list divlist;
+        divlist.append({{gid, gset}});
+        divs.append(divlist);
+        // Now the actual divisions
+        auto divarray = cdata.value("DIVISIONS").toArray();
+        for (const auto &d : divarray) {
+            division_list divlist;
+            auto groups = d.toObject().value("Groups").toArray();
+            for (const auto &g : groups) {
+                int gid = g.toInt();
+                auto sglist = fet_info.nodes.value(gid)
+                                  .DATA["SUBGROUPS"].toArray();
+                QSet<QString> gset;
+                for (const auto &sg : sglist) {
+                    gset.insert(sg.toString());
+                }
+                divlist.append({{gid, gset}});
+            }
+            divs.append(divlist);
+        }
+        //qDebug() << "CLASS" << cname << p_class_divs(divs);
+        class_groups[c] = divs;
+    }
+    fet_info.class_subgroup_divisions = class_groups;
+}
+
+void course_divisions(FetInfo &fet_info, QJsonArray groups)
 {
     // For the results
     QMap<int, QList<TileFraction>> results;
@@ -32,6 +90,15 @@ void class_divisions(FetInfo &fet_info, QJsonArray groups)
     for (auto i = class_subgroups.cbegin(), end = class_subgroups.cend();
             i != end; ++i) {
         int cl = i.key();
+
+        auto sgdivs = fet_info.class_subgroup_divisions.value(cl);
+//TODO ...
+        for (const auto &sgdiv : sgdivs) {
+            for (const auto & sg : sgdiv) {
+
+            }
+        }
+
         auto cnode = fet_info.nodes.value(cl);
         // Get the list of all subgroups for the class – this must go via
         // the class name to the whole-class group
@@ -50,6 +117,11 @@ void class_divisions(FetInfo &fet_info, QJsonArray groups)
             auto groups = d.toObject().value("Groups").toArray();
             for (const auto &g : groups) {
                 //TODO
+                int gid = g.toInt();
+                auto gnode = fet_info.nodes.value(gid);
+                auto sg = gnode.DATA.value("SUBGROUPS").toArray();
+
+
             }
         }
 
