@@ -42,14 +42,36 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
         auto fetdata = fetData(xml);
         DBData dbdata(fetdata.nodes);
 
+        // Make course lists for all classes and teachers.
+
+        // Start with an analysis of the divisions and their groups/subgroups
+        // for all classes. The results of this are used by the calls to
+        // course_divisions.
         class_divisions(dbdata);
+
+        // Collect the group tile information for each course,
+        // add the course-ids to the lists for the classes and teachers.
         for (int course_id : dbdata.Tables["COURSES"]) {
             auto cdata = dbdata.Nodes[course_id].DATA;
             auto groups = cdata["STUDENTS"].toArray();
             auto llist = course_divisions(dbdata, groups);
+
+            dbdata.course_tileinfo[course_id] = llist;
+            auto tlist = cdata.value("TEACHERS").toArray();
+            for (const auto &t : tlist) {
+                int tid = t.toInt();
+                dbdata.teacher_courses[tid].append(course_id);
+            }
+            for (auto iter = llist.cbegin(), end = llist.cend();
+                    iter != end; ++iter) {
+                int cl = iter.key();
+                dbdata.class_courses[cl].append(course_id);
+            }
+
+            // Print the item
             QStringList ll;
             for (auto iter = llist.cbegin(), end = llist.cend();
-                 iter != end; ++iter) {
+                    iter != end; ++iter) {
                 int cl = iter.key();
                 for (const auto &llf : iter.value()) {
                     ll.append(QString("%1(%2:%3:%4:%5)")
@@ -62,17 +84,11 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
             }
             QString subject = dbdata.get_tag(cdata.value("SUBJECT").toInt());
             QStringList teachers;
-            auto tlist = cdata.value("TEACHERS").toArray();
             for (const auto &t : tlist) {
                 teachers.append(dbdata.get_tag(t.toInt()));
             }
             qDebug() << "COURSE TILES" << subject << teachers.join(",")
                      << groups << "->" << ll.join(",");
-
-
-            //TODO: Collect all of this together as tile-data for each
-            // course (which bits in text form, which bits in index form?)
-            // and make separate lists for classes, teachers and rooms.
         }
 
         auto dbpath = fileName.section(".", 0, -2) + ".sqlite";

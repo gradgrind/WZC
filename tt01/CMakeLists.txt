@@ -23,6 +23,7 @@ set(PROJECT_SOURCES
         readspaceconstraints.h   readspaceconstraints.cpp
         lessontiles.h   lessontiles.cpp
         database.h      database.cpp
+        showclass.h     showclass.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
