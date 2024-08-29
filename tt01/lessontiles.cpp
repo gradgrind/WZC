@@ -72,7 +72,6 @@ void class_divisions(FetInfo &fet_info)
     fet_info.class_subgroup_divisions = class_groups;
 }
 
-//TODO: How to include the groups associated with each tile?
 QMap<int, QList<TileFraction>> course_divisions(
     FetInfo &fet_info, QJsonArray groups)
 {
@@ -98,23 +97,28 @@ QMap<int, QList<TileFraction>> course_divisions(
             int offset = 0;
             int frac = 0;
             int i = 0;
+            QStringList tags;
             for (const auto & sg : sgdiv) {
                 i++;
                 if (cgset.contains(sg.subgroups)) {
                     frac++;
+                    tags.append(get_tag(fet_info.nodes, sg.group));
                 } else {
                     if (frac != 0) {
                         // emit tile data
-                        results[cl].append({offset, frac, int(sgdiv.length())});
+                        results[cl].append({
+                            offset, frac, int(sgdiv.length()), tags});
                         // restart
                         frac = 0;
+                        tags.clear();
                     }
                     offset = i;
                 }
             }
             if (frac != 0) {
                 // emit any remaining tile data
-                results[cl].append({offset, frac, int(sgdiv.length())});
+                results[cl].append({
+                    offset, frac, int(sgdiv.length()), tags});
             }
             if (results.contains(cl)) break;
         }

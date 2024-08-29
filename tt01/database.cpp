@@ -4,6 +4,11 @@
 #include <QJsonDocument>
 //#include <QElapsedTimer>
 
+QString get_tag(QList<DBNode> nodes, int index)
+{
+    return nodes.value(index).DATA.value("ID").toString();
+}
+
 void save_data(QString path, QList<DBNode> nodes)
 {
     //QElapsedTimer timer;

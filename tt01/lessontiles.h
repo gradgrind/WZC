@@ -6,6 +6,7 @@ struct TileFraction {
     int offset;
     int fraction;
     int total;
+    QStringList groups;
 };
 
 void class_divisions(FetInfo &fet_info);

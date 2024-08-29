@@ -11,6 +11,8 @@ struct DBNode {
     QJsonObject DATA;
 };
 
+QString get_tag(QList<DBNode> nodes, int index);
+
 void save_data(QString path, QList<DBNode> nodes);
 
 #endif // DATABASE_H

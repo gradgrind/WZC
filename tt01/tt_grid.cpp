@@ -51,11 +51,12 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
                  iter != end; ++iter) {
                 int cl = iter.key();
                 for (const auto &llf : iter.value()) {
-                    ll.append(QString("%1(%2:%3:%4)")
+                    ll.append(QString("%1(%2:%3:%4:%5)")
                                   .arg(cl)
                                   .arg(llf.offset)
                                   .arg(llf.fraction)
-                                  .arg(llf.total));
+                                  .arg(llf.total)
+                                  .arg(llf.groups.join(",")));
                 }
             }
             qDebug() << "COURSE TILES" << cdata["SUBJECT"]
