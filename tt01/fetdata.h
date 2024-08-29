@@ -7,14 +7,6 @@
 
 QMultiMap<QString, QString> readSimpleItems(XMLNode node);
 
-struct group_subgroups {
-    int group;
-    QSet<QString> subgroups;
-};
-
-typedef QList<group_subgroups> division_list;
-typedef QList<division_list> class_divs;
-
 struct FetInfo{
     QHash<QString, int> days;
     QHash<QString, int> hours;

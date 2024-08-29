@@ -6,10 +6,10 @@
 // Determine which division is used.
 // Produce the fractional data, and potentially more than one tile per class.
 
-// Maybe it would be a good idea to build subgroup sets for all classes.
-// For each division a list of mappings: group -> subgroup-set.
-// Each class should also have a set of all its subgroups, perhaps as
-// first division?
+// To assist, build subgroup sets for all classes,
+// for each division a list of mappings: group -> subgroup-set.
+// Each class should also have a set of all its subgroups, here as
+// first division.
 
 // p_class_divs is only used for testing purposes.
 QString p_class_divs(class_divs cdivs)
@@ -28,35 +28,22 @@ QString p_class_divs(class_divs cdivs)
     return qsl0.join("|");
 }
 
-void class_divisions(FetInfo &fet_info)
+void class_divisions(DBData &db_data)
 {
     // The division list contains lists of pairs: {gid, subgroup-set}.
     // The first division contains a single pair, for the whole class.
     QHash<int, class_divs> class_groups;
     // Loop through all classes
-    for (int c : fet_info.class_list) {
+    for (int c : db_data.Tables["CLASSES"]) {
         class_divs divs;
-        auto cdata = fet_info.nodes.value(c).DATA;
-        auto cname = cdata["ID"].toString();
-        //qDebug() << "CLASS" << cname;
-        // Whole class
-        int gid = fet_info.groups.value(cname);
-        auto sglist = fet_info.nodes.value(gid).DATA["SUBGROUPS"].toArray();
-        QSet<QString> gset;
-        for (const auto &sg : sglist) {
-            gset.insert(sg.toString());
-        }
-        division_list divlist;
-        divlist.append({{gid, gset}});
-        divs.append(divlist);
-        // Now the actual divisions
+        auto cdata = db_data.Nodes.value(c).DATA;
         auto divarray = cdata.value("DIVISIONS").toArray();
         for (const auto &d : divarray) {
             division_list divlist;
             auto groups = d.toObject().value("Groups").toArray();
             for (const auto &g : groups) {
                 int gid = g.toInt();
-                auto sglist = fet_info.nodes.value(gid)
+                auto sglist = db_data.Nodes.value(gid)
                                   .DATA["SUBGROUPS"].toArray();
                 QSet<QString> gset;
                 for (const auto &sg : sglist) {
@@ -66,14 +53,14 @@ void class_divisions(FetInfo &fet_info)
             }
             divs.append(divlist);
         }
-        //qDebug() << "CLASS" << cname << p_class_divs(divs);
+        //qDebug() << "CLASS" << cdata["ID"].toString() << p_class_divs(divs);
         class_groups[c] = divs;
     }
-    fet_info.class_subgroup_divisions = class_groups;
+    db_data.class_subgroup_divisions = class_groups;
 }
 
 QMap<int, QList<TileFraction>> course_divisions(
-    FetInfo &fet_info, QJsonArray groups)
+    DBData &db_data, QJsonArray groups)
 {
     // For the results
     QMap<int, QList<TileFraction>> results;
@@ -81,7 +68,7 @@ QMap<int, QList<TileFraction>> course_divisions(
     QMap<int, QSet<QString>> class_subgroups;
     for (const auto &v : groups) {
         int g = v.toInt();
-        auto gnode = fet_info.nodes.value(g);
+        auto gnode = db_data.Nodes.value(g);
         int cl = gnode.DATA.value("CLASS").toInt();
         auto sglist = gnode.DATA.value("SUBGROUPS").toArray();
         for (const auto &sg : sglist) {
@@ -92,7 +79,7 @@ QMap<int, QList<TileFraction>> course_divisions(
             iter != end; ++iter) {
         int cl = iter.key();
         auto cgset = iter.value();
-        auto sgdivs = fet_info.class_subgroup_divisions.value(cl);
+        auto sgdivs = db_data.class_subgroup_divisions.value(cl);
         for (const auto &sgdiv : sgdivs) {
             int offset = 0;
             int frac = 0;
@@ -102,7 +89,7 @@ QMap<int, QList<TileFraction>> course_divisions(
                 i++;
                 if (cgset.contains(sg.subgroups)) {
                     frac++;
-                    tags.append(get_tag(fet_info.nodes, sg.group));
+                    tags.append(db_data.get_tag(sg.group));
                 } else {
                     if (frac != 0) {
                         // emit tile data

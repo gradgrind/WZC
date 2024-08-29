@@ -297,8 +297,12 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
                 }
             });
             fet_info.groups[name] = id;
-            // Convert the division members to indexes
-            QJsonArray divisions;
+            // Rebuild the divisions, starting with the whole-class "division"
+            QJsonArray divisions{QJsonObject{
+                {"Tag", "*"},
+                {"Groups", QJsonArray{id}},
+            }};
+            // Convert the remaining division members to indexes
             for (const auto &d : categories) {
                 QJsonArray glist;
                 for (const auto &g : d.groups) {

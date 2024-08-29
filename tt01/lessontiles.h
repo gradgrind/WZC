@@ -1,6 +1,6 @@
 #ifndef LESSONTILES_H
 #define LESSONTILES_H
-#include "fetdata.h"
+#include "database.h"
 
 struct TileFraction {
     int offset;
@@ -9,9 +9,9 @@ struct TileFraction {
     QStringList groups;
 };
 
-void class_divisions(FetInfo &fet_info);
+void class_divisions(DBData &db_data);
 
 QMap<int, QList<TileFraction>> course_divisions(
-    FetInfo &fet_info, QJsonArray groups);
+    DBData &db_data, QJsonArray groups);
 
 #endif // LESSONTILES_H

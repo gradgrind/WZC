@@ -11,6 +11,29 @@ struct DBNode {
     QJsonObject DATA;
 };
 
+struct group_subgroups {
+    int group;
+    QSet<QString> subgroups;
+};
+
+typedef QList<group_subgroups> division_list;
+typedef QList<division_list> class_divs;
+
+class DBData
+{
+public:
+    QString db_path;
+    QList<DBNode> Nodes;
+    QHash<QString, QList<int>> Tables;
+    QHash<int, class_divs> class_subgroup_divisions;
+
+    DBData(QList<DBNode> nodes);
+
+    void save(QString path);
+    void save();
+    QString get_tag(int index);
+};
+
 QString get_tag(QList<DBNode> nodes, int index);
 
 void save_data(QString path, QList<DBNode> nodes);

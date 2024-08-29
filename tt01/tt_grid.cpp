@@ -40,12 +40,13 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
         XMLNode xml = readXMLTree(tdat);
 
         auto fetdata = fetData(xml);
+        DBData dbdata(fetdata.nodes);
 
-        class_divisions(fetdata);
-        for (int course_id : fetdata.course_list) {
-            auto cdata = fetdata.nodes[course_id].DATA;
+        class_divisions(dbdata);
+        for (int course_id : dbdata.Tables["COURSES"]) {
+            auto cdata = dbdata.Nodes[course_id].DATA;
             auto groups = cdata["STUDENTS"].toArray();
-            auto llist = course_divisions(fetdata, groups);
+            auto llist = course_divisions(dbdata, groups);
             QStringList ll;
             for (auto iter = llist.cbegin(), end = llist.cend();
                  iter != end; ++iter) {
@@ -59,12 +60,23 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
                                   .arg(llf.groups.join(",")));
                 }
             }
-            qDebug() << "COURSE TILES" << cdata["SUBJECT"]
+            QString subject = dbdata.get_tag(cdata.value("SUBJECT").toInt());
+            QStringList teachers;
+            auto tlist = cdata.value("TEACHERS").toArray();
+            for (const auto &t : tlist) {
+                teachers.append(dbdata.get_tag(t.toInt()));
+            }
+            qDebug() << "COURSE TILES" << subject << teachers.join(",")
                      << groups << "->" << ll.join(",");
+
+
+            //TODO: Collect all of this together as tile-data for each
+            // course (which bits in text form, which bits in index form?)
+            // and make separate lists for classes, teachers and rooms.
         }
 
         auto dbpath = fileName.section(".", 0, -2) + ".sqlite";
-        save_data(dbpath, fetdata.nodes);
+        dbdata.save(dbpath);
         qDebug() << "Saved data to" << dbpath;
 
         return;
