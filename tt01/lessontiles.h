@@ -10,4 +10,7 @@ struct TileFraction {
 
 void class_divisions(FetInfo &fet_info);
 
+QMap<int, QList<TileFraction>> course_divisions(
+    FetInfo &fet_info, QJsonArray groups);
+
 #endif // LESSONTILES_H

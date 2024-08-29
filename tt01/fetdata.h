@@ -3,12 +3,7 @@
 
 #include <QJsonObject>
 #include "readxml.h"
-
-struct DBNode {
-    int Id;
-    QString DB_TABLE;
-    QJsonObject DATA;
-};
+#include "database.h"
 
 QMultiMap<QString, QString> readSimpleItems(XMLNode node);
 
@@ -29,16 +24,11 @@ struct FetInfo{
     QList<int> class_list;
     QHash<QString, int> groups;
     QHash<int, class_divs> class_subgroup_divisions;
+    QList<int> course_list;
     QHash<QString, int> activity_lesson;
     QList<DBNode> nodes;
 };
 
-class FetData
-{
-public:
-    FetData(XMLNode xmlin);
-
-    QList<DBNode> nodeList;
-};
+FetInfo fetData(XMLNode xmlin);
 
 #endif // FETDATA_H

@@ -1,8 +1,12 @@
 #include "tt_grid.h"
 #include "readxml.h"
 #include "fetdata.h"
+#include "database.h"
 #include <QFileDialog>
 #include <iostream>
+
+#include <QJsonArray>
+#include "lessontiles.h"
 
 TT_Grid::TT_Grid(
     QGraphicsView *view,
@@ -35,7 +39,33 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
         QString tdat = indat.readAll();
         XMLNode xml = readXMLTree(tdat);
 
-        FetData f(xml);
+        auto fetdata = fetData(xml);
+
+        class_divisions(fetdata);
+        for (int course_id : fetdata.course_list) {
+            auto cdata = fetdata.nodes[course_id].DATA;
+            auto groups = cdata["STUDENTS"].toArray();
+            auto llist = course_divisions(fetdata, groups);
+            QStringList ll;
+            for (auto iter = llist.cbegin(), end = llist.cend();
+                 iter != end; ++iter) {
+                int cl = iter.key();
+                for (const auto &llf : iter.value()) {
+                    ll.append(QString("%1(%2:%3:%4)")
+                                  .arg(cl)
+                                  .arg(llf.offset)
+                                  .arg(llf.fraction)
+                                  .arg(llf.total));
+                }
+            }
+            qDebug() << "COURSE TILES" << cdata["SUBJECT"]
+                     << groups << "->" << ll.join(",");
+        }
+
+        auto dbpath = fileName.section(".", 0, -2) + ".sqlite";
+        save_data(dbpath, fetdata.nodes);
+        qDebug() << "Saved data to" << dbpath;
+
         return;
 
         for (const auto &l : printXMLNode(xml)) {

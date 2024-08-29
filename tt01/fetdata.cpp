@@ -3,8 +3,6 @@
 #include "readtimeconstraints.h"
 #include "readspaceconstraints.h"
 
-#include "lessontiles.h"
-
 // Note that QMultiMap returns the values of entries with multiple values
 // in reverse order (as a QList)!
 // It is possible to reverse such a list:
@@ -203,7 +201,7 @@ void readRooms(FetInfo &fet_info, QList<QVariant> item_list)
 // Note that this assumes a certain structure for the class data:
 // The "Categories" are used to define the divisions.
 // All groups must have appropriate subgroups defined, even if there is
-// only a single subgroup.
+// only a single subgroup. Also undivided classes must have a subgroup.
 // The subgroups are not used anywhere else in the fet-file, the
 // students participating in all activities are defined only using
 // classes (Years) and Groups.
@@ -283,7 +281,11 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
             // At present this is not referrred to by the class node!
             int id = fet_info.nodes.length();
             auto sglist = allsubgroups.values();
-            std::sort(sglist.begin(), sglist.end());
+            if (sglist.length() > 1) {
+                std::sort(sglist.begin(), sglist.end());
+            } else if (sglist.isEmpty()) {
+                sglist.append(name + ":0");
+            }
             fet_info.nodes.append({
                 .Id = id,
                 .DB_TABLE = "GROUPS",
@@ -377,6 +379,7 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
                         {"STUDENTS", glist},
                     },
                 });
+                fet_info.course_list.append(id);
                 if (cid != "0") {
                     coursemap[cid] = id;
                 }
@@ -396,7 +399,7 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
     }
 }
 
-FetData::FetData(XMLNode xmlin)
+FetInfo fetData(XMLNode xmlin)
 {
     // Read the top level items
     qDebug() << xmlin.name << xmlin.attributes;
@@ -422,6 +425,5 @@ FetData::FetData(XMLNode xmlin)
     readSpaceConstraints(fetdata, fet_top["Space_Constraints_List"]);
     // <Activity_Tags_List> ???
 
-
-    class_divisions(fetdata);
+    return fetdata;
 }

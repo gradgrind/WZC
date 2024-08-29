@@ -72,7 +72,9 @@ void class_divisions(FetInfo &fet_info)
     fet_info.class_subgroup_divisions = class_groups;
 }
 
-void course_divisions(FetInfo &fet_info, QJsonArray groups)
+//TODO: How to include the groups associated with each tile?
+QMap<int, QList<TileFraction>> course_divisions(
+    FetInfo &fet_info, QJsonArray groups)
 {
     // For the results
     QMap<int, QList<TileFraction>> results;
@@ -87,43 +89,38 @@ void course_divisions(FetInfo &fet_info, QJsonArray groups)
             class_subgroups[cl].insert(sg.toString());
         }
     }
-    for (auto i = class_subgroups.cbegin(), end = class_subgroups.cend();
-            i != end; ++i) {
-        int cl = i.key();
-
+    for (auto iter = class_subgroups.cbegin(), end = class_subgroups.cend();
+            iter != end; ++iter) {
+        int cl = iter.key();
+        auto cgset = iter.value();
         auto sgdivs = fet_info.class_subgroup_divisions.value(cl);
-//TODO ...
         for (const auto &sgdiv : sgdivs) {
+            int offset = 0;
+            int frac = 0;
+            int i = 0;
             for (const auto & sg : sgdiv) {
-
+                i++;
+                if (cgset.contains(sg.subgroups)) {
+                    frac++;
+                } else {
+                    if (frac != 0) {
+                        // emit tile data
+                        results[cl].append({offset, frac, int(sgdiv.length())});
+                        // restart
+                        frac = 0;
+                    }
+                    offset = i;
+                }
             }
-        }
-
-        auto cnode = fet_info.nodes.value(cl);
-        // Get the list of all subgroups for the class – this must go via
-        // the class name to the whole-class group
-        QString cname = cnode.DATA.value("ID").toString();
-        auto cgnode = fet_info.nodes.value(fet_info.groups.value(cname));
-        auto allsg = cgnode.DATA.value("SUBGROUPS").toArray();
-        auto sgset = i.value();
-        if (sgset.size() == allsg.size()) {
-            // Whole class
-            results[cl].append({0, 1, 1});
-            continue;
-        }
-        // Find the correct division
-        auto divs = cnode.DATA.value("DIVISIONS").toArray();
-        for (const auto &d : divs) {
-            auto groups = d.toObject().value("Groups").toArray();
-            for (const auto &g : groups) {
-                //TODO
-                int gid = g.toInt();
-                auto gnode = fet_info.nodes.value(gid);
-                auto sg = gnode.DATA.value("SUBGROUPS").toArray();
-
-
+            if (frac != 0) {
+                // emit any remaining tile data
+                results[cl].append({offset, frac, int(sgdiv.length())});
             }
+            if (results.contains(cl)) break;
         }
-
+        if (!results.contains(cl)) {
+            qFatal() << "Couldn't make tile for class" << cl << "from:" << groups;
+        }
     }
+    return results;
 }

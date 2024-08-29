@@ -2,6 +2,7 @@
 #define READXML_H
 
 #include <QString>
+#include <QStringList>
 #include <QVariant>
 #include <QList>
 #include <QMap>
