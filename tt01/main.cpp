@@ -1,8 +1,9 @@
 #include "canvas.h"
 #include "tt_grid.h"
-#include <QBoxLayout>
-//#include <QStyleFactory>
 #include "readxml.h"
+#include "viewhandler.h"
+//#include <QStyleFactory>
+#include <QHBoxLayout>
 
 int main(int argc, char *argv[])
 {
@@ -10,8 +11,8 @@ int main(int argc, char *argv[])
     //QApplication::setStyle("fusion");
     QApplication a(argc, argv);
     QWidget mainwindow;
-    QWidget right;
-    right.setFixedWidth(200);
+    ViewHandler right;
+    right.setFixedWidth(200);    
 
     QPalette pal = QPalette();
     pal.setColor(QPalette::Window, QColor(255, 255, 200));
@@ -30,10 +31,14 @@ int main(int argc, char *argv[])
         {"HU A", "HU B", "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7"},
         {2, 4, 6});
 
+
+//TODO: Reorganize the test code. Use pushbuttton to load a file.
+//    grid.test_setup(&ViewHandler::set_data);
+
     qDebug() << "@ (3, 1): " << grid.cols[4][2]->rect();
     qDebug() << "  ... " << grid.cols[4][2]->pos();
 
-    Tile *t = new Tile(&grid, QJsonObject
+    Tile *t = new Tile(grid.scene, grid.settings, QJsonObject
         {
             {"TEXT", "Centre"},
             {"TR", "rTop"},
@@ -46,7 +51,7 @@ int main(int argc, char *argv[])
     grid.place_tile(t, 3, 1);
     //t->place(200, 300, 150, 150);
 
-    t = new Tile(&grid,
+    t = new Tile(grid.scene, grid.settings,
         QJsonObject {
             {"TEXT", "Second"},
             {"BL", "lBottom"},

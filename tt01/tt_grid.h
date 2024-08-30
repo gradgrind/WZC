@@ -3,40 +3,9 @@
 
 #include <QApplication>
 #include "canvas.h"
-#include "chip.h"
+#include "tile.h"
+#include "database.h"
 #include <QStringList>
-
-class TT_Grid; // forward declaration – needed in Tile
-
-class Tile : public Chip
-{
-public:
-    enum { Type = UserType + 3 };
-    int type() const override
-    {
-        // Enable the use of qgraphicsitem_cast with this item.
-        return Type;
-    }
-
-    Tile(TT_Grid *grid, QJsonObject data);
-
-    void place(qreal x, qreal y, qreal w, qreal h);
-
-    QString tag;
-    int length;
-    int divs;
-    int div0;
-    int ndivs;
-    QString middle;
-    QString tl;
-    QString tr;
-    QString bl;
-    QString br;
-
-    const qreal TILE_BORDER_WIDTH = 1.0;
-    const bool TEXT_BOLD = true;
-    const int TEXT_ALIGN = 0; // centred
-};
 
 class TT_Grid
 {
@@ -51,6 +20,7 @@ public:
     void place_tile(Tile *tile, int col, int row);
 
     void test(QList<QGraphicsItem *> items);
+    void test_setup(void (*func)(DBData *, TT_Grid *));
 
     Canvas *canvas;
     Scene *scene;
@@ -72,6 +42,9 @@ public:
     qreal FONT_CORNER_SIZE = 8.0;
 
     QJsonObject settings;
+
+private:
+    void (*setup_func)(DBData *, TT_Grid *);
 };
 
 #endif // TT_GRID_H

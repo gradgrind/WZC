@@ -24,6 +24,8 @@ set(PROJECT_SOURCES
         lessontiles.h   lessontiles.cpp
         database.h      database.cpp
         showclass.h     showclass.cpp
+        tile.h          tile.cpp
+        viewhandler.h  viewhandler.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

@@ -32,10 +32,13 @@ public:
     QString db_path;
     QList<DBNode> Nodes;
     QHash<QString, QList<int>> Tables;
+    QHash<int, int> days;   // db-index -> absolute index
+    QHash<int, int> hours;  // db-index -> absolute index
     QHash<int, class_divs> class_subgroup_divisions;
     QHash<int, QMap<int, QList<TileFraction>>> course_tileinfo;
     QHash<int, QList<int>> teacher_courses;
     QHash<int, QList<int>> class_courses;
+    QHash<int, QList<int>> course_lessons;
     //QHash<int, QList<int>> room_courses;
     // It may be better to seek the courses for a room dynamically,
     // as these might be changed interactively.
