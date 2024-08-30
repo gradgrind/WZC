@@ -407,6 +407,9 @@ FetInfo fetData(XMLNode xmlin)
 {
     // Read the top level items
     qDebug() << xmlin.name << xmlin.attributes;
+    if (xmlin.name != "fet") {
+        qFatal() << "Invalid fet file";
+    }
     QMap<QString, QList<QVariant>> fet_top;
     for (const auto &v : xmlin.children) {
         auto n = v.value<XMLNode>();

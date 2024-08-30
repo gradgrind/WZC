@@ -16,6 +16,7 @@ public:
     ViewHandler(QGraphicsView *gview);
 
 private:
+    QWidget *viewtype;
     QListWidget *choice = nullptr;
     QRadioButton *rb_class;
     QRadioButton *rb_teacher;

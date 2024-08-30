@@ -25,6 +25,7 @@ set(PROJECT_SOURCES
         database.h      database.cpp
         showclass.h     showclass.cpp
         showteacher.h   showteacher.cpp
+        showroom.h      showroom.cpp
         tile.h          tile.cpp
         viewhandler.h   viewhandler.cpp
 )

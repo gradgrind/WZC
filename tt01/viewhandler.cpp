@@ -4,6 +4,7 @@
 #include "lessontiles.h"
 #include "showclass.h"
 #include "showteacher.h"
+#include "showroom.h"
 #include <QBoxLayout>
 #include <QPushButton>
 #include <QListWidget>
@@ -20,7 +21,7 @@ ViewHandler::ViewHandler(QGraphicsView *gview) : QWidget(), view{gview}
     connect(
         load_file, &QPushButton::clicked,
         this, &ViewHandler::handle_load_file);
-    auto viewtype = new QWidget();
+    viewtype = new QWidget();
     rb_class = new QRadioButton("Klasse");
     rb_teacher = new QRadioButton("Lehrer(in)");
     rb_room = new QRadioButton("Raum");
@@ -29,6 +30,9 @@ ViewHandler::ViewHandler(QGraphicsView *gview) : QWidget(), view{gview}
     box2->addWidget(rb_class);
     box2->addWidget(rb_teacher);
     box2->addWidget(rb_room);
+    // The selection controls should be disabled until a file has
+    // been loaded.
+    viewtype->setEnabled(false);
     choice = new QListWidget();
     box1->addWidget(choice);
     connect(
@@ -120,6 +124,7 @@ void ViewHandler::handle_load_file()
             int cl = iter.key();
             dbdata->class_courses[cl].append(course_id);
         }
+        viewtype->setEnabled(true);
 
         /*
         // Print the item
@@ -201,5 +206,7 @@ void ViewHandler::handle_item_chosen(int index)
         ShowClass(grid, dbdata, indexmap.value(index));
     } else if (rb_teacher->isChecked()) {
         ShowTeacher(grid, dbdata, indexmap.value(index));
+    } else if (rb_room->isChecked()) {
+        ShowRoom(grid, dbdata, indexmap.value(index));
     }
 }
