@@ -1,11 +1,4 @@
 #include "tt_grid.h"
-#include "readxml.h"
-#include "fetdata.h"
-#include <QFileDialog>
-#include <iostream>
-
-#include <QJsonArray>
-#include "lessontiles.h"
 
 TT_Grid::TT_Grid(
     QGraphicsView *view,
@@ -34,85 +27,6 @@ void TT_Grid::test(QList<QGraphicsItem *> items)
 {
     scene->clear();
     setup_grid();
-
-    auto fileName = QFileDialog::getOpenFileName(nullptr,
-        ("Open XML file"), "", ("XML Files (*.xml *.fet)"));
-    QFile data(fileName);
-    if (data.open(QFile::ReadOnly | QIODevice::Text)) {
-        QTextStream indat(&data);
-        QString tdat = indat.readAll();
-        XMLNode xml = readXMLTree(tdat);
-
-        auto fetdata = fetData(xml);
-        DBData dbdata(fetdata.nodes);
-        setup_func(&dbdata, this);
-
-        // Make lesson lists for the courses.
-        for (int lid : dbdata.Tables["LESSONS"]) {
-            auto ldata = dbdata.Nodes[lid].DATA;
-            dbdata.course_lessons[ldata["COURSE"].toInt()].append(lid);
-        }
-
-        // Make course lists for all classes and teachers.
-
-        // Start with an analysis of the divisions and their groups/subgroups
-        // for all classes. The results of this are used by the calls to
-        // course_divisions.
-        class_divisions(dbdata);
-
-        // Collect the group tile information for each course,
-        // add the course-ids to the lists for the classes and teachers.
-        for (int course_id : dbdata.Tables["COURSES"]) {
-            auto cdata = dbdata.Nodes[course_id].DATA;
-            auto groups = cdata["STUDENTS"].toArray();
-            auto llist = course_divisions(dbdata, groups);
-
-            dbdata.course_tileinfo[course_id] = llist;
-            auto tlist = cdata.value("TEACHERS").toArray();
-            for (const auto &t : tlist) {
-                int tid = t.toInt();
-                dbdata.teacher_courses[tid].append(course_id);
-            }
-            for (auto iter = llist.cbegin(), end = llist.cend();
-                    iter != end; ++iter) {
-                int cl = iter.key();
-                dbdata.class_courses[cl].append(course_id);
-            }
-
-            // Print the item
-            QStringList ll;
-            for (auto iter = llist.cbegin(), end = llist.cend();
-                    iter != end; ++iter) {
-                int cl = iter.key();
-                for (const auto &llf : iter.value()) {
-                    ll.append(QString("%1(%2:%3:%4:%5)")
-                                  .arg(cl)
-                                  .arg(llf.offset)
-                                  .arg(llf.fraction)
-                                  .arg(llf.total)
-                                  .arg(llf.groups.join(",")));
-                }
-            }
-            QString subject = dbdata.get_tag(cdata.value("SUBJECT").toInt());
-            QStringList teachers;
-            for (const auto &t : tlist) {
-                teachers.append(dbdata.get_tag(t.toInt()));
-            }
-            qDebug() << "COURSE TILES" << subject << teachers.join(",")
-                     << groups << "->" << ll.join(",");
-        }
-
-        auto dbpath = fileName.section(".", 0, -2) + ".sqlite";
-        dbdata.save(dbpath);
-        qDebug() << "Saved data to" << dbpath;
-
-        return;
-
-        for (const auto &l : printXMLNode(xml)) {
-            std::cout << qPrintable(l) << std::endl;
-        }
-
-    }
 }
 
 void TT_Grid::setup_grid()

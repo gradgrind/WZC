@@ -51,8 +51,6 @@ public:
     QString get_tag(int index);
 };
 
-QString get_tag(QList<DBNode> nodes, int index);
-
-void save_data(QString path, QList<DBNode> nodes);
+int time2mins(QString time);
 
 #endif // DATABASE_H

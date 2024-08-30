@@ -5,24 +5,32 @@
 #include "tt_grid.h"
 #include <QWidget>
 #include <QListWidget>
+#include <QGraphicsView>
+#include <QRadioButton>
 
 class ViewHandler : public QWidget
 {
     Q_OBJECT
 
 public:
-    ViewHandler();
-    void set_data(DBData *db_data, TT_Grid *gridref);
+    ViewHandler(QGraphicsView *gview);
 
 private:
-    QListWidget *choice;
-    DBData *dbdata;
-    TT_Grid *grid;
+    QListWidget *choice = nullptr;
+    QRadioButton *rb_class;
+    QRadioButton *rb_teacher;
+    QRadioButton *rb_room;
+    QList<int> indexmap;
+    DBData *dbdata = nullptr;
+    QGraphicsView *view;
+    TT_Grid *grid = nullptr;
 
 private slots:
     void handle_load_file();
     void handle_rb_class();
-    void handle_class_chosen(int index);
+    void handle_rb_teacher();
+    void handle_rb_room();
+    void handle_item_chosen(int index);
 };
 
 #endif // VIEWHANDLERS_H

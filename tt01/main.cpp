@@ -11,29 +11,23 @@ int main(int argc, char *argv[])
     //QApplication::setStyle("fusion");
     QApplication a(argc, argv);
     QWidget mainwindow;
-    ViewHandler right;
-    right.setFixedWidth(200);    
+    QHBoxLayout hb(&mainwindow);
+    QGraphicsView view;
+    hb.addWidget(&view);
+    ViewHandler right(&view);
+    hb.addWidget(&right);
+    right.setFixedWidth(200);
 
     QPalette pal = QPalette();
     pal.setColor(QPalette::Window, QColor(255, 255, 200));
     right.setAutoFillBackground(true);
     right.setPalette(pal);
 
-    QHBoxLayout hb(&mainwindow);
-
-    QGraphicsView view;
-    hb.addWidget(&view);
-    hb.addWidget(&right);
-
 //    Canvas canv(&view);
     TT_Grid grid(&view,
         {"Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"},
         {"HU A", "HU B", "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7"},
         {2, 4, 6});
-
-
-//TODO: Reorganize the test code. Use pushbuttton to load a file.
-//    grid.test_setup(&ViewHandler::set_data);
 
     qDebug() << "@ (3, 1): " << grid.cols[4][2]->rect();
     qDebug() << "  ... " << grid.cols[4][2]->pos();

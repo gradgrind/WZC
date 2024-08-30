@@ -64,3 +64,14 @@ void DBData::save()
     }
     db.commit();
 }
+
+int time2mins(QString time)
+{
+    auto hm = time.split(":");
+    bool ok;
+    int h = hm[0].toInt(&ok);
+    if (!ok || h < 0 || h >= 24) return -1;
+    int m = hm[1].toInt(&ok);
+    if (!ok || m < 0 || m >= 60) return -1;
+    return h * 60 + m;
+}
