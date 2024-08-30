@@ -219,7 +219,8 @@ void Chip::place_pair(
             l->setPos(CHIP_MARGIN, CHIP_MARGIN);
         } else {
             qreal h0 = rect().height() - CHIP_MARGIN;
-            l->setPos(CHIP_MARGIN, h0 - l->boundingRect().height());
+            l->setPos(CHIP_MARGIN,
+                      h0 - l->sceneBoundingRect().height());
         }
     }
     if (r) {
@@ -229,7 +230,8 @@ void Chip::place_pair(
             r->setPos(w0 + CHIP_MARGIN - w_r, CHIP_MARGIN);
         } else {
             qreal h0 = rect().height() - CHIP_MARGIN;
-            r->setPos(w0 + CHIP_MARGIN - w_r, h0 - r->boundingRect().height());
+            r->setPos(w0 + CHIP_MARGIN - w_r,
+                      h0 - r->sceneBoundingRect().height());
         }
     }
 }
