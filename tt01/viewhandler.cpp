@@ -3,6 +3,7 @@
 #include "fetdata.h"
 #include "lessontiles.h"
 #include "showclass.h"
+#include "showteacher.h"
 #include <QBoxLayout>
 #include <QPushButton>
 #include <QListWidget>
@@ -198,5 +199,7 @@ void ViewHandler::handle_item_chosen(int index)
     // Which type of item is being handled?
     if (rb_class->isChecked()) {
         ShowClass(grid, dbdata, indexmap.value(index));
+    } else if (rb_teacher->isChecked()) {
+        ShowTeacher(grid, dbdata, indexmap.value(index));
     }
 }

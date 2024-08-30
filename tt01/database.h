@@ -35,6 +35,8 @@ public:
     QHash<int, int> days;   // db-index -> absolute index
     QHash<int, int> hours;  // db-index -> absolute index
     QHash<int, class_divs> class_subgroup_divisions;
+    // The tiles are divided only for the class view. The map below
+    // supplies a list of tiles for each involved class.
     QHash<int, QMap<int, QList<TileFraction>>> course_tileinfo;
     QHash<int, QList<int>> teacher_courses;
     QHash<int, QList<int>> class_courses;
