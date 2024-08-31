@@ -49,6 +49,7 @@ Canvas::Canvas(QGraphicsView *gview) : QObject()
     view->setScene(scene);
     //self.items = {}
 
+    /*
     //-- Testing code:
     QGraphicsRectItem *r1 = new QGraphicsRectItem(20, 50, 300, 10);
     scene->addItem(r1);
@@ -70,6 +71,7 @@ Canvas::Canvas(QGraphicsView *gview) : QObject()
     chip2->set_background("e0e0ff");
     chip2->set_border(0);
     chip2->set_text("Middle");
+    */
 }
 
 int Canvas::pt2px(int pt) {

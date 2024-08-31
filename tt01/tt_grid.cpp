@@ -1,5 +1,7 @@
 #include "tt_grid.h"
 
+Cell::Cell(int x, int y) : Chip(), cellx{x}, celly{y} {}
+
 TT_Grid::TT_Grid(
     QGraphicsView *view,
     QStringList days,
@@ -13,63 +15,69 @@ TT_Grid::TT_Grid(
     breaklist = breaks;
     setup_grid();
 
+    //TODO: do something useful ...
     scene->set_click_handler([this](const QList<QGraphicsItem *> items) {
         test(items);
     });
 }
 
-void TT_Grid::test_setup(void (*func)(DBData *, TT_Grid *))
-{
-    setup_func = func;
-}
-
+//TODO: remove
 void TT_Grid::test(QList<QGraphicsItem *> items)
 {
-    scene->clear();
-    setup_grid();
+    qDebug() << "CLICKED:" << items;
 }
 
 void TT_Grid::setup_grid()
 {
     cols.clear();
 
-    QList<Chip *> hheaders;
+    QList<Cell *> hheaders;
     qreal y = 0.0;
-    Chip *c = new Chip(VHEADERWIDTH, HHEADERHEIGHT);
+    Cell *c = new Cell(-1, -1);
+    c->set_size(VHEADERWIDTH, HHEADERHEIGHT);
     c->set_border(2.0, GRIDLINECOLOUR);
     hheaders.append(c);
     scene->addItem(c);
     c->setPos(-VHEADERWIDTH, -HHEADERHEIGHT);
+    int yi = 0;
     for(const QString &hour : std::as_const(hourlist)) {
-        Chip *c = new Chip(VHEADERWIDTH, HOUR_HEIGHT);
+        Cell *c = new Cell(-1, yi);
+        c->set_size(VHEADERWIDTH, HOUR_HEIGHT);
         c->set_border(2.0, GRIDLINECOLOUR);
         c->set_text(hour);
         hheaders.append(c);
         scene->addItem(c);
         c->setPos(-VHEADERWIDTH, y);
         y += HOUR_HEIGHT;
+        yi++;
     }
     cols.append(hheaders);
     qreal x = 0.0;
+    int xi = 0;
     for(const QString &day : std::as_const(daylist)) {
-        QList<Chip *> rows;
+        QList<Cell *> rows;
         y = 0.0;
-        Chip *c = new Chip(DAY_WIDTH, HHEADERHEIGHT);
+        Cell *c = new Cell(xi, -1);
+        c->set_size(DAY_WIDTH, HHEADERHEIGHT);
         c->set_border(2.0, GRIDLINECOLOUR);
         scene->addItem(c);
         c->set_text(day);
         rows.append(c);
         c->setPos(x, -HHEADERHEIGHT);
+        int yi = 0;
         for(const QString &hour : std::as_const(hourlist)) {
-            c = new Chip(DAY_WIDTH, HOUR_HEIGHT);
+            c = new Cell(xi, yi);
+            c->set_size(DAY_WIDTH, HOUR_HEIGHT);
             c->set_border(2.0, GRIDLINECOLOUR);
             rows.append(c);
             scene->addItem(c);
             c->setPos(x, y);
             y += HOUR_HEIGHT;
+            yi++;
         }
         cols.append(rows);
         x += DAY_WIDTH;
+        xi++;
     }
     // Add emphasis on breaks
     int x0 = -VHEADERWIDTH;
@@ -93,7 +101,7 @@ TT_Grid::~TT_Grid()
 
 void TT_Grid::place_tile(Tile *tile, int col, int row)
 {
-    Chip *cell = cols[col + 1][row + 1];
+    Cell *cell = cols[col + 1][row + 1];
     QRectF r = cell->rect();
     qreal cellw = r.width() - 2*GRIDLINEWIDTH;
     QPointF p = cell->pos();

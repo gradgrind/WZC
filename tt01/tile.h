@@ -6,7 +6,7 @@
 class Tile : public Chip
 {
 public:
-    enum { Type = UserType + 3 };
+    enum { Type = UserType + 4 };
     int type() const override
     {
         // Enable the use of qgraphicsitem_cast with this item.

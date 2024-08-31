@@ -42,7 +42,7 @@ void HoverRectItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event) {
     those of the corners.
 */
 Chip::Chip(qreal width, qreal height) : HoverRectItem() {
-    setRect(0.0, 0.0, width, height);
+    set_size(width, height);
 }
 
 Chip::Chip() : HoverRectItem() {}
@@ -52,7 +52,7 @@ void Chip::set_size(qreal width, qreal height)
     setRect(0.0, 0.0, width, height);
 }
 
-// setPos(x, y); built in
+// setPos(x, y); built in member function
 
 /* Colour the background, which is initially transparent.
  * Colours must be provided as "RRGGBB" strings (case insensitive).

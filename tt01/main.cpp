@@ -1,6 +1,6 @@
 #include "canvas.h"
-#include "tt_grid.h"
-#include "readxml.h"
+//#include "tt_grid.h"
+//#include "readxml.h"
 #include "viewhandler.h"
 //#include <QStyleFactory>
 #include <QHBoxLayout>
@@ -23,7 +23,8 @@ int main(int argc, char *argv[])
     right.setAutoFillBackground(true);
     right.setPalette(pal);
 
-//    Canvas canv(&view);
+    /*
+    //Canvas canv(&view);
     TT_Grid grid(&view,
         {"Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"},
         {"HU A", "HU B", "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7"},
@@ -53,11 +54,11 @@ int main(int argc, char *argv[])
     );
     grid.place_tile(t, 4, 6);
     //t->place(500, 250, 150, 150);
+    */
 
     view.setFixedSize(A4.toSize());
 
-    //readFet_test();
-    readxml_test();
+    //readxml_test();
 
     mainwindow.show();
 

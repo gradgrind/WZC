@@ -7,6 +7,22 @@
 #include "database.h"
 #include <QStringList>
 
+class Cell : public Chip
+{
+public:
+    enum { Type = UserType + 3 };
+    int type() const override
+    {
+        // Enable the use of qgraphicsitem_cast with this item.
+        return Type;
+    }
+
+    Cell(int x, int y);
+
+    int cellx;
+    int celly;
+};
+
 class TT_Grid
 {
 public:
@@ -20,7 +36,6 @@ public:
     void place_tile(Tile *tile, int col, int row);
 
     void test(QList<QGraphicsItem *> items);
-    void test_setup(void (*func)(DBData *, TT_Grid *));
 
     Canvas *canvas;
     Scene *scene;
@@ -29,7 +44,7 @@ public:
     QList<int> breaklist;
 
     void setup_grid();
-    QList<QList<Chip *>> cols;
+    QList<QList<Cell *>> cols;
 
     qreal DAY_WIDTH = 140.0;
     qreal HOUR_HEIGHT = 60.0;
@@ -42,9 +57,6 @@ public:
     qreal FONT_CORNER_SIZE = 8.0;
 
     QJsonObject settings;
-
-private:
-    void (*setup_func)(DBData *, TT_Grid *);
 };
 
 #endif // TT_GRID_H
