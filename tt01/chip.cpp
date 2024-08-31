@@ -6,7 +6,8 @@
 HoverRectItem::HoverRectItem(QGraphicsItem *parent)
     : QGraphicsRectItem(parent) {}
 
-void HoverRectItem::setHoverHandler(void (* handler)(QGraphicsRectItem*, bool))
+void HoverRectItem::setHoverHandler(
+    std::function<void (HoverRectItem *, bool)> handler)
 {
     hover_handler = handler;
     if (handler) {

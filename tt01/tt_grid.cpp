@@ -15,16 +15,83 @@ TT_Grid::TT_Grid(
     breaklist = breaks;
     setup_grid();
 
-    //TODO: do something useful ...
-    scene->set_click_handler([this](const QList<QGraphicsItem *> items) {
-        test(items);
+    // Set up event handlers
+    scene->set_click_handler([this](
+            const QList<QGraphicsItem *> items, int keymod) {
+        handle_click(items, keymod);
     });
+    scene->set_context_menu_handler([this](
+            const QList<QGraphicsItem *> items) {
+        handle_context_menu(items);
+    });
+    hover_handler = [this](HoverRectItem* gitem, bool enter){
+        handle_hover(gitem, enter);
+    };
 }
 
-//TODO: remove
-void TT_Grid::test(QList<QGraphicsItem *> items)
+void TT_Grid::handle_click(QList<QGraphicsItem *> items, int keymod)
 {
-    qDebug() << "CLICKED:" << items;
+    Tile *tile = nullptr;
+    int cellx = -100, celly = -100;
+    for (const auto item : items) {
+        Tile *t = qgraphicsitem_cast<Tile *>(item);
+        if (t) {
+            tile = t;
+            continue;
+        }
+        Cell * cell = qgraphicsitem_cast<Cell *>(item);
+        if (cell) {
+            cellx = cell->cellx;
+            celly = cell->celly;
+            break;
+        }
+        // Ignore everything else
+    }
+
+    QString tiledata;
+    if (tile) {
+        tiledata = QString("[%1|%2]").arg(tile->tag).arg(tile->lid);
+    }
+    qDebug() << "CLICKED:" << keymod << "::" << cellx << celly
+             << tiledata;
+
+}
+
+void TT_Grid::handle_context_menu(QList<QGraphicsItem *> items)
+{
+    Tile *tile = nullptr;
+    int cellx = -100, celly = -100;
+    for (const auto item : items) {
+        Tile *t = qgraphicsitem_cast<Tile *>(item);
+        if (t) {
+            tile = t;
+            continue;
+        }
+        Cell * cell = qgraphicsitem_cast<Cell *>(item);
+        if (cell) {
+            cellx = cell->cellx;
+            celly = cell->celly;
+            break;
+        }
+        // Ignore everything else
+        }
+
+    QString tiledata;
+    if (tile) {
+        tiledata = QString("[%1|%2]").arg(tile->tag).arg(tile->lid);
+    }
+    qDebug() << "CONTEXT MENU:" << cellx << celly
+             << tiledata;
+
+}
+
+void TT_Grid::handle_hover(HoverRectItem* gitem, bool enter){
+    Tile *tile = qgraphicsitem_cast<Tile *>(gitem);
+    if (enter) {
+        qDebug() << "ENTER" << tile->lid;
+    } else {
+        qDebug() << "EXIT" << tile->lid;
+    }
 }
 
 void TT_Grid::setup_grid()
@@ -118,4 +185,65 @@ void TT_Grid::place_tile(Tile *tile, int col, int row)
     tile->place(
         x0 + GRIDLINEWIDTH + dx, y0 + GRIDLINEWIDTH,
         w, h - 2*GRIDLINEWIDTH);
+}
+
+Tile::Tile(
+    TT_Grid *grid,
+    QJsonObject data,
+    int lesson_id) : Chip()
+{
+    grid->scene->addItem(this);
+
+    if (grid->hover_handler) {
+        setHoverHandler(grid->hover_handler);
+            //void (* handler)(QGraphicsRectItem*, bool))
+
+    }
+
+    lid = lesson_id;
+    tag = data.value("TAG").toString();
+    length = data.value("LENGTH").toInt(1);
+    divs = data.value("DIVS").toInt(1);
+    div0 = data.value("DIV0").toInt(0);
+    ndivs = data.value("NDIVS").toInt(1);
+    middle = data.value("TEXT").toString();
+    tl = data.value("TL").toString();
+    tr = data.value("TR").toString();
+    bl = data.value("BL").toString();
+    br = data.value("BR").toString();
+
+    QString bg = data.value("BACKGROUND").toString("FFFFFF");
+    set_background(bg);
+    QJsonObject settings = grid->settings;
+    set_border(settings.value(
+                           "TILE_BORDER_WIDTH").toDouble(TILE_BORDER_WIDTH),
+               settings.value(
+                           "TILE_BORDER_COLOUR").toString(TILE_BORDER_COLOUR)
+               );
+
+    config_text(
+        settings.value("TEXT_SIZE").toDouble(),
+        settings.value("TEXT_BOLD").toBool(TEXT_BOLD),
+        settings.value("TEXT_ALIGN").toInt(TEXT_ALIGN),
+        settings.value("TEXT_COLOUR").toString());
+    set_subtext_size(settings.value("SUBTEXT_SIZE").toDouble());
+}
+
+void Tile::place(qreal x, qreal y, qreal w, qreal h)
+{
+    /* The QGraphicsItem method "setPos" takes "float" coordinates,
+     * either as setPos(x, y) or as setPos(QPointF). It sets the position
+     * of the item in parent coordinates. For items with no parent, scene
+     * coordinates are used.
+     * The position of the item describes its origin (local coordinate
+     * (0, 0)) in parent coordinates.
+     * The size of the tile is set by means of the width and height values.
+     * If no change of size is desired, just call the "setPos" method.
+     */
+    setRect(0, 0, w, h);
+    setPos(x, y);
+    // Handle the text field placement and potential shrinking
+    set_text(middle);
+    set_toptext(tl, tr);
+    set_bottomtext(bl, br);
 }

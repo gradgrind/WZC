@@ -27,7 +27,7 @@ ShowClass::ShowClass(TT_Grid *grid, DBData *db_data, int class_id)
             int d = db_data->days.value(ldata.value("DAY").toInt());
             int h = db_data->hours.value(ldata.value("HOUR").toInt());
             for (const auto &tf : tiles) {
-                Tile *t = new Tile(grid->scene, grid->settings,
+                Tile *t = new Tile(grid,
                     QJsonObject {
                         {"TEXT", subject},
                         {"TL", teacher},
@@ -37,7 +37,8 @@ ShowClass::ShowClass(TT_Grid *grid, DBData *db_data, int class_id)
                         {"DIV0", tf.offset},
                         {"DIVS", tf.fraction},
                         {"NDIVS", tf.total},
-                    }
+                    },
+                    lid
                 );
                 grid->place_tile(t, d, h);
             }

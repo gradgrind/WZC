@@ -32,7 +32,7 @@ ShowTeacher::ShowTeacher(TT_Grid *grid, DBData *db_data, int teacher_id)
             QString room = rooms.join(",");
             int d = db_data->days.value(ldata.value("DAY").toInt());
             int h = db_data->hours.value(ldata.value("HOUR").toInt());
-            Tile *t = new Tile(grid->scene, grid->settings,
+            Tile *t = new Tile(grid,
                 QJsonObject {
                     {"TEXT", group},
                     {"TL", subject},
@@ -41,7 +41,8 @@ ShowTeacher::ShowTeacher(TT_Grid *grid, DBData *db_data, int teacher_id)
                     {"DIV0", 0},
                     {"DIVS", 1},
                     {"NDIVS", 1},
-                }
+                },
+                lid
             );
             grid->place_tile(t, d, h);
         }

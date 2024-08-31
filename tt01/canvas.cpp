@@ -1,6 +1,5 @@
 #include "canvas.h"
-#include "chip.h"
-#include <QMenu>
+#include <QGraphicsSceneEvent>
 
 const int minutesPerHour = 60;
 const qreal CHIP_MARGIN = 1.5;
@@ -47,7 +46,6 @@ Canvas::Canvas(QGraphicsView *gview) : QObject()
 
     scene = new Scene();
     view->setScene(scene);
-    //self.items = {}
 
     /*
     //-- Testing code:
@@ -90,9 +88,7 @@ qreal Canvas::px2mm(int px) {
 
 // *******************
 
-Scene::Scene() : QGraphicsScene() {
-    make_context_menu();
-}
+Scene::Scene() : QGraphicsScene() {}
 
 void Scene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
     if (event->button() == Qt::MouseButton::LeftButton) {
@@ -115,79 +111,46 @@ void Scene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 
         QList<QGraphicsItem *> allitems = items(point);
 
-        qDebug() << "Items" << keymod
-                 << " @ " << point << " : " << allitems;
+        //qDebug() << "Items" << keymod
+        //         << " @ " << point << " : " << allitems;
 
         if (click_handler) {
-            click_handler(allitems);
+            click_handler(allitems, keymod);
         }
-
-
-/*
-                cell = None
-                tiles = []
-                item0 = None
-                for item in items:
-                    try:
-                        cell = item.tag
-                        item0 = item
-                    except AttributeError:
-                        tiles.append(item)
-                for tile in tiles:
-                    # Give all tiles at this point a chance to react, starting
-                    # with the topmost. An item can break the chain by
-                    # returning a false value.
-                    try:
-                        if not tile.leftclick():
-                            return
-                    except AttributeError:
-                        pass
-                if item0:
-                    print(f"Left press{shift}{ctrl}{alt} @ {cell}")
-                    if shift:
-#???
-                        self.place_tile("T2", cell)
-                    if alt:
-                        self.select_cell(cell)
-
-*/
-
     }
 }
 
-void Scene::make_context_menu() {
-    context_menu = new QMenu();
-    QAction *action = context_menu->addAction("I am context Action 1");
-    //connect(action, &QAction::triggered, &Canvas::context_1);
-    connect(action, &QAction::triggered, [=](bool b) {qDebug() << "-> lambda";});
+void Scene::set_click_handler(
+    std::function<void (const QList<QGraphicsItem *>, int)> handler)
+{
+    click_handler = handler;
 }
 
 void Scene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 {
-    auto point = event->scenePos();
-    auto gitems = items(point);
-    // Choose the topmost reacting item
-    QMenu *cm = context_menu;
-    for(auto gitem : gitems) {
-        Chip *gtitem = qgraphicsitem_cast<Chip *>(gitem);
-        if (gtitem) {
-            qDebug() << "Chip";
-            //return;
-            // Get the context menu from the item.
-            // What info do the handlers need? Item (the scene is available
-            // from the item, if it is passed as pointer)?
-            cm = gtitem->context_menu;
-        }
+    QPointF point = event->scenePos();
+    QList<QGraphicsItem *> allitems = items(point);
+
+    //qDebug() << "Context menu items"
+    //         << " @ " << point << " : " << allitems;
+
+    if (context_menu_handler) {
+        context_menu_handler(allitems);
     }
-    if (cm) {
-        cm->exec(event->screenPos());
-    } else {
-        qDebug() << "Context Menu";
-    }
+
 }
 
-//TODO: At present I am just using this for testing
-void Scene::set_click_handler(std::function<void (const QList<QGraphicsItem *>)> handler)
+void Scene::set_context_menu_handler(
+    std::function<void (const QList<QGraphicsItem *>)> handler)
 {
-    click_handler = handler;
+    context_menu_handler = handler;
+
+    // To show a context menu, cm:
+    //    cm->exec(event->screenPos());
+    // To make a context menu:
+    //    QMenu *cm = new QMenu();
+    //    QAction *action = cm->addAction("I am context Action 1");
+    //    //connect(action, &QAction::triggered, &Canvas::cm_1);
+    //    connect(action, &QAction::triggered, [=](bool b) {
+    //        qDebug() << "-> lambda";});
 }

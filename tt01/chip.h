@@ -20,14 +20,15 @@ public:
     }
 
     HoverRectItem(QGraphicsItem *parent = nullptr);
-    void setHoverHandler(void (* handler)(QGraphicsRectItem*, bool));
+    void setHoverHandler(
+        std::function<void (HoverRectItem *, bool)> handler);
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 private:
-    void (* hover_handler)(QGraphicsRectItem*, bool);
+    std::function<void (HoverRectItem*, bool)> hover_handler;
 };
 
 // *******************

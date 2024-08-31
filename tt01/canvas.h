@@ -19,10 +19,10 @@ class Scene : public QGraphicsScene
 
 public:
     Scene();
-    QMenu *context_menu;
-    void make_context_menu();
 
     void set_click_handler(
+        std::function<void(const QList<QGraphicsItem *>, int)> handler);
+    void set_context_menu_handler(
         std::function<void(const QList<QGraphicsItem *>)> handler);
 
 protected:
@@ -30,7 +30,8 @@ protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
 
 private:
-    std::function<void (const QList<QGraphicsItem *>)> click_handler;
+    std::function<void (const QList<QGraphicsItem *>, int)> click_handler;
+    std::function<void (const QList<QGraphicsItem *>)> context_menu_handler;
 };
 
 // *******************

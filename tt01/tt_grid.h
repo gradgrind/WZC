@@ -3,8 +3,8 @@
 
 #include <QApplication>
 #include "canvas.h"
-#include "tile.h"
-#include "database.h"
+#include "chip.h"
+//#include "database.h"
 #include <QStringList>
 
 class Cell : public Chip
@@ -23,6 +23,8 @@ public:
     int celly;
 };
 
+class Tile; // forward declaration
+
 class TT_Grid
 {
 public:
@@ -34,8 +36,6 @@ public:
     ~TT_Grid();
 
     void place_tile(Tile *tile, int col, int row);
-
-    void test(QList<QGraphicsItem *> items);
 
     Canvas *canvas;
     Scene *scene;
@@ -57,6 +57,48 @@ public:
     qreal FONT_CORNER_SIZE = 8.0;
 
     QJsonObject settings;
+
+    std::function<void (HoverRectItem*, bool)> hover_handler;
+
+private:
+    void handle_click(QList<QGraphicsItem *> items, int keymod);
+    void handle_context_menu(QList<QGraphicsItem *> items);
+    void handle_hover(HoverRectItem*, bool);
+};
+
+class Tile : public Chip
+{
+public:
+    enum { Type = UserType + 4 };
+    int type() const override
+    {
+        // Enable the use of qgraphicsitem_cast with this item.
+        return Type;
+    }
+
+    Tile(
+        TT_Grid *grid,
+        QJsonObject data,
+        int lesson_id);
+
+    void place(qreal x, qreal y, qreal w, qreal h);
+
+    int lid;
+    QString tag;
+    int length;
+    int divs;
+    int div0;
+    int ndivs;
+    QString middle;
+    QString tl;
+    QString tr;
+    QString bl;
+    QString br;
+
+    const qreal TILE_BORDER_WIDTH = 1.0;
+    const QString TILE_BORDER_COLOUR = "6060FF";
+    const bool TEXT_BOLD = true;
+    const int TEXT_ALIGN = 0; // centred
 };
 
 #endif // TT_GRID_H
