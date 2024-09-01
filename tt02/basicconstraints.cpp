@@ -132,16 +132,33 @@ void BasicConstraints::place_lessons()
         for (auto t : tlist) {
             ldc.teachers.push_back(t2i.value(t.toInt()));
         }
-        //TODO: Need the possible-rooms-list (in "ROOMSPEC")
+        // Get the possible-rooms list, which can contain a virtual room
+        // (as only member).
+        // The input is a simple list, the result will be a list of lists.
         auto rlist = node.value("ROOMSPEC").toArray();
-        for (auto rlv : rlist) {
-            std::vector<int> rilist;
-            auto rl = rlv.toArray();
-            for (auto r : rl) {
-                rilist.push_back(r2i.value(r.toInt()));
+        std::vector<int> rvec;
+        for (auto rv : rlist) {
+            int rid = rv.toInt();
+            auto node = db_data->Nodes.value(rid).DATA;
+            if (node.contains("SUBROOMS")) {
+                // Virtual room
+                auto srll = node.value("SUBROOMS").toArray();
+                for (auto srl : srll) {
+                    if (!rvec.empty()) {
+                        ldc.roomspec.push_back(rvec);
+                        rvec.clear();
+                    }
+                    auto srla = srl.toArray();
+                    for (auto sr : srla) {
+                        rvec.push_back(sr.toInt());
+                    }
+                }
+                break;
             }
-            ldc.roomspec.push_back(rilist);
+            rvec.push_back(r2i.value(rid));
         }
+        ldc.roomspec.push_back(rvec);
+
         // The used rooms are associated with the individual lessons.
         // Note that they are only valid if there is a slot placement.
         for (int lid : db_data->course_lessons.value(cid)) {
@@ -153,7 +170,7 @@ void BasicConstraints::place_lessons()
             }
             lesson_resources[lid] = ld;
             int d0 = lnode.value("DAY").toInt();
-            if (d0 == 0) continue;
+            if (d0 == 0) continue; // no placement
             int d = db_data->days.value(d0);
             int h = db_data->hours.value(lnode.value("HOUR").toInt());
             int l = lnode.value("LENGTH").toInt();

@@ -5,7 +5,35 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
 {
     for (const auto &v : item_list) {
         auto n = v.value<XMLNode>();
-        if (n.name == "ConstraintActivityPreferredRoom") {
+        // I don't completely understand the use of the Weight_Percentage
+        // value ... I will assume always 100%.
+        if (n.name == "ConstraintActivityPreferredRooms") {
+            auto m = readSimpleItems(n);
+            auto aid = m.value("Activity_Id");
+            // Actually, roomspecs should surely be on courses, not lessons.
+            // So some entries will be redundant. Don't overwrite an
+            // existing roomspec value.
+            int aix = fet_info.activity_lesson.value(aid);
+            int cid = fet_info.nodes[aix].DATA.value("COURSE").toInt();
+            auto cnode = &fet_info.nodes[cid];
+            // Don't overwrite an existing roomspec value
+            if (cnode->DATA.contains("ROOMSPEC")) continue;
+            QJsonArray room_list;
+            auto fet_room_list = m.values("Preferred_Room");
+            for (const auto &r : fet_room_list) {
+                int rr = fet_info.rooms.value(r);
+                // If this is a "virtual" room, it should be the only room
+                // in this list (to avoid overcomplexity ...)
+                auto node = fet_info.nodes.value(rr).DATA;
+                if (node.contains("SUBROOMS")
+                        and (fet_room_list.length() != 1)) {
+                    qFatal() << "Room constraint, virtual room is not"
+                             << "alone on activity" << aid;
+                }
+                room_list.append(rr);
+            }
+            cnode->DATA["ROOMSPEC"] = room_list;
+        } else if (n.name == "ConstraintActivityPreferredRoom") {
             // If the acceptable room is initially set using this
             // constraint, there may be two entries. The later one
             // will be the one containing "Real_Room" entries, if the
