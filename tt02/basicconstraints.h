@@ -9,10 +9,18 @@ class BasicConstraints
 public:
     BasicConstraints(DBData *dbdata);
 
-    std::vector<int> item_vec;
-    std::vector<roaring::Roaring64Map> items;
-    std::vector<std::vector<roaring::Roaring64Map>> week;
-    //(5 , std::vector<roaring::Roaring64Map> (9));
+    DBData * db_data;
+    int ndays;
+    int nhours;
+    QHash<QString, int> sg2i;
+    std::vector<std::vector<std::vector<int>>> sg_weeks;
+    QHash<int, int> t2i;
+    std::vector<std::vector<std::vector<int>>> t_weeks;
+    QHash<int, int> r2i;
+    std::vector<std::vector<std::vector<int>>> r_weeks;
+
+private:
+    void slot_blockers();
 };
 
 #endif // BASICCONSTRAINTS_H
