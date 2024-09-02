@@ -153,6 +153,13 @@ void TT_Grid::setup_grid()
             scene->addItem(l);
         }
     }
+    // Add the tile-selection rectangle
+    selection_rect = new QGraphicsRectItem();
+    selection_rect->setPen(
+        QPen(QBrush(QColor("#FF" + SELECTIONCOLOUR)), GRIDLINEWIDTH));
+    scene->addItem(selection_rect);
+    selection_rect->setZValue(10);
+    selection_rect->hide();
 }
 
 TT_Grid::~TT_Grid()
@@ -186,6 +193,32 @@ void TT_Grid::setClickHandler(
     std::function<void (int day, int hour, Tile *tile)> handler)
 {
     click_handler = handler;
+}
+
+void TT_Grid::select_tile(Tile *tile) {
+    if (tile) {
+        selection_rect->setRect(tile->rect());
+        selection_rect->setPos(tile->pos());
+        selection_rect->show();
+    } else {
+        selection_rect->hide();
+    }
+}
+
+void TT_Grid::setCellOK(int day, int hour)
+{
+    auto cell = cols[day+1][hour+1];
+    cell->setBrush(OKBRUSH);
+    ok_cells.append(cell);
+}
+
+void TT_Grid::clearCellOK()
+{
+    QBrush b;
+    for (const auto &cell : ok_cells) {
+        cell->setBrush(b);
+    }
+    ok_cells.clear();
 }
 
 

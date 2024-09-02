@@ -18,6 +18,8 @@ class BasicConstraints
 public:
     BasicConstraints(DBData *dbdata);
 
+    bool test_place_lesson(lesson_data *ldata, int day, int hour);
+
     DBData * db_data;
     int ndays;
     int nhours;
@@ -46,7 +48,7 @@ public:
 
 private:
     void slot_blockers();
-    void place_lessons();
+    void initial_place_lessons();
 };
 
 #endif // BASICCONSTRAINTS_H

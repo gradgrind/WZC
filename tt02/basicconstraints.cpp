@@ -67,7 +67,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
             ndays , std::vector<int> (nhours)));
 
     slot_blockers();
-    place_lessons();
+    initial_place_lessons();
 }
 
 void BasicConstraints::slot_blockers()
@@ -115,7 +115,7 @@ void BasicConstraints::slot_blockers()
 }
 
 // Initial placement of the lessons.
-void BasicConstraints::place_lessons()
+void BasicConstraints::initial_place_lessons()
 {
     for (int cid : db_data->Tables.value("COURSES")) {
         lesson_data ldc;
@@ -214,4 +214,30 @@ void BasicConstraints::place_lessons()
             }
         }
     }
+}
+
+// This is a primitive test for a placement. It returns only true or false,
+// according to whether the placement is possible. It doesn't change
+// anything.
+bool BasicConstraints::test_place_lesson(
+    lesson_data *ldata, int day, int hour)
+{
+    for (int i : ldata->groups) {
+        if (sg_weeks[i][day][hour]) return false;
+    }
+    for (int i : ldata->teachers) {
+        if (t_weeks[i][day][hour]) return false;
+    }
+    // ldata->rooms is not relevant here
+    for (const auto & ivec : ldata->roomspec) {
+        bool ok = false;
+        for (int i: ivec) {
+            if (!r_weeks[i][day][hour]) {
+                ok = true;
+                break;
+            }
+        }
+        if (!ok) return false;
+    }
+    return true;
 }

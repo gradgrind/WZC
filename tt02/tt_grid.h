@@ -39,6 +39,9 @@ public:
     void place_tile(Tile *tile, int col, int row);
     void setClickHandler(
         std::function<void (int day, int hour, Tile *tile)> handler);
+    void select_tile(Tile *tile);
+    void setCellOK(int day, int hour);
+    void clearCellOK();
 
     Canvas *canvas;
     Scene *scene;
@@ -57,6 +60,8 @@ public:
     QString BREAKLINECOLOUR = "404080";
     qreal FONT_CENTRE_SIZE = 12.0;
     qreal FONT_CORNER_SIZE = 8.0;
+    QString SELECTIONCOLOUR = "FF0000";
+    QBrush OKBRUSH = QColor("#FFDFFF99");
 
     QJsonObject settings;
 
@@ -67,6 +72,8 @@ private:
     void handle_context_menu(QList<QGraphicsItem *> items);
     void handle_hover(HoverRectItem*, bool);
     std::function<void (int day, int hour, Tile *tile)> click_handler;
+    QGraphicsRectItem *selection_rect = nullptr;
+    QList<Cell*> ok_cells;
 };
 
 class Tile : public Chip
