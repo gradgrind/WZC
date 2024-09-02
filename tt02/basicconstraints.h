@@ -5,6 +5,8 @@
 #include "with_roaring/roaring.hh"
 
 struct lesson_data{
+    // The contained values (int) are the indexes into the week-blocks
+    // for the corresponding items.
     std::vector<int> teachers;
     std::vector<int> groups;
     std::vector<int> rooms;
@@ -23,6 +25,8 @@ public:
     QHash<int, QList<QString>> g2sg;
     // atomic subgroup -> week-block index:
     QHash<QString, int> sg2i;
+    // week-block index -> atomic subgroup:
+    QList<QString> i_sg;
     // week-blocks for atomic subgroups:
     std::vector<std::vector<std::vector<int>>> sg_weeks;
     // teacher index -> week-block index:
@@ -33,6 +37,8 @@ public:
     std::vector<std::vector<std::vector<int>>> t_weeks;
     // room index -> week-block index:
     QHash<int, int> r2i;
+    // week-block index -> room index:
+    QList<int> i_r;
     // week-blocks for rooms:
     std::vector<std::vector<std::vector<int>>> r_weeks;
     // placement resources for each lesson

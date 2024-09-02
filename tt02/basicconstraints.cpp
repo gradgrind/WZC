@@ -9,7 +9,6 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
     // the index of the lesson-node.
 
     // Collect the atomic subgroups
-    int sgi = 0;
     for (int gid : dbdata->Tables.value("GROUPS")) {
         auto node = dbdata->Nodes.value(gid).DATA;
         auto sglist = node.value("SUBGROUPS").toArray();
@@ -19,8 +18,8 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
             g2sg[gid].append(sgstr);
             if (allsg) {
                 // A whole-class group
-                sg2i[sgstr] = sgi;
-                sgi++;
+                sg2i[sgstr] = i_sg.length();
+                i_sg.append(sgstr);
             }
         }
     }
@@ -30,7 +29,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
     ndays = dbdata->days.size();
     nhours = dbdata->hours.size();
     sg_weeks = std::vector<std::vector<std::vector<int>>>(
-        sgi, std::vector<std::vector<int>> (
+        i_sg.length(), std::vector<std::vector<int>> (
             ndays , std::vector<int> (nhours)));
     /*
     qDebug() << "ndays:" << ndays << "|| nhours:" << nhours;
@@ -56,16 +55,15 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
     */
 
     // Make a weekly array for each real room
-    int ri = 0;
     for (int rid : dbdata->Tables.value("ROOMS")) {
         auto node = dbdata->Nodes.value(rid).DATA;
         if (node.contains("SUBROOMS")) continue;
         // A real room
-        r2i[rid] = ri;
-        ri++;
+        r2i[rid] = i_r.length();
+        i_r.append(rid);
     }
     r_weeks = std::vector<std::vector<std::vector<int>>>(
-        ri, std::vector<std::vector<int>> (
+        i_r.length(), std::vector<std::vector<int>> (
             ndays , std::vector<int> (nhours)));
 
     slot_blockers();

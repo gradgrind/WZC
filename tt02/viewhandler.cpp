@@ -11,8 +11,6 @@
 #include <QFileDialog>
 #include <QJsonArray>
 
-#include "basicconstraints.h"
-
 const int BREAK_MINS = 10;
 
 ViewHandler::ViewHandler(QGraphicsView *gview) : QWidget(), view{gview}
@@ -51,6 +49,13 @@ ViewHandler::ViewHandler(QGraphicsView *gview) : QWidget(), view{gview}
         this, &ViewHandler::handle_item_chosen);
 }
 
+ViewHandler::~ViewHandler()
+{
+    if (dbdata) delete dbdata;
+    if (grid) delete grid;
+    if (basic_constraints) delete basic_constraints;
+}
+
 void ViewHandler::handle_load_file()
 {
     auto fileName = QFileDialog::getOpenFileName(nullptr,
@@ -63,6 +68,7 @@ void ViewHandler::handle_load_file()
     XMLNode xml = readXMLTree(tdat);
 
     auto fetdata = fetData(xml);
+    if (dbdata) delete dbdata;
     dbdata = new DBData(fetdata.nodes);
 
     // Make lesson lists for the courses.
@@ -157,7 +163,20 @@ void ViewHandler::handle_load_file()
     dbdata->save(dbpath);
     qDebug() << "Saved data to" << dbpath;
 
-    BasicConstraints bc(dbdata);
+    if (basic_constraints) delete basic_constraints;
+    basic_constraints = new BasicConstraints(dbdata);
+    grid->setClickHandler([this](int d, int h, Tile *t){
+        onClick(d, h, t);
+    });
+}
+
+void ViewHandler::onClick(int day, int hour, Tile *tile) {
+    if (tile) {
+        qDebug() << "TILE CLICKED:" << day << hour
+                 << QString("[%1|%2]").arg(tile->tag).arg(tile->lid);
+    } else {
+        qDebug() << "CELL CLICKED:" << day << hour;
+    }
 }
 
 void ViewHandler::handle_rb_class()

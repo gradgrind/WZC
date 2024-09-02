@@ -35,7 +35,10 @@ public:
         QList<int> breaks);
     ~TT_Grid();
 
+    void setup_grid();
     void place_tile(Tile *tile, int col, int row);
+    void setClickHandler(
+        std::function<void (int day, int hour, Tile *tile)> handler);
 
     Canvas *canvas;
     Scene *scene;
@@ -43,7 +46,6 @@ public:
     QStringList hourlist;
     QList<int> breaklist;
 
-    void setup_grid();
     QList<QList<Cell *>> cols;
 
     qreal DAY_WIDTH = 140.0;
@@ -64,6 +66,7 @@ private:
     void handle_click(QList<QGraphicsItem *> items, int keymod);
     void handle_context_menu(QList<QGraphicsItem *> items);
     void handle_hover(HoverRectItem*, bool);
+    std::function<void (int day, int hour, Tile *tile)> click_handler;
 };
 
 class Tile : public Chip

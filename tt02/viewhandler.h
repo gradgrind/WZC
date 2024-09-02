@@ -1,6 +1,7 @@
 #ifndef VIEWHANDLERS_H
 #define VIEWHANDLERS_H
 
+#include "basicconstraints.h"
 #include "database.h"
 #include "tt_grid.h"
 #include <QWidget>
@@ -14,6 +15,7 @@ class ViewHandler : public QWidget
 
 public:
     ViewHandler(QGraphicsView *gview);
+    ~ViewHandler();
 
 private:
     QWidget *viewtype;
@@ -25,6 +27,7 @@ private:
     DBData *dbdata = nullptr;
     QGraphicsView *view;
     TT_Grid *grid = nullptr;
+    BasicConstraints *basic_constraints = nullptr;
 
 private slots:
     void handle_load_file();
@@ -32,6 +35,7 @@ private slots:
     void handle_rb_teacher();
     void handle_rb_room();
     void handle_item_chosen(int index);
+    void onClick(int day, int hour, Tile *tile);
 };
 
 #endif // VIEWHANDLERS_H

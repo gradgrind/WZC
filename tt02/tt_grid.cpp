@@ -48,13 +48,8 @@ void TT_Grid::handle_click(QList<QGraphicsItem *> items, int keymod)
         // Ignore everything else
     }
 
-    QString tiledata;
-    if (tile) {
-        tiledata = QString("[%1|%2]").arg(tile->tag).arg(tile->lid);
-    }
-    qDebug() << "CLICKED:" << keymod << "::" << cellx << celly
-             << tiledata;
-
+    //TODO: What to do with keymod?
+    if (click_handler) click_handler(cellx, celly, tile);
 }
 
 void TT_Grid::handle_context_menu(QList<QGraphicsItem *> items)
@@ -186,6 +181,13 @@ void TT_Grid::place_tile(Tile *tile, int col, int row)
         x0 + GRIDLINEWIDTH + dx, y0 + GRIDLINEWIDTH,
         w, h - 2*GRIDLINEWIDTH);
 }
+
+void TT_Grid::setClickHandler(
+    std::function<void (int day, int hour, Tile *tile)> handler)
+{
+    click_handler = handler;
+}
+
 
 Tile::Tile(
     TT_Grid *grid,
