@@ -247,6 +247,8 @@ bool BasicConstraints::test_place_lesson(
 // That could be triggered by shift-click (which would place if ok?).
 
 // Return a list of clashing-lesson-ids.
+// This seems to take 10-20 times as long as the simple test above!
+// So use it only when the details are needed.
 std::vector<int> BasicConstraints::find_clashes(
     lesson_data *ldata, int day, int hour)
 {
@@ -265,9 +267,26 @@ std::vector<int> BasicConstraints::find_clashes(
             clashes.push_back(lid);
         }
     }
-
+    for (int i : ldata->rooms_needed) {
+        int lid = r_weeks[i][day][hour];
+        if (lid && std::find(
+                clashes.begin(), clashes.end(), lid) == clashes.end()) {
+            clashes.push_back(lid);
+        }
+    }
+    if (!ldata->rooms_choice.empty()) {
+        int lid;
+        for (int i : ldata->rooms_choice) {
+            lid = r_weeks[i][day][hour];
+            if (lid && std::find(
+                    clashes.begin(), clashes.end(), lid) != clashes.end()) {
+                // The room is attached to a lesson which already clashes
+                return clashes;
+            }
+        }
+        // Take the last room's lesson as the clash, just so that
+        // something gets listed (TODO: is there a better way?)
+        clashes.push_back(lid);
+    }
     return clashes;
-
-    //TODO: rooms
-
 }
