@@ -8,8 +8,9 @@ struct lesson_data{
     // for the corresponding items.
     std::vector<int> teachers;
     std::vector<int> groups;
-    std::vector<int> rooms;
-    std::vector<std::vector<int>> roomspec;
+    std::vector<int> rooms;     // used only for placed lessons
+    std::vector<int> rooms_needed;
+    std::vector<int> rooms_choice;
 };
 
 class BasicConstraints
@@ -18,6 +19,7 @@ public:
     BasicConstraints(DBData *dbdata);
 
     bool test_place_lesson(lesson_data *ldata, int day, int hour);
+    std::vector<int> find_clashes(lesson_data *ldata, int day, int hour);
 
     DBData * db_data;
     int ndays;

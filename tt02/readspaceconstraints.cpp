@@ -25,7 +25,7 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 // If this is a "virtual" room, it should be the only room
                 // in this list (to avoid overcomplexity ...)
                 auto node = fet_info.nodes.value(rr).DATA;
-                if (node.contains("SUBROOMS")
+                if (node.contains("ROOMS_NEEDED")
                         and (fet_room_list.length() != 1)) {
                     qFatal() << "Room constraint, virtual room is not"
                              << "alone on activity" << aid;

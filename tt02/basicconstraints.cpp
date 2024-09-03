@@ -57,7 +57,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
     // Make a weekly array for each real room
     for (int rid : dbdata->Tables.value("ROOMS")) {
         auto node = dbdata->Nodes.value(rid).DATA;
-        if (node.contains("SUBROOMS")) continue;
+        if (node.contains("ROOMS_NEEDED")) continue;
         // A real room
         r2i[rid] = i_r.length();
         i_r.append(rid);
@@ -102,7 +102,7 @@ void BasicConstraints::slot_blockers()
     // Block slots where rooms are "not available"
     for (int rid : db_data->Tables.value("ROOMS")) {
         auto node = db_data->Nodes.value(rid).DATA;
-        if (node.contains("SUBROOMS")) continue;
+        if (node.contains("ROOMS_NEEDED")) continue;
         auto blist = node.value("NOT_AVAILABLE").toArray();
         for (auto b : blist) {
             auto bpair = b.toArray();
@@ -131,31 +131,34 @@ void BasicConstraints::initial_place_lessons()
             ldc.teachers.push_back(t2i.value(t.toInt()));
         }
         // Get the possible-rooms list, which can contain a virtual room
-        // (as only member).
-        // The input is a simple list, the result will be a list of lists.
+        // (as only member – checked in "readspaceconstraints").
+        // The input is a simple list.
         auto rlist = node.value("ROOMSPEC").toArray();
         std::vector<int> rvec;
         for (auto rv : rlist) {
             int rid = rv.toInt();
             auto node = db_data->Nodes.value(rid).DATA;
-            if (node.contains("SUBROOMS")) {
+            if (node.contains("ROOMS_NEEDED")) {
                 // Virtual room
-                auto srll = node.value("SUBROOMS").toArray();
-                for (auto srl : srll) {
-                    if (!rvec.empty()) {
-                        ldc.roomspec.push_back(rvec);
-                        rvec.clear();
-                    }
-                    auto srla = srl.toArray();
-                    for (auto sr : srla) {
-                        rvec.push_back(r2i.value(sr.toInt()));
-                    }
+                auto srl = node.value("ROOMS_NEEDED").toArray();
+                for (auto sr : std::as_const(srl)) {
+                    ldc.rooms_needed.push_back(r2i.value(sr.toInt()));
                 }
-                break;
+                srl = node.value("ROOMS_CHOICE").toArray();
+                for (auto sr : std::as_const(srl)) {
+                    rvec.push_back(r2i.value(sr.toInt()));
+                }
+            } else {
+                // A real room
+                rvec.push_back(r2i.value(rid));
             }
-            rvec.push_back(r2i.value(rid));
         }
-        ldc.roomspec.push_back(rvec);
+        if (rvec.size() > 1) {
+            ldc.rooms_choice = rvec;
+        } else if (!rvec.empty()) {
+            // Add to compulsory room list
+            ldc.rooms_needed.push_back(rvec[0]);
+        }
 
         // The used rooms are associated with the individual lessons.
         // Note that they are only valid if there is a slot placement.
@@ -229,15 +232,42 @@ bool BasicConstraints::test_place_lesson(
         if (t_weeks[i][day][hour]) return false;
     }
     // ldata->rooms is not relevant here
-    for (const auto & ivec : ldata->roomspec) {
-        bool ok = false;
-        for (int i: ivec) {
-            if (!r_weeks[i][day][hour]) {
-                ok = true;
-                break;
-            }
-        }
-        if (!ok) return false;
+    for (int i : ldata->rooms_needed) {
+        if (r_weeks[i][day][hour]) return false;
     }
-    return true;
+    if (ldata->rooms_choice.empty()) return true;
+    for (int i : ldata->rooms_choice) {
+        if (!r_weeks[i][day][hour]) return true;
+    }
+    return false;
+}
+//TODO: Deal with length > 1
+//TODO: Add a test which returns details of the clashesm at least the
+// lessons/courses, maybe also the associated groups/teachers/rooms ...
+// That could be triggered by shift-click (which would place if ok?).
+
+// Return a list of clashing-lesson-ids.
+std::vector<int> BasicConstraints::find_clashes(
+    lesson_data *ldata, int day, int hour)
+{
+    std::vector<int> clashes;
+    for (int i : ldata->groups) {
+        int lid = sg_weeks[i][day][hour];
+        if (lid && std::find(
+                clashes.begin(), clashes.end(), lid) == clashes.end()) {
+            clashes.push_back(lid);
+        }
+    }
+    for (int i : ldata->teachers) {
+        int lid = t_weeks[i][day][hour];
+        if (lid && std::find(
+                clashes.begin(), clashes.end(), lid) == clashes.end()) {
+            clashes.push_back(lid);
+        }
+    }
+
+    return clashes;
+
+    //TODO: rooms
+
 }

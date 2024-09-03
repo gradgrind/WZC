@@ -154,17 +154,24 @@ void readRooms(FetInfo &fet_info, QList<QVariant> item_list)
             auto name = m.value("Name");
             int id = fet_info.nodes.length();
             QJsonObject data{
-                        {"ID", name},
-                        {"NAME",  m.value("Long_Name")},
-                        {"X", i}
+                {"ID", name},
+                {"NAME",  m.value("Long_Name")},
+                {"X", i}
             };
             fet_info.rooms[name] = id;
+            QJsonArray compulsory;
             if (m.value("Virtual") == "true") {
-                QJsonArray vra;
+                // I make a compromise with the rooms, allowing a little
+                // flexibility, but not so much that the implementation
+                // becomes unmanageable. Thus there are two entries for
+                // room requirements (as distinct from room allocation
+                // when a lesson has been placed): "ROOMS_NEEDED" is a list
+                // of necessary rooms, "ROOM_CHOICE" is a list from which
+                // one room must be taken.
                 for (const auto &vc : n.children) {
                     auto nc = vc.value<XMLNode>();
                     if (nc.name == "Set_of_Real_Rooms") {
-                        QJsonArray rra;
+                        QJsonArray choices;
                         for (const auto &vr : nc.children) {
                             auto nr = vr.value<XMLNode>();
                             if (nr.name == "Real_Room") {
@@ -174,13 +181,23 @@ void readRooms(FetInfo &fet_info, QList<QVariant> item_list)
                                     qFatal() << "Virtual Room contains room"
                                              << r << "(not yet defined)";
                                 }
-                                rra.append(fet_info.rooms[r]);
+                                choices.append(fet_info.rooms[r]);
                             }
                         }
-                        vra.append(rra);
+                        if (choices.size() > 1) {
+                            if (data.contains("ROOM_CHOICE")) {
+                                qFatal() << "Virtual room" << name
+                                         << "has more than one choice list"
+                                         << "(currently not supported)";
+                            } else {
+                                data["ROOM_CHOICE"] = choices;
+                            }
+                        } else {
+                            compulsory.append(choices[0]);
+                        }
                     }
                 }
-                data["SUBROOMS"] = vra;
+                data["ROOMS_NEEDED"] = compulsory;
             }
             //TODO: There is probably a better way of handling this:
             auto c = m.value("Comments");

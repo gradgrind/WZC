@@ -230,7 +230,7 @@ void ViewHandler::handle_rb_room()
     for (int c : dbdata->Tables.value("ROOMS")) {
         auto node = dbdata->Nodes.value(c).DATA;
         // Don't show room groups
-        if (!node.value("SUBROOMS").toArray().isEmpty()) continue;
+        if (node.contains("ROOMS_NEEDED")) continue;
         choice->addItem(QString("%2: %1")
                             .arg(node.value("NAME").toString(),
                                  node.value("ID").toString()));

@@ -82,11 +82,13 @@ void TT_Grid::handle_context_menu(QList<QGraphicsItem *> items)
 
 void TT_Grid::handle_hover(HoverRectItem* gitem, bool enter){
     Tile *tile = qgraphicsitem_cast<Tile *>(gitem);
+    /*
     if (enter) {
         qDebug() << "ENTER" << tile->lid;
     } else {
         qDebug() << "EXIT" << tile->lid;
     }
+    */
 }
 
 void TT_Grid::setup_grid()
