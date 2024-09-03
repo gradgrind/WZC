@@ -5,8 +5,6 @@
 //#include <QStyleFactory>
 #include <QHBoxLayout>
 
-#include "with_roaring/use_roaring.h"
-
 int main(int argc, char *argv[])
 {
     //qDebug() << QStyleFactory::keys();
@@ -63,8 +61,6 @@ int main(int argc, char *argv[])
     //readxml_test();
 
     mainwindow.show();
-
-    roar();
 
     return a.exec();
 }

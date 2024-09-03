@@ -34,9 +34,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(tt02
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        with_roaring/roaring.c with_roaring/roaring.h
-        with_roaring/roaring.hh
-        with_roaring/use_roaring.cpp with_roaring/use_roaring.h
+
+
+
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET tt02 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

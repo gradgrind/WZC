@@ -2,7 +2,6 @@
 #define BASICCONSTRAINTS_H
 
 #include "database.h"
-#include "with_roaring/roaring.hh"
 
 struct lesson_data{
     // The contained values (int) are the indexes into the week-blocks

@@ -148,7 +148,7 @@ void BasicConstraints::initial_place_lessons()
                     }
                     auto srla = srl.toArray();
                     for (auto sr : srla) {
-                        rvec.push_back(sr.toInt());
+                        rvec.push_back(r2i.value(sr.toInt()));
                     }
                 }
                 break;

@@ -180,15 +180,15 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         // Select tile
         grid->select_tile(tile);
         // Seek possible placements
+        //grid->clearCellOK();
         for (int d = 0; d < basic_constraints->ndays; d++) {
             for (int h = 0; h < basic_constraints->nhours; h++) {
                 if (basic_constraints->test_place_lesson(ldata, d, h)) {
-                    qDebug() << "OK:" << d << h;
+                    //qDebug() << "OK:" << d << h;
                     grid->setCellOK(d, h);
                 }
             }
         }
-
     } else {
         qDebug() << "CELL CLICKED:" << day << hour;
         // Unselect tile
