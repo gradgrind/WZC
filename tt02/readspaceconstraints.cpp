@@ -6,13 +6,17 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
     for (const auto &v : item_list) {
         auto n = v.value<XMLNode>();
         // I don't completely understand the use of the Weight_Percentage
-        // value ... I will assume always 100%.
+        // value here ... I will assume always 100%.
         if (n.name == "ConstraintActivityPreferredRooms") {
             auto m = readSimpleItems(n);
             auto aid = m.value("Activity_Id");
             // Actually, roomspecs should surely be on courses, not lessons.
-            // So some entries will be redundant. Don't overwrite an
-            // existing roomspec value.
+            // So some entries will be redundant. I'm not sure whether fet
+            // can write different roomspecs for the various lessons of a
+            // course, but they are written to the individual activities.
+            // Assume all roomspecs of a course are identical and don't
+            // overwrite an existing roomspec value for a course with
+            // multiple lessons.
             int aix = fet_info.activity_lesson.value(aid);
             int cid = fet_info.nodes[aix].DATA.value("COURSE").toInt();
             auto cnode = &fet_info.nodes[cid];
@@ -62,4 +66,3 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
 
 // <Space_Constraints_List>
 // <ConstraintBasicCompulsorySpace>
-// <ConstraintActivityPreferredRooms>

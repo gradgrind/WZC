@@ -65,10 +65,26 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             anode->DATA["DAY"] = fet_info.days.value(day);
             anode->DATA["HOUR"] = fet_info.hours.value(hour);
             anode->DATA["FIXED"] = fixed;
+        } else if (n.name == "ConstraintMinDaysBetweenActivities") {
+            auto m = readSimpleItems(n);
+            if (m.value("Weight_Percentage") == "100"
+                    && m.value("MinDays") == "1") {
+                QJsonArray lids;
+                for (const auto &aid : m.values("Activity_Id")) {
+                    lids.append(fet_info.activity_lesson.value(aid));
+                }
+                // Add to HARD_CONSTRAINTS table.
+                int hcid = fet_info.nodes.length();
+                fet_info.nodes.append({
+                    .Id = hcid,
+                    .DB_TABLE = "HARD_CONSTRAINTS",
+                    .DATA = {
+                        {"TYPE", "ONE_DAY_BETWEEN"},
+                        {"LESSONS", lids},
+                    },
+                });
+            }
         }
-
-// ConstraintMinDaysBetweenActivities
-// ConstraintMinDaysBetweenActivities
 // ConstraintStudentsSetMaxGapsPerWeek
 // ConstraintStudentsSetMinHoursDaily
 // ConstraintStudentsSetMaxHoursDailyInInterval

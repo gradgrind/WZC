@@ -114,9 +114,10 @@ void BasicConstraints::slot_blockers()
     }
 }
 
-// Initial placement of the lessons.
+// Initial placement of the lessons. Call this only once!
 void BasicConstraints::initial_place_lessons()
 {
+    lessons.push_back({});  // dummy lesson at index 0
     for (int cid : db_data->Tables.value("COURSES")) {
         lesson_data ldc;
         auto node = db_data->Nodes.value(cid).DATA;
@@ -169,13 +170,20 @@ void BasicConstraints::initial_place_lessons()
             for (auto r : rlist) {
                 ld.rooms.push_back(r2i.value(r.toInt()));
             }
-            lesson_resources[lid] = ld;
+            ld.lesson_id = lid;
+            int l = lnode.value("LENGTH").toInt();
+            ld.length = l;
+            ld.fixed = lnode.value("FIXED").toBool();
+            int lix = lessons.size();
+            lid2lix[lid] = lix;
+            lessons.push_back(ld);
             int d0 = lnode.value("DAY").toInt();
-            if (d0 == 0) continue; // no placement
+            if (d0 == 0) { // no placement
+                lessons[lix].day = -1;
+                continue;
+            }
             int d = db_data->days.value(d0);
             int h = db_data->hours.value(lnode.value("HOUR").toInt());
-            int l = lnode.value("LENGTH").toInt();
-            //TODO: What to do with "FIXED"?
             // Test placement before actually doing it
             for (int i = 0; i < l; i++) {
                 int hh = h + i;
@@ -202,17 +210,19 @@ void BasicConstraints::initial_place_lessons()
                     }
                 }
             }
+            lessons[lix].day = d;
+            lessons[lix].hour = h;
             // Now do the placement
             for (int i = 0; i < l; i++) {
                 int hh = h + i;
                 for (int t : ld.teachers) {
-                    t_weeks.at(t).at(d).at(hh) = lid;
+                    t_weeks.at(t).at(d).at(hh) = lix;
                 }
                 for (int sg : ld.groups) {
-                    sg_weeks.at(sg).at(d).at(hh) = lid;
+                    sg_weeks.at(sg).at(d).at(hh) = lix;
                 }
                 for (int r : ld.rooms) {
-                    r_weeks.at(r).at(d).at(hh) = lid;
+                    r_weeks.at(r).at(d).at(hh) = lix;
                 }
             }
         }
@@ -241,8 +251,8 @@ bool BasicConstraints::test_place_lesson(
     }
     return false;
 }
-//TODO: Deal with length > 1
-//TODO: Add a test which returns details of the clashesm at least the
+//TODO: Deal with length > 1, maybe parallel lessons?
+//TODO: Add a test which returns details of the clashes, at least the
 // lessons/courses, maybe also the associated groups/teachers/rooms ...
 // That could be triggered by shift-click (which would place if ok?).
 
@@ -254,39 +264,39 @@ std::vector<int> BasicConstraints::find_clashes(
 {
     std::vector<int> clashes;
     for (int i : ldata->groups) {
-        int lid = sg_weeks[i][day][hour];
-        if (lid && std::find(
-                clashes.begin(), clashes.end(), lid) == clashes.end()) {
-            clashes.push_back(lid);
+        int lix = sg_weeks[i][day][hour];
+        if (lix && std::find(
+                clashes.begin(), clashes.end(), lix) == clashes.end()) {
+            clashes.push_back(lix);
         }
     }
     for (int i : ldata->teachers) {
-        int lid = t_weeks[i][day][hour];
-        if (lid && std::find(
-                clashes.begin(), clashes.end(), lid) == clashes.end()) {
-            clashes.push_back(lid);
+        int lix = t_weeks[i][day][hour];
+        if (lix && std::find(
+                clashes.begin(), clashes.end(), lix) == clashes.end()) {
+            clashes.push_back(lix);
         }
     }
     for (int i : ldata->rooms_needed) {
-        int lid = r_weeks[i][day][hour];
-        if (lid && std::find(
-                clashes.begin(), clashes.end(), lid) == clashes.end()) {
-            clashes.push_back(lid);
+        int lix = r_weeks[i][day][hour];
+        if (lix && std::find(
+                clashes.begin(), clashes.end(), lix) == clashes.end()) {
+            clashes.push_back(lix);
         }
     }
     if (!ldata->rooms_choice.empty()) {
-        int lid;
+        int lix;
         for (int i : ldata->rooms_choice) {
-            lid = r_weeks[i][day][hour];
-            if (lid && std::find(
-                    clashes.begin(), clashes.end(), lid) != clashes.end()) {
+            lix = r_weeks[i][day][hour];
+            if (lix && std::find(
+                    clashes.begin(), clashes.end(), lix) != clashes.end()) {
                 // The room is attached to a lesson which already clashes
                 return clashes;
             }
         }
         // Take the last room's lesson as the clash, just so that
         // something gets listed (TODO: is there a better way?)
-        clashes.push_back(lid);
+        clashes.push_back(lix);
     }
     return clashes;
 }
