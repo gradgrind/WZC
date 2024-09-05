@@ -18,9 +18,9 @@ struct lesson_data{
     std::vector<int> rooms_needed;
     std::vector<int> rooms_choice;
 
-//?
     int length;
-    bool fixed;
+    bool fixed = false;
+    std::vector<std::vector<int>> start_cells; // set only when fixed == false
     // used only for placed lessons:
     int day;
     int hour;
@@ -41,6 +41,7 @@ public:
 
     bool test_place_lesson(lesson_data *ldata, int day, int hour);
     std::vector<int> find_clashes(lesson_data *ldata, int day, int hour);
+    std::vector<std::vector<int>> find_places(int lix);
 
     DBData * db_data;
     int ndays;

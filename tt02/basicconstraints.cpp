@@ -68,6 +68,8 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
 
     slot_blockers();
     initial_place_lessons();
+//TODO: I should perhaps handle the hard local constraints here too
+// (before placing any lessons, to capture errors).
 }
 
 void BasicConstraints::slot_blockers()
@@ -118,6 +120,7 @@ void BasicConstraints::slot_blockers()
 void BasicConstraints::initial_place_lessons()
 {
     lessons.push_back({});  // dummy lesson at index 0
+    std::vector<int> to_place;
     for (int cid : db_data->Tables.value("COURSES")) {
         lesson_data ldc;
         auto node = db_data->Nodes.value(cid).DATA;
@@ -173,17 +176,28 @@ void BasicConstraints::initial_place_lessons()
             ld.lesson_id = lid;
             int l = lnode.value("LENGTH").toInt();
             ld.length = l;
-            ld.fixed = lnode.value("FIXED").toBool();
             int lix = lessons.size();
             lid2lix[lid] = lix;
             lessons.push_back(ld);
             int d0 = lnode.value("DAY").toInt();
             if (d0 == 0) { // no placement
                 lessons[lix].day = -1;
+                to_place.push_back(lix);
                 continue;
             }
+            // Deal with lessons with a placement time
             int d = db_data->days.value(d0);
+            lessons[lix].day = d;
             int h = db_data->hours.value(lnode.value("HOUR").toInt());
+            lessons[lix].hour = h;
+            bool fixed = lnode.value("FIXED").toBool();
+            // I need to place the fixed lessons first, in order to build
+            // available-slot lists for each (non-fixed) lesson.
+            if (!fixed) {
+                to_place.push_back(lix);
+                continue;
+            }
+            lessons[lix].fixed = true;
             // Test placement before actually doing it
             for (int i = 0; i < l; i++) {
                 int hh = h + i;
@@ -210,8 +224,6 @@ void BasicConstraints::initial_place_lessons()
                     }
                 }
             }
-            lessons[lix].day = d;
-            lessons[lix].hour = h;
             // Now do the placement
             for (int i = 0; i < l; i++) {
                 int hh = h + i;
@@ -227,7 +239,72 @@ void BasicConstraints::initial_place_lessons()
             }
         }
     }
+    // Now deal with the unfixed lessons. These need available-slot lists
+    // and those with a placement time need to be placed.
+    for (int lix : to_place) {
+        auto free = find_places(lix);
+        auto ldata = &lessons.at(lix);
+        ldata->start_cells = free;
+        // Check placement (if any) and place it
+        int d = ldata->day;
+        if (d < 0) continue;
+        int h0 = ldata->hour;
+        for (int h : free[d]) {
+            if (h == h0) {
+                // Placement ok
+                for (int i = 0; i < ldata->length; i++) {
+                    int hh = h + i;
+                    for (int t : ldata->teachers) {
+                        t_weeks.at(t).at(d).at(hh) = lix;
+                    }
+                    for (int sg : ldata->groups) {
+                        sg_weeks.at(sg).at(d).at(hh) = lix;
+                    }
+                    for (int r : ldata->rooms) {
+                        r_weeks.at(r).at(d).at(hh) = lix;
+                    }
+                }
+                goto done;
+            }
+        }
+        qFatal() << "Couldn't place lesson" << ldata->lesson_id;
+    done:;
+    }
 }
+
+std::vector<std::vector<int>> BasicConstraints::find_places(int lix)
+{
+    std::vector<std::vector<int>> free(ndays);
+    auto ldata = &lessons.at(lix);
+    if (ldata->length == 1) {
+        for (int d = 0; d < ndays; ++d) {
+            for (int h = 0; h < nhours; ++h) {
+                if (test_place_lesson(ldata, d, h)) {
+                    //qDebug() << "OK:" << d << h;
+                    free[d].push_back(h);
+                }
+            }
+        }
+    } else {
+        int l = ldata->length;
+        for (int d = 0; d < ndays; ++d) {
+            int count = 0;
+            int h = 0;
+            while (h < nhours) {
+                if (test_place_lesson(ldata, d, h++)) {
+                    if (++count == l) {
+                        free[d].push_back(h - l);
+                        --count;
+                    }
+                } else {
+                    count = 0;
+                }
+            }
+        }
+    }
+    return free;
+}
+
 
 // This is a primitive test for a placement. It returns only true or false,
 // according to whether the placement is possible. It doesn't change

@@ -31,12 +31,13 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
 {
     for (const auto &v : item_list) {
         auto n = v.value<XMLNode>();
+        //
         if (n.name == "ConstraintStudentsSetNotAvailableTimes") {
             auto m = readSimpleItems(n);
             auto gid = m.value("Students");
             //TODO: In fet this can be any group, not just a class.
-            // Should I limit it to classes here, or add the info to the groups?
-            // Currently I am adding it to the groups.
+            // Should I limit it to classes here, or add the info to the
+            // groups? Currently I am adding it to the groups.
             QJsonArray daylist;
             for (const auto &vt : n.children) {
                 auto nt = vt.value<XMLNode>();
@@ -56,6 +57,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             int gix = fet_info.groups.value(gid);
             auto gnode = &fet_info.nodes[gix];
             gnode->DATA["NOT_AVAILABLE"] = daylist;
+        //
         } else if (n.name == "ConstraintTeacherNotAvailableTimes") {
             auto m = readSimpleItems(n);
             auto tid = m.value("Teacher");
@@ -78,6 +80,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             int tix = fet_info.teachers.value(tid);
             auto tnode = &fet_info.nodes[tix];
             tnode->DATA["NOT_AVAILABLE"] = daylist;
+        //
         } else if (n.name == "ConstraintActivityPreferredStartingTime") {
             auto m = readSimpleItems(n);
             auto aid = m.value("Activity_Id");
@@ -89,6 +92,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             anode->DATA["DAY"] = fet_info.days.value(day);
             anode->DATA["HOUR"] = fet_info.hours.value(hour);
             anode->DATA["FIXED"] = fixed;
+        //
         } else if (n.name == "ConstraintMinDaysBetweenActivities") {
             auto m = readSimpleItems(n);
             QString w = convert_weight(m.value("Weight_Percentage"));
@@ -121,6 +125,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                     },
                 });
             }
+        //
         } else if (n.name == "ConstraintActivityPreferredStartingTimes") {
             auto m = readSimpleItems(n);
             QString w = convert_weight(m.value("Weight_Percentage"));
@@ -150,6 +155,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                     {"WEIGHT", w},
                 },
             });
+        //
         } else if (n.name == "ConstraintActivitiesPreferredStartingTimes") {
             auto m = readSimpleItems(n);
             QString w = convert_weight(m.value("Weight_Percentage"));
@@ -186,35 +192,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                     {"WEIGHT", w},
                 },
             });
-        } else if (n.name == "ConstraintActivityPreferredStartingTimes") {
-            auto m = readSimpleItems(n);
-            QString w = convert_weight(m.value("Weight_Percentage"));
-            int lid = fet_info.activity_lesson.value(
-                m.value("Activity_Id"));
-            QJsonArray times;
-            for (const auto &vt : n.children) {
-                auto nt = vt.value<XMLNode>();
-                if (nt.name == "Preferred_Starting_Time") {
-                    auto ntdata = readSimpleItems(nt);
-                    int d = fet_info.days.value(
-                        ntdata.value("Preferred_Starting_Day"));
-                    int h = fet_info.hours.value(
-                        ntdata.value("Preferred_Starting_Hour"));
-                    times.append(QJsonArray{d, h});
-                }
-            }
-            // Add to LOCAL_CONSTRAINTS table.
-            int hcid = fet_info.nodes.length();
-            fet_info.nodes.append({
-                                   .Id = hcid,
-                                   .DB_TABLE = "LOCAL_CONSTRAINTS",
-                                   .DATA = {
-                                       {"TYPE", "PREFERRED_STARTING_TIMES"},
-                                       {"LESSON", lid},
-                                       {"SLOTS", times},
-                                       {"WEIGHT", w},
-                                       },
-                                   });
+        //
         } else if (n.name == "ConstraintActivitiesPreferredTimeSlots") {
             auto m = readSimpleItems(n);
             QString w = convert_weight(m.value("Weight_Percentage"));
@@ -251,6 +229,25 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                     {"WEIGHT", w},
                 },
             });
+        //
+        } else if (n.name == "ConstraintActivitiesSameStartingTime") {
+            auto m = readSimpleItems(n);
+            QString w = convert_weight(m.value("Weight_Percentage"));
+            QJsonArray lids;
+            for (const auto &aid : m.values("Activity_Id")) {
+                lids.append(fet_info.activity_lesson.value(aid));
+            }
+            // Add to LOCAL_CONSTRAINTS table.
+            int hcid = fet_info.nodes.length();
+            fet_info.nodes.append({
+                .Id = hcid,
+                .DB_TABLE = "LOCAL_CONSTRAINTS",
+                .DATA = {
+                    {"TYPE", "SAME_STARTING_TIME"},
+                    {"LESSONS", lids},
+                    {"WEIGHT", w},
+                },
+            });
         }
 
 // ConstraintStudentsSetMaxGapsPerWeek
@@ -261,8 +258,6 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
 // ConstraintTeacherMaxDaysPerWeek
 // ConstraintTeacherIntervalMaxDaysPerWeek
 // ConstraintTeacherMaxGapsPerWeek
-// ConstraintActivitiesSameStartingTime
-
 
     }
 
