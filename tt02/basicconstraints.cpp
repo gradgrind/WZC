@@ -67,9 +67,9 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
             ndays , std::vector<int> (nhours)));
 
     slot_blockers();
-    initial_place_lessons();
 //TODO: I should perhaps handle the hard local constraints here too
 // (before placing any lessons, to capture errors).
+    initial_place_lessons();
 }
 
 void BasicConstraints::slot_blockers()
@@ -116,9 +116,28 @@ void BasicConstraints::slot_blockers()
     }
 }
 
+//TODO: Collect Activity slot constraints
+void BasicConstraints::activity_slot_constraints()
+{
+    for (int xid : db_data->Tables.value("LOCAL_CONSTRAINTS")) {
+        auto node = db_data->Nodes.value(xid).DATA;
+        if (node.value("WEIGHT") != "+") continue; // only hard constraints
+
+// "SAME_STARTING_TIME"
+// "ONE_DAY_BETWEEN"
+// "DAYS_BETWEEN"
+// "PREFERRED_STARTING_TIMES"
+// "ACTIVITIES_PREFERRED_STARTING_TIMES"
+// "ACTIVITIES_PREFERRED_TIME_SLOTS"
+    }
+}
+
 // Initial placement of the lessons. Call this only once!
 void BasicConstraints::initial_place_lessons()
 {
+    if (!lessons.empty()) {
+        qFatal() << "BasicConstraints::initial_place_lessons() called twice";
+    }
     lessons.push_back({});  // dummy lesson at index 0
     std::vector<int> to_place;
     for (int cid : db_data->Tables.value("COURSES")) {

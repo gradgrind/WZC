@@ -75,6 +75,7 @@ public:
 
 private:
     void slot_blockers();
+    void activity_slot_constraints();
     void initial_place_lessons();
 };
 

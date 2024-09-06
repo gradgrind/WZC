@@ -189,7 +189,7 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
 
 //TODO: I should now have the BasicConstraints::start_cells to limit tests.
 // The preferred_slots should be removed, having been dealt with earlier
-// (TODO) by integrating it into the start_cells..
+// (TODO) by integrating it into the start_cells.
 
         if (ldata->preferred_slots.empty()) {
             if (ldata->length == 1) {
