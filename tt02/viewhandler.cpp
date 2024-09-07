@@ -182,8 +182,7 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         // Select tile
         grid->select_tile(tile);
         // Seek possible placements
-        //TODO: handle length > 1 and parallel lessons
-        QList<TTSlot> free;
+        //TODO: parallel lessons
         //grid->clearCellOK();
 
         if (ldata->start_cells.empty()) {
@@ -201,36 +200,11 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         qDebug() << "START-CELLS:" << ldata->start_cells;
 //TODO: The start-cells seem too restrictive. Are the wrong cells getting
 // added somehow?
-
-
-        if (ldata->length == 1) {
-            for (int d = 0; d < basic_constraints->ndays; ++d) {
-                const auto & dvec = ldata->start_cells[d];
-                for (int h : dvec) {
-                    if (basic_constraints->test_place_lesson(ldata, d, h)) {
-                        //qDebug() << "OK:" << d << h;
-                        free.append({d, h});
-                    }
-                }
-            }
-        } else {
-            int l = ldata->length;
-            for (int d = 0; d < basic_constraints->ndays; ++d) {
-                const auto & dvec = ldata->start_cells[d];
-                for (int h : dvec) {
-                    for (int count = 0; count < l; ++count) {
-                        if (!basic_constraints->test_place_lesson(
-                                ldata, d, h+count)) {
-                            goto nofit;
-                        }
-                    }
-                    free.append({d, h});
-                nofit:;
-                }
-            }
-        }
-        for (auto p : free) {
-            grid->setCellOK(p.day, p.hour);
+        auto free = basic_constraints->find_possible_places(ldata);
+        for (int d = 0; d < basic_constraints->ndays; ++d) {
+            const auto &dvec = free[d];
+            for (int h : dvec)
+                grid->setCellOK(d, h);
         }
     } else {
         qDebug() << "CELL CLICKED:" << day << hour;

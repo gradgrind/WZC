@@ -66,10 +66,15 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
         i_r.length(), std::vector<std::vector<int>> (
             ndays , std::vector<int> (nhours)));
 
+    // First enter the NOT_AVAILABLE constraints into the week-vectors
+    // for teachers, student groups and rooms.
     slot_blockers();
-//TODO: I should perhaps handle the hard local constraints here too
-// (before placing any lessons, to capture errors).
+    // Now collect the hard local constraints which specify possible
+    // starting times for individual lessons or lessons fulfilling
+    // certain conditions. Also the lesson lengths are taken into account.
     time_constraints tconstraints = activity_slot_constraints();
+    // Place the lessons which have their starting times specified.
+    // Also set up the start_cells field for non-fixed lessons.
     initial_place_lessons(tconstraints);
 }
 
@@ -167,19 +172,18 @@ time_constraints BasicConstraints::activity_slot_constraints()
 }
 
 
-void BasicConstraints::with_slots(
-    std::vector<ActivitySelectionSlots> &alist,
-    lesson_data &ld,
-    bool starting_time)
+void BasicConstraints::with_slots(std::vector<ActivitySelectionSlots> &alist,
+                                  lesson_data *ld,
+                                  bool starting_time)
 {
     for (auto &a : alist) {
-        if ((a.tag.isEmpty() || ld.tags.contains(a.tag))
-            && (!a.tid || (std::find(ld.teachers.begin(),
-                ld.teachers.end(), a.tid) != ld.teachers.end()))
-            && (!a.gid || (std::find(ld.groups.begin(),
-                ld.groups.end(), a.gid) != ld.groups.end()))
-            && (!a.sid || a.sid == ld.subject)
-            && (!a.l || a.l == ld.length)) {
+        if ((a.tag.isEmpty() || ld->tags.contains(a.tag))
+            && (!a.tid || (std::find(ld->teachers.begin(),
+                ld->teachers.end(), a.tid) != ld->teachers.end()))
+            && (!a.gid || (std::find(ld->groups.begin(),
+                ld->groups.end(), a.gid) != ld->groups.end()))
+            && (!a.sid || a.sid == ld->subject)
+            && (!a.l || a.l == ld->length)) {
 
             // If they are starting times, simply take them on, unless
             // there are already starting times for this lesson, then
@@ -188,7 +192,7 @@ void BasicConstraints::with_slots(
             // need to be built, based on the lesson length.
             // So start with that ...
 
-            if (!starting_time && ld.length > 1) {
+            if (!starting_time && ld->length > 1) {
                 std::vector<std::vector<int>> ttslots(ndays);
                 int d = 0;
                 for (int d = 0; d < ndays; ++d) {
@@ -201,7 +205,7 @@ void BasicConstraints::with_slots(
                             l = 1;
                         } else if (start + l == h) {
                             // contiguous
-                            if (++l == ld.length) {
+                            if (++l == ld->length) {
                                 ttslots[d].push_back(start);
                                 ++start;
                                 --l;
@@ -215,15 +219,15 @@ void BasicConstraints::with_slots(
                 }
                 a.ttslots = ttslots;
             }
-            if (ld.start_cells.empty()) {
-                ld.start_cells = a.ttslots;
+            if (ld->start_cells.empty()) {
+                ld->start_cells = a.ttslots;
             } else {
                 for (int d = 0; d < ndays; ++d) {
                     const auto hvec = a.ttslots[d];
                     int hvecl = hvec.size();
                     int i = 0;
                     std::vector<int> hlist;
-                    for (int h : ld.start_cells[d]) {
+                    for (int h : ld->start_cells[d]) {
                         while (i < hvecl) {
                             int hh = hvec[i];
                             if (hh == h) {
@@ -235,22 +239,38 @@ void BasicConstraints::with_slots(
                             ++i;
                         }
                     }
-                    ld.start_cells[d] = hlist;
+                    ld->start_cells[d] = hlist;
                 }
             }
         }
     }
 }
 
-// Find slots lists for a given lesson
+// Build basic starting-slots lists for a given lesson based on lesson
+// length and hard local starting time / slot constraints.
+// Finally take existing placed lessons into account, so this method
+// should be called before non-fixed lessons are placed.
 void BasicConstraints::find_slots(
-    time_constraints &constraints, lesson_data &ld)
+    time_constraints &constraints, lesson_data *ld)
 {
-    if (constraints.lesson_starting_times.contains(ld.lesson_id)) {
-        ld.start_cells = constraints.lesson_starting_times[ld.lesson_id];
+    if (!ld->start_cells.empty()) {
+        qFatal() << "BasicConstraints::find_slots called with"
+            << "non-empty start_cells";
+    }
+    if (constraints.lesson_starting_times.contains(ld->lesson_id)) {
+        ld->start_cells = constraints.lesson_starting_times[ld->lesson_id];
+    } else {
+        ld->start_cells.resize(ndays);
+        for (auto &dvec : ld->start_cells) {
+            dvec.resize(nhours);
+            for (int h = 0; h < nhours; ++h) dvec[h] = h;
+        }
     }
     with_slots(constraints.activities_starting_times, ld, true);
     with_slots(constraints.activities_slots, ld, false);
+    // Find possible placements taking blocked cells and already placed
+    // lessons into account
+    ld->start_cells = find_possible_places(ld);
 }
 
 // Initial placement of the lessons. Call this only once!
@@ -260,9 +280,10 @@ void BasicConstraints::initial_place_lessons(time_constraints &tconstraints)
         qFatal() << "BasicConstraints::initial_place_lessons() called twice";
     }
     lessons.push_back({});  // dummy lesson at index 0
-    std::vector<int> to_place;
+    std::vector<int> to_place; // collect non-fixed lessons for later placement
+    // Place fixed lessons first.
     for (int cid : db_data->Tables.value("COURSES")) {
-        lesson_data ldc;
+        lesson_data ldc; // lesson data for the course
         auto node = db_data->Nodes.value(cid).DATA;
         ldc.subject = node.value("SUBJECT").toInt();
         auto glist = node.value("STUDENTS").toArray();
@@ -276,7 +297,7 @@ void BasicConstraints::initial_place_lessons(time_constraints &tconstraints)
             ldc.teachers.push_back(t2i.value(t.toInt()));
         }
         // Get the possible-rooms list, which can contain a virtual room
-        // (as only member – checked in "readspaceconstraints").
+        // (as the only member, which is checked in "readspaceconstraints").
         // The input is a simple list.
         auto rlist = node.value("ROOMSPEC").toArray();
         std::vector<int> rvec;
@@ -305,7 +326,7 @@ void BasicConstraints::initial_place_lessons(time_constraints &tconstraints)
             ldc.rooms_needed.push_back(rvec[0]);
         }
 
-        // The used rooms are associated with the individual lessons.
+        // The occupied rooms are associated with the individual lessons.
         // Note that they are only valid if there is a slot placement.
         for (int lid : db_data->course_lessons.value(cid)) {
             lesson_data ld(ldc);
@@ -323,53 +344,32 @@ void BasicConstraints::initial_place_lessons(time_constraints &tconstraints)
             }
             int lix = lessons.size();
             lid2lix[lid] = lix;
-            lessons.push_back(ld);
             int d0 = lnode.value("DAY").toInt();
             if (d0 == 0) { // no placement
-                lessons[lix].day = -1;
+                ld.day = -1;
                 to_place.push_back(lix);
-                find_slots(tconstraints, ld);
+                lessons.push_back(ld);
                 continue;
             }
             // Deal with lessons with a placement time
             int d = db_data->days.value(d0);
-            lessons[lix].day = d;
+            ld.day = d;
             int h = db_data->hours.value(lnode.value("HOUR").toInt());
-            lessons[lix].hour = h;
+            ld.hour = h;
             bool fixed = lnode.value("FIXED").toBool();
             // I need to place the fixed lessons first, in order to build
             // available-slot lists for each (non-fixed) lesson.
             if (!fixed) {
                 to_place.push_back(lix);
-                find_slots(tconstraints, ld);
+                lessons.push_back(ld);
                 continue;
             }
-            lessons[lix].fixed = true;
+            ld.fixed = true;
+            lessons.push_back(ld);
             // Test placement before actually doing it
-            for (int i = 0; i < l; i++) {
-                int hh = h + i;
-                for (int t : ld.teachers) {
-                    if (t_weeks.at(t).at(d).at(hh) != 0) {
-                        qFatal() << "Couldn't place lesson" << lid
-                                 << "// teacher" << i_t.at(t) << "in"
-                                 << t_weeks.at(t).at(d).at(hh)
-                                 << "@ Slot" << d << h;
-                    }
-                }
-                for (int sg : ld.groups) {
-                    if (sg_weeks.at(sg).at(d).at(hh) != 0) {
-                        qFatal() << "Couldn't place lesson" << lid
-                                 << "// group in"
-                                 << sg_weeks.at(sg).at(d).at(hh);
-                    }
-                }
-                for (int r : ld.rooms) {
-                    if (r_weeks.at(r).at(d).at(hh) != 0) {
-                        qFatal() << "Couldn't place lesson" << lid
-                                 << "// room in"
-                                 << r_weeks.at(r).at(d).at(hh);
-                    }
-                }
+            if (!test_possible_place(&ld, d, h)) {
+                qFatal() << "Couldn't place lesson" << lid
+                         << "@ Slot" << d << h;
             }
             // Now do the placement
             for (int i = 0; i < l; i++) {
@@ -388,46 +388,87 @@ void BasicConstraints::initial_place_lessons(time_constraints &tconstraints)
     }
     // Now deal with the unfixed lessons. These need available-slot lists
     // and those with a placement time need to be placed.
+    // First collect the (currently) available slots – before actually
+    // placing any of the non-fixed lessons.
     for (int lix : to_place) {
-        auto free = find_places(lix);
+        find_slots(tconstraints, &lessons[lix]);
+    }
+    // Check placements (if any) and place the lessons
+    for (int lix : to_place) {
         auto ldata = &lessons.at(lix);
-        ldata->start_cells = free;
-        // Check placement (if any) and place it
         int d = ldata->day;
         if (d < 0) continue;
-        int h0 = ldata->hour;
-        for (int h : free[d]) {
-            if (h == h0) {
-                // Placement ok
-                for (int i = 0; i < ldata->length; i++) {
-                    int hh = h + i;
-                    for (int t : ldata->teachers) {
-                        t_weeks.at(t).at(d).at(hh) = lix;
-                    }
-                    for (int sg : ldata->groups) {
-                        sg_weeks.at(sg).at(d).at(hh) = lix;
-                    }
-                    for (int r : ldata->rooms) {
-                        r_weeks.at(r).at(d).at(hh) = lix;
-                    }
-                }
-                goto done;
+        int h = ldata->hour;
+        // Test placement before actually doing it
+        if (!test_place(ldata, d, h)) {
+            qDebug() << "§1" << ldata->start_cells;
+
+            qFatal() << "Couldn't place lesson" << ldata->lesson_id
+                     << "@ Slot" << d << h;
+        }
+        // Now do the placement
+        for (int i = 0; i < ldata->length; i++) {
+            int hh = h + i;
+            for (int t : ldata->teachers) {
+                t_weeks.at(t).at(d).at(hh) = lix;
+            }
+            for (int sg : ldata->groups) {
+                sg_weeks.at(sg).at(d).at(hh) = lix;
+            }
+            for (int r : ldata->rooms) {
+                r_weeks.at(r).at(d).at(hh) = lix;
             }
         }
-        qFatal() << "Couldn't place lesson" << ldata->lesson_id;
-    done:;
     }
 }
 
-std::vector<std::vector<int>> BasicConstraints::find_places(int lix)
+// Test whether the given lesson is blocked at the given time (which is
+// permitted by the start_cells table).
+bool BasicConstraints::test_possible_place(
+    lesson_data *ldata, int day, int hour)
+{
+    for (int lx = 0; lx < ldata->length; ++lx) {
+        for (int i : ldata->groups) {
+            if (sg_weeks[i][day][hour+lx]) return false;
+        }
+        for (int i : ldata->teachers) {
+            if (t_weeks[i][day][hour+lx]) return false;
+        }
+        // ldata->rooms is not relevant here
+        for (int i : ldata->rooms_needed) {
+            if (r_weeks[i][day][hour+lx]) return false;
+        }
+        if (ldata->rooms_choice.empty()) goto next;
+        for (int i : ldata->rooms_choice) {
+            if (!r_weeks[i][day][hour+lx]) goto next;
+        }
+        return false;
+    next:;
+    }
+    return true;
+}
+
+// Test whether the given lesson can be placed at the given time.
+bool BasicConstraints::test_place(lesson_data *ldata, int day, int hour)
+{
+    const auto & dvec = ldata->start_cells[day];
+    for (int h : dvec) {
+        if (h < hour) continue;
+        if (h > hour) break;
+        return test_possible_place(ldata, day, hour);
+    }
+    return false;
+}
+
+std::vector<std::vector<int>> BasicConstraints::find_possible_places(
+    lesson_data *ldata)
 {
     std::vector<std::vector<int>> free(ndays);
-    auto ldata = &lessons.at(lix);
     if (ldata->length == 1) {
         for (int d = 0; d < ndays; ++d) {
-            for (int h = 0; h < nhours; ++h) {
-                if (test_place_lesson(ldata, d, h)) {
-                    //qDebug() << "OK:" << d << h;
+            const auto & dvec = ldata->start_cells[d];
+            for (int h : dvec) {
+                if (test_single_slot(ldata, d, h)) {
                     free[d].push_back(h);
                 }
             }
@@ -435,28 +476,33 @@ std::vector<std::vector<int>> BasicConstraints::find_places(int lix)
     } else {
         int l = ldata->length;
         for (int d = 0; d < ndays; ++d) {
-            int count = 0;
-            int h = 0;
-            while (h < nhours) {
-                if (test_place_lesson(ldata, d, h++)) {
-                    if (++count == l) {
-                        free[d].push_back(h - l);
-                        --count;
+            const auto & dvec = ldata->start_cells[d];
+            int hmax = 0;
+            for (int h : dvec) {
+                if (hmax < h) hmax = h;
+                while (test_single_slot(ldata, d, hmax)) {
+                    // Overrunning hmax should not be possible as the length
+                    // is taken into consideration when building start_cells.
+                    if (++hmax - h == l) {
+                        free[d].push_back(h);
+                        break;
                     }
-                } else {
-                    count = 0;
                 }
+                // If testing of hmax failed and it is in the range of the
+                // next h value, the test can be repeated. To avoid that it
+                // would be necessary to save the failed hmax and test for
+                // it later. It is not clear that this would be a great
+                // improvement.
             }
         }
     }
     return free;
 }
 
-
 // This is a primitive test for a placement. It returns only true or false,
 // according to whether the placement is possible. It doesn't change
 // anything.
-bool BasicConstraints::test_place_lesson(
+bool BasicConstraints::test_single_slot(
     lesson_data *ldata, int day, int hour)
 {
     for (int i : ldata->groups) {
@@ -475,7 +521,7 @@ bool BasicConstraints::test_place_lesson(
     }
     return false;
 }
-//TODO: Deal with length > 1, maybe parallel lessons?
+
 //TODO: Add a test which returns details of the clashes, at least the
 // lessons/courses, maybe also the associated groups/teachers/rooms ...
 // That could be triggered by shift-click (which would place if ok?).

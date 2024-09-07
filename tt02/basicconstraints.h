@@ -38,7 +38,7 @@ struct lesson_data{
     QStringList tags;
     int length;
     bool fixed = false;
-    std::vector<std::vector<int>> start_cells; // set only when fixed == false
+    std::vector<std::vector<int>> start_cells; // set only when not "fixed"
     // used only for placed lessons:
     int day;
     int hour;
@@ -47,9 +47,6 @@ struct lesson_data{
 //??
     std::vector<int> parallel;
     std::vector<int> different_days;
-    //std::vector<TTSlot> preferred_slots; // starting times!
-    // PreferredSlots constraints should be converted to
-    // PreferredStartingTimes.
 };
 
 class BasicConstraints
@@ -57,9 +54,11 @@ class BasicConstraints
 public:
     BasicConstraints(DBData *dbdata);
 
-    bool test_place_lesson(lesson_data *ldata, int day, int hour);
+    bool test_single_slot(lesson_data *ldata, int day, int hour);
     std::vector<int> find_clashes(lesson_data *ldata, int day, int hour);
-    std::vector<std::vector<int>> find_places(int lix);
+    std::vector<std::vector<int>> find_possible_places(lesson_data *ldata);
+    bool test_possible_place(lesson_data *ldata, int day, int hour);
+    bool test_place(lesson_data *ldata, int day, int hour);
 
     DBData * db_data;
     int ndays;
@@ -97,9 +96,9 @@ private:
     void initial_place_lessons(time_constraints &tconstraints);
     void with_slots(
         std::vector<ActivitySelectionSlots> &alist,
-        lesson_data &ld,
+        lesson_data *ld,
         bool starting_time);
-    void find_slots(time_constraints &constraints, lesson_data &ld);
+    void find_slots(time_constraints &constraints, lesson_data *ld);
 };
 
 #endif // BASICCONSTRAINTS_H
