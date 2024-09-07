@@ -7,6 +7,22 @@ struct TTSlot {
     int day, hour;
 };
 
+struct ActivitySelectionSlots {
+    QString tag;
+    int tid;
+    int gid;
+    int sid;
+    int l;
+    std::vector<std::vector<int>> ttslots;
+};
+
+struct time_constraints {
+    std::unordered_map<int, std::vector<std::vector<int>>> lesson_starting_times;
+    std::vector<ActivitySelectionSlots> activities_starting_times;
+    std::vector<ActivitySelectionSlots> activities_slots;
+    //TODO ...
+};
+
 struct lesson_data{
     // Only 100%-constraints are handled here.
     int lesson_id;
@@ -18,6 +34,8 @@ struct lesson_data{
     std::vector<int> rooms_needed;
     std::vector<int> rooms_choice;
 
+    int subject;
+    QStringList tags;
     int length;
     bool fixed = false;
     std::vector<std::vector<int>> start_cells; // set only when fixed == false
@@ -29,7 +47,7 @@ struct lesson_data{
 //??
     std::vector<int> parallel;
     std::vector<int> different_days;
-    std::vector<TTSlot> preferred_slots; // starting times!
+    //std::vector<TTSlot> preferred_slots; // starting times!
     // PreferredSlots constraints should be converted to
     // PreferredStartingTimes.
 };
@@ -75,8 +93,13 @@ public:
 
 private:
     void slot_blockers();
-    void activity_slot_constraints();
-    void initial_place_lessons();
+    time_constraints activity_slot_constraints();
+    void initial_place_lessons(time_constraints &tconstraints);
+    void with_slots(
+        std::vector<ActivitySelectionSlots> &alist,
+        lesson_data &ld,
+        bool starting_time);
+    void find_slots(time_constraints &constraints, lesson_data &ld);
 };
 
 #endif // BASICCONSTRAINTS_H

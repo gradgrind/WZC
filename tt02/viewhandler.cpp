@@ -186,62 +186,49 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         QList<TTSlot> free;
         //grid->clearCellOK();
 
+        if (ldata->start_cells.empty()) {
+            // This should be a "fixed" lesson
+            if (ldata->fixed) {
+                qDebug() << "FIXED";
+                return;
+            }
 
-//TODO: I should now have the BasicConstraints::start_cells to limit tests.
-// The preferred_slots should be removed, having been dealt with earlier
-// (TODO) by integrating it into the start_cells.
+            // Go through all cells
+//TODO: Actually, shouldn't ALL non-fixed cells have a start_cells list?
+            return;
+        }
 
-        if (ldata->preferred_slots.empty()) {
-            if (ldata->length == 1) {
-                for (int d = 0; d < basic_constraints->ndays; ++d) {
-                    for (int h = 0; h < basic_constraints->nhours; ++h) {
-                        if (basic_constraints->test_place_lesson(ldata, d, h)) {
-                            //qDebug() << "OK:" << d << h;
-                            free.append({d, h});
-                        }
-                    }
-                }
-            } else {
-                int l = ldata->length;
-                for (int d = 0; d < basic_constraints->ndays; ++d) {
-                    int count = 0;
-                    int h = 0;
-                    while (h < basic_constraints->nhours) {
-                        if (basic_constraints->test_place_lesson(ldata, d, h++)) {
-                            if (++count == l) {
-                                free.append({d, h - l});
-                                --count;
-                            }
-                        } else {
-                            count = 0;
-                        }
+        qDebug() << "START-CELLS:" << ldata->start_cells;
+//TODO: The start-cells seem too restrictive. Are the wrong cells getting
+// added somehow?
+
+
+        if (ldata->length == 1) {
+            for (int d = 0; d < basic_constraints->ndays; ++d) {
+                const auto & dvec = ldata->start_cells[d];
+                for (int h : dvec) {
+                    if (basic_constraints->test_place_lesson(ldata, d, h)) {
+                        //qDebug() << "OK:" << d << h;
+                        free.append({d, h});
                     }
                 }
             }
         } else {
-            for (auto slot : ldata->preferred_slots) {
-                if (basic_constraints->test_place_lesson(
-                        ldata, slot.day, slot.hour)) {
-                    //qDebug() << "OK:" << d << h;
-                    // Handle length > 1
-                    if (ldata->length != 1) {
-                        //TODO: This can repeat cell tests. Would some
-                        // other approach be better?
-                        bool ok = true;
-                        for (int i = 1; i < ldata->length; i++) {
-                            if (!basic_constraints->test_place_lesson(
-                                    ldata, slot.day, slot.hour + i)) {
-                                ok = false;
-                                break;
-                            }
+            int l = ldata->length;
+            for (int d = 0; d < basic_constraints->ndays; ++d) {
+                const auto & dvec = ldata->start_cells[d];
+                for (int h : dvec) {
+                    for (int count = 0; count < l; ++count) {
+                        if (!basic_constraints->test_place_lesson(
+                                ldata, d, h+count)) {
+                            goto nofit;
                         }
-                        if (!ok) continue;
                     }
-                    free.append({slot.day, slot.hour});
+                    free.append({d, h});
+                nofit:;
                 }
             }
         }
-
         for (auto p : free) {
             grid->setCellOK(p.day, p.hour);
         }

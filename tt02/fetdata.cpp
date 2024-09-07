@@ -432,6 +432,8 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
                 .DATA = {
                     {"COURSE", id},
                     {"LENGTH", m.value("Duration").toInt()},
+                    {"ACTIVITY_TAGS", QJsonArray::fromStringList(
+                                          m.values("Activity_Tag"))},
                 },
             });
             fet_info.activity_lesson[m.value("Id")] = lid;
