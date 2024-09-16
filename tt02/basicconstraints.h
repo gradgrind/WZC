@@ -40,6 +40,8 @@ struct lesson_data{
     bool fixed = false;
     std::vector<std::vector<int>> start_cells; // set only when not "fixed"
     // used only for placed lessons:
+//TODO: Actually, at least "day" should always be set, to -1 for unplaced
+// lessons.
     int day;
     int hour;
     std::vector<int> rooms;
