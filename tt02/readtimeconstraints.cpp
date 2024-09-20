@@ -1,28 +1,30 @@
 #include "readtimeconstraints.h"
 #include <QJsonArray>
 
-// I use a weighting scale "-", "1", "2", ... "8", "9", "+".
+// I use a weighting scale 0 .. 10, where 0 means that the constraint is
+// effectively inactive an 10 should be a hard constraint (compulsory),
+// when appropriate and possible.
 // Perform a rough translation from the fet percentage weightings.
-QString convert_weight(QString fet_weight)
+int convert_weight(QString fet_weight)
 {
-    if (fet_weight == "100") return "+";
-    if (fet_weight == "0") return "-";
+    if (fet_weight == "100") return 10;
+    if (fet_weight == "0") return 0;
     float w = fet_weight.toFloat();
     if (w < 93.5) {
         if (w < 83.6) {
-            if (w < 60) return "1";
-            if (w < 74) return "2";
-            return "3";
+            if (w < 60) return 1;
+            if (w < 74) return 2;
+            return 3;
         }
-        if (w < 89.7) return "4";
-        return "5";
+        if (w < 89.7) return 4;
+        return 5;
     }
     if (w < 97.4) {
-        if (w < 95.9) return "6";
-        return "7";
+        if (w < 95.9) return 6;
+        return 7;
     }
-    if (w <= 98.5) return "8";
-    return "9";
+    if (w <= 98.5) return 8;
+    return 9;
 }
 
 // Ignore "ConstraintBasicCompulsoryTime"
@@ -95,7 +97,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
         //
         } else if (n.name == "ConstraintMinDaysBetweenActivities") {
             auto m = readSimpleItems(n);
-            QString w = convert_weight(m.value("Weight_Percentage"));
+            int w = convert_weight(m.value("Weight_Percentage"));
             QJsonArray lids;
             for (const auto &aid : m.values("Activity_Id")) {
                 lids.append(fet_info.activity_lesson.value(aid));
@@ -103,32 +105,20 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             // Add to LOCAL_CONSTRAINTS table.
             int hcid = fet_info.nodes.length();
             int days = m.value("MinDays").toInt();
-            if (days == 1) {
-                fet_info.nodes.append({
-                    .Id = hcid,
-                    .DB_TABLE = "LOCAL_CONSTRAINTS",
-                    .DATA = {
-                        {"TYPE", "ONE_DAY_BETWEEN"},
-                        {"LESSONS", lids},
-                        {"WEIGHT", w},
-                    },
-                });
-            } else {
-                fet_info.nodes.append({
-                    .Id = hcid,
-                    .DB_TABLE = "LOCAL_CONSTRAINTS",
-                    .DATA = {
-                        {"TYPE", "DAYS_BETWEEN"},
-                        {"NDAYS", days},
-                        {"LESSONS", lids},
-                        {"WEIGHT", w},
-                    },
-                });
-            }
+            fet_info.nodes.append({
+                .Id = hcid,
+                .DB_TABLE = "LOCAL_CONSTRAINTS",
+                .DATA = {
+                    {"TYPE", "DAYS_BETWEEN"},
+                    {"NDAYS", days},
+                    {"LESSONS", lids},
+                    {"WEIGHT", w},
+                },
+            });
         //
         } else if (n.name == "ConstraintActivityPreferredStartingTimes") {
             auto m = readSimpleItems(n);
-            QString w = convert_weight(m.value("Weight_Percentage"));
+            int w = convert_weight(m.value("Weight_Percentage"));
             int lid = fet_info.activity_lesson.value(
                 m.value("Activity_Id"));
             QJsonArray times;
@@ -158,7 +148,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
         //
         } else if (n.name == "ConstraintActivitiesPreferredStartingTimes") {
             auto m = readSimpleItems(n);
-            QString w = convert_weight(m.value("Weight_Percentage"));
+            int w = convert_weight(m.value("Weight_Percentage"));
             QString atag = m.value("Activity_Tag");
             int g = fet_info.groups.value(m.value("Students"));
             int s = fet_info.subjects.value(m.value("Subject"));
@@ -195,7 +185,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
         //
         } else if (n.name == "ConstraintActivitiesPreferredTimeSlots") {
             auto m = readSimpleItems(n);
-            QString w = convert_weight(m.value("Weight_Percentage"));
+            int w = convert_weight(m.value("Weight_Percentage"));
             QString atag = m.value("Activity_Tag");
             int g = fet_info.groups.value(m.value("Students"));
             int s = fet_info.subjects.value(m.value("Subject"));
@@ -232,7 +222,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
         //
         } else if (n.name == "ConstraintActivitiesSameStartingTime") {
             auto m = readSimpleItems(n);
-            QString w = convert_weight(m.value("Weight_Percentage"));
+           int w = convert_weight(m.value("Weight_Percentage"));
             QJsonArray lids;
             for (const auto &aid : m.values("Activity_Id")) {
                 lids.append(fet_info.activity_lesson.value(aid));

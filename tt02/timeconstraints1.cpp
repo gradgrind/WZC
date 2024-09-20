@@ -1,4 +1,18 @@
 #include "timeconstraints1.h"
+#include <qjsonarray.h>
+
+SameStartingTime::SameStartingTime(QJsonObject node)// : Constraint()
+{
+    penalty = node.value("WEIGHT").toInt();
+    auto llist = node.value("LESSONS").toArray();
+    lesson_indexes.resize(llist.size());
+    for (const auto lid : llist) {
+        lesson_indexes.push_back(lid.toInt());
+    }
+}
+
+//TODO
+int SameStartingTime::evaluate(BasicConstraints *constraint_data) { return 0; }
 
 /*
  * This is an important constraint which could be implemented in various ways.
@@ -70,3 +84,28 @@ bool DifferentDays::test(BasicConstraints *constraint_data, int l_id, int day)
     }
     return true;
 }
+
+/*#DOC
+
+## Idea for handling hard constraints.
+
+When looking for slots in which to place a lesson tile there can be
+constraints which limit the available days (like the different-days
+constraints). If I run one of these before doing any other searches, it
+could return a list of possible days, which can then restrict the range
+of subsequent tests.
+
+Initially I have the generally possible slots organized as a list of
+day-lists, these latter being lists of possible hours. The day-restrictor
+constraints can reduce these slots.
+
+Then the basic tests can be run on the lesson (groups, teachers, rooms),
+but only testing the subset of slots. The result will be a still more
+restricted subset.
+
+There can also be (hard-)parallel lessons. These also need to be tested,
+possibly leading to even smaller slot subsets.
+
+Actually, it might be sensible to run the parallel lessons through their
+own day-restrictor constraints at the beginning of the procedure.
+*/

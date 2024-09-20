@@ -23,8 +23,30 @@ struct time_constraints {
     //TODO ...
 };
 
+class BasicConstraints;
+
+class Constraint
+{
+public:
+    virtual ~Constraint() = default;
+
+    virtual int evaluate(BasicConstraints *constraint_data) = 0;
+
+    int penalty;
+};
+
 struct lesson_data{
     // Only 100%-constraints are handled here.
+    ~lesson_data()
+    {
+        for (const auto *o : parallel) {
+            delete o;
+        }
+        for (const auto *o : day_constraints) {
+            delete o;
+        }
+    }
+
     int lesson_id;
 
     // The contained values (int) are the indexes into the week-blocks
@@ -46,9 +68,9 @@ struct lesson_data{
     int hour;
     std::vector<int> rooms;
 
-//??
-    std::vector<int> parallel;
-    std::vector<int> different_days;
+    // The items must be pointers because of the polymorphism ...
+    std::vector<Constraint *> parallel;
+    std::vector<Constraint *> day_constraints;
 };
 
 class BasicConstraints

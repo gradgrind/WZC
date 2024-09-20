@@ -64,3 +64,39 @@ int main(int argc, char *argv[])
 
     return a.exec();
 }
+
+/*#DOC
+The basic idea is to build a (school) timetable viewer and editor.
+
+The timetable data is in an sqlite database, but the current approach
+does not take advantage of the possibilities of an SQL database. Only
+a single table is used, containing mostly JSON data. A single JSON file
+would be a possible alternative. The database is handled in the module
+"database".
+
+How the data gets into the database is only touched on in the current code.
+There are many possibilities, but at present there is only a reader for
+certain files from the fet program (https://www.lalescu.ro/liviu/fet).
+Primarily addressed are the result files "XXXXX_data_and_timetable.fet",
+but – in principle – also the basic "XXXXX.fet" files should be useable.
+Only a small subset of the fet constraints is imported, those which I
+regard as essential basic "hard" constraints. It should be possible to
+import more, but that is not a priority. I would prefer to develop my
+own constraints. When these exist, it may be that certain fet constraints
+can be transformed to these, but this is not currently planned.
+The module "fetdata" manages this importing, using module "readxml" to
+perform the low-level reading of the XML. There are also modules to deal
+with reading the constraints: "readtimeconstraints" and
+"readspaceconstraints".
+
+The "canvas" module forms the basis for the timetable display using a
+QGraphicsView/Scene. The "chip" module provides a rectangle item with
+various useful properties (including text fields and basic support for
+"hover" interaction). The "tt_grid" module builds on these to provide
+a grid structure for the timetable and potentially interactive tiles
+for the lessons.
+
+Module "viewhandler" ties all the components together and manages the
+loading and display of the timetable. The interaction is currently
+under development.
+*/

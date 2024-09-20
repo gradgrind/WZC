@@ -29,6 +29,7 @@ set(PROJECT_SOURCES
         viewhandler.h   viewhandler.cpp
         basicconstraints.h  basicconstraints.cpp
         timeconstraints1.h  timeconstraints1.cpp
+        localconstraints.h   localconstraints.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

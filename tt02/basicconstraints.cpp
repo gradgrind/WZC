@@ -162,10 +162,18 @@ time_constraints BasicConstraints::activity_slot_constraints()
                     .ttslots = days,
                 });
             }
-        } else {
-            // "SAME_STARTING_TIME"
-            // "ONE_DAY_BETWEEN"
-            // "DAYS_BETWEEN"
+        } else if (ntype == "DAYS_BETWEEN") {
+//                {"NDAYS", days},
+//                    {"LESSONS", lids},
+//                    {"WEIGHT", w},
+
+
+        } else if (ntype == "SAME_STARTING_TIME") {
+//            auto sst = new SameStartingTime(node);
+//TODO: How to solve the dependency loop?!
+
+//            {"LESSONS", lids},
+//                {"WEIGHT", w},
         }
     }
     return constraints;
