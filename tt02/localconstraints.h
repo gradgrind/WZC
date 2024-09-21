@@ -3,6 +3,6 @@
 
 #include "basicconstraints.h"
 
-time_constraints activity_slot_constraints(BasicConstraints *basic_constraints);
+void localConstraints(BasicConstraints *basic_constraints);
 
 #endif // LOCALCONSTRAINTS_H

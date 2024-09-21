@@ -1,6 +1,6 @@
 #include <qjsonarray.h>
 #include "localconstraints.h"
-#include "timeconstraints1.h"
+#include "samestartingtime.h"
 
 // Collect Activity slot constraints
 time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
@@ -59,4 +59,14 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
     return constraints;
 }
 
+void localConstraints(BasicConstraints *basic_constraints)
+{
+    // Collect the hard local constraints which specify possible
+    // starting times for individual lessons or lessons fulfilling
+    // certain conditions. Also the lesson lengths are taken into account.
+    time_constraints tconstraints = activity_slot_constraints(basic_constraints);
+    // Place the lessons which have their starting times specified.
+    // Also set up the start_cells field for non-fixed lessons.
+    basic_constraints->initial_place_lessons(tconstraints);
+}
 

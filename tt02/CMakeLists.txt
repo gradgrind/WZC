@@ -28,8 +28,10 @@ set(PROJECT_SOURCES
         showroom.h      showroom.cpp
         viewhandler.h   viewhandler.cpp
         basicconstraints.h  basicconstraints.cpp
-        timeconstraints1.h  timeconstraints1.cpp
-        localconstraints.h   localconstraints.cpp
+
+        localconstraints.h  localconstraints.cpp
+        samestartingtime.h  samestartingtime.cpp
+        differentdays.h differentdays.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

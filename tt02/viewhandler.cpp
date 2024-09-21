@@ -5,6 +5,7 @@
 #include "showclass.h"
 #include "showteacher.h"
 #include "showroom.h"
+#include "localconstraints.h"
 #include <QBoxLayout>
 #include <QPushButton>
 #include <QListWidget>
@@ -165,6 +166,7 @@ void ViewHandler::handle_load_file()
 
     if (basic_constraints) delete basic_constraints;
     basic_constraints = new BasicConstraints(dbdata);
+    localConstraints(basic_constraints);
 
     grid->setClickHandler([this](int d, int h, Tile *t){
         onClick(d, h, t);
