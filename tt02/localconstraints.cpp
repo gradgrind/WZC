@@ -1,6 +1,5 @@
 #include <qjsonarray.h>
 #include "localconstraints.h"
-#include "samestartingtime.h"
 
 // Collect Activity slot constraints
 time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
@@ -49,12 +48,18 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             //                    {"WEIGHT", w},
 
 
-                } else if (ntype == "SAME_STARTING_TIME") {
-                    SameStartingTime sst(node);
-
-            //            {"LESSONS", lids},
-            //                {"WEIGHT", w},
+        } else if (ntype == "SAME_STARTING_TIME") {
+            std::shared_ptr<SameStartingTime> sst(new SameStartingTime(node));
+            for (int lid : sst->lesson_indexes) {
+                auto l = &basic_constraints->lessons[lid];
+                if (l->parallel) {
+                    qDebug() << "Lesson" << l->lesson_id
+                             << "has multiple 'SameStartingTime' constraints";
+                    continue;
+                }
+                l->parallel = sst;
             }
+        }
     }
     return constraints;
 }

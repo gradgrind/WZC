@@ -35,13 +35,23 @@ public:
     int penalty;
 };
 
+class SameStartingTime : public Constraint
+{
+public:
+    SameStartingTime(QJsonObject node);
+
+    int evaluate(BasicConstraints *constraint_data) override;
+    bool test(BasicConstraints *constraint_data, int l_id, int day);
+
+    std::vector<int> lesson_indexes;
+};
+
 struct lesson_data{
     // Only 100%-constraints are handled here.
     ~lesson_data()
     {
-        for (const auto *o : parallel) {
-            delete o;
-        }
+        //TODO: probably need to use shared pointers here, so no destructor
+        // would be needed
         for (const auto *o : day_constraints) {
             delete o;
         }
@@ -68,8 +78,7 @@ struct lesson_data{
     int hour;
     std::vector<int> rooms;
 
-    // The items must be pointers because of the polymorphism ...
-    std::vector<Constraint *> parallel;
+    std::shared_ptr<SameStartingTime> parallel;
     std::vector<Constraint *> day_constraints;
 };
 

@@ -30,7 +30,7 @@ set(PROJECT_SOURCES
         basicconstraints.h  basicconstraints.cpp
 
         localconstraints.h  localconstraints.cpp
-        samestartingtime.h  samestartingtime.cpp
+
         differentdays.h differentdays.cpp
 )
 
