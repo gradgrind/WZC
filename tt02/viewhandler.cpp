@@ -57,6 +57,7 @@ ViewHandler::~ViewHandler()
     if (basic_constraints) delete basic_constraints;
 }
 
+//TODO: A second call results in a crash!
 void ViewHandler::handle_load_file()
 {
     auto fileName = QFileDialog::getOpenFileName(nullptr,

@@ -1,5 +1,6 @@
 #include <qjsonarray.h>
 #include "localconstraints.h"
+#include "differentdays.h"
 
 // Collect Activity slot constraints
 time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
@@ -8,7 +9,10 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
     auto db_data = basic_constraints->db_data;
     for (int xid : db_data->Tables.value("LOCAL_CONSTRAINTS")) {
         auto node = db_data->Nodes.value(xid).DATA;
-        if (node.value("WEIGHT") != "+") continue; // only hard constraints
+        int w = node.value("WEIGHT").toInt();
+
+//TODO?? Where do I deal with soft constraints?
+        if (w != 10) continue; // only hard constraints
 
         auto ntype = node.value("TYPE");
         if (node.contains("SLOTS")) {
@@ -43,22 +47,36 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
                 });
             }
         } else if (ntype == "DAYS_BETWEEN") {
-            //                {"NDAYS", days},
-            //                    {"LESSONS", lids},
-            //                    {"WEIGHT", w},
-
-
-        } else if (ntype == "SAME_STARTING_TIME") {
-            std::shared_ptr<SameStartingTime> sst(new SameStartingTime(node));
-            for (int lid : sst->lesson_indexes) {
-                auto l = &basic_constraints->lessons[lid];
-                if (l->parallel) {
-                    qDebug() << "Lesson" << l->lesson_id
-                             << "has multiple 'SameStartingTime' constraints";
-                    continue;
+            DifferentDays * dd = new DifferentDays(node);
+            if (dd->isHard()) {
+                std::shared_ptr<DifferentDays> sdd(dd);
+                for (int lid : dd->lesson_indexes) {
+                    basic_constraints->lessons[lid]
+                        .day_constraints.push_back(sdd);
                 }
-                l->parallel = sst;
+            } else {
+                basic_constraints->general_constraints.push_back(
+                    std::unique_ptr<Constraint>(dd));
             }
+            delete dd;
+        } else if (ntype == "SAME_STARTING_TIME") {
+            SameStartingTime * sst = new SameStartingTime(node);
+            if (sst->isHard()) {
+                std::shared_ptr<SameStartingTime> ssst(sst);
+                for (int lid : sst->lesson_indexes) {
+                    auto l = &basic_constraints->lessons[lid];
+                    if (l->parallel) {
+                        qDebug() << "Lesson" << l->lesson_id
+                                 << "has multiple 'SameStartingTime' constraints";
+                        continue;
+                    }
+                    l->parallel = ssst;
+                }
+            } else {
+                basic_constraints->general_constraints.push_back(
+                    std::unique_ptr<Constraint>(sst));
+            }
+            delete sst;
         }
     }
     return constraints;
@@ -66,12 +84,17 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
 
 void localConstraints(BasicConstraints *basic_constraints)
 {
+    // Build the BasicConstraints::lessons list, placing the fixed lessons
+    // and returning a list of the unfixed ones.
+    auto unplaced = basic_constraints->initial_place_lessons();
     // Collect the hard local constraints which specify possible
     // starting times for individual lessons or lessons fulfilling
     // certain conditions. Also the lesson lengths are taken into account.
     time_constraints tconstraints = activity_slot_constraints(basic_constraints);
-    // Place the lessons which have their starting times specified.
-    // Also set up the start_cells field for non-fixed lessons.
-    basic_constraints->initial_place_lessons(tconstraints);
+    // Place the (unfixed) lessons which have their starting times specified.
+    // Also set up the start_cells field (for unfixed lessons). This field
+    // specifies which slots can potentially be used for the lesson – assuming
+    // no basic clashes.
+    basic_constraints->initial_place_lessons2(unplaced, tconstraints);
 }
 

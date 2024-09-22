@@ -1,4 +1,5 @@
 #include "differentdays.h"
+#include <qjsonarray.h>
 
 /*
  * This is an important constraint which could be implemented in various ways.
@@ -19,9 +20,16 @@
  * "basicconstraints.h".
  *
  */
-DifferentDays::DifferentDays() : Constraint()
+DifferentDays::DifferentDays(QJsonObject node) : Constraint()
 {
-
+    penalty = node.value("WEIGHT").toInt();
+    gap = node.value("NDAYS").toInt();
+    auto llist = node.value("LESSONS").toArray();
+    int n = llist.size();
+    lesson_indexes.resize(n);
+    for (int i = 0; i < n; ++i) {
+        lesson_indexes[i] = llist[i].toInt();
+    }
 }
 
 // Handle constraints "different days" and "days between".

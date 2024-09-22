@@ -31,7 +31,9 @@ public:
     virtual ~Constraint() = default;
 
     virtual int evaluate(BasicConstraints *constraint_data) = 0;
+    bool isHard() { return (penalty == 10); }
 
+protected:
     int penalty;
 };
 
@@ -48,15 +50,6 @@ public:
 
 struct lesson_data{
     // Only 100%-constraints are handled here.
-    ~lesson_data()
-    {
-        //TODO: probably need to use shared pointers here, so no destructor
-        // would be needed
-        for (const auto *o : day_constraints) {
-            delete o;
-        }
-    }
-
     int lesson_id;
 
     // The contained values (int) are the indexes into the week-blocks
@@ -79,7 +72,7 @@ struct lesson_data{
     std::vector<int> rooms;
 
     std::shared_ptr<SameStartingTime> parallel;
-    std::vector<Constraint *> day_constraints;
+    std::vector<std::shared_ptr<Constraint>> day_constraints;
 };
 
 class BasicConstraints
@@ -92,7 +85,9 @@ public:
     std::vector<std::vector<int>> find_possible_places(lesson_data *ldata);
     bool test_possible_place(lesson_data *ldata, int day, int hour);
     bool test_place(lesson_data *ldata, int day, int hour);
-    void initial_place_lessons(time_constraints &tconstraints);
+    std::vector<int> initial_place_lessons();
+    void initial_place_lessons2(
+        std::vector<int> to_place, time_constraints &tconstraints);
 
     DBData * db_data;
     int ndays;
@@ -123,6 +118,7 @@ public:
 
     std::unordered_map<int, int> lid2lix;
     std::vector<lesson_data> lessons;
+    std::vector<std::unique_ptr<Constraint>> general_constraints;
 
 private:
     void slot_blockers();

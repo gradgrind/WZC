@@ -217,7 +217,7 @@ void BasicConstraints::find_slots(
 }
 
 // Initial placement of the lessons. Call this only once!
-void BasicConstraints::initial_place_lessons(time_constraints &tconstraints)
+std::vector<int> BasicConstraints::initial_place_lessons()
 {
     if (!lessons.empty()) {
         qFatal() << "BasicConstraints::initial_place_lessons() called twice";
@@ -309,7 +309,9 @@ void BasicConstraints::initial_place_lessons(time_constraints &tconstraints)
             }
             ld.fixed = true;
             lessons.push_back(ld);
-            // Test placement before actually doing it
+            // Test placement before actually doing it. This only checks the
+            // most basic criteria, i.e. clashes. Other hard constraints are
+            // ignored for fixed placements.
             if (!test_possible_place(&ld, d, h)) {
                 qFatal() << "Couldn't place lesson" << lid
                          << "@ Slot" << d << h;
@@ -329,7 +331,13 @@ void BasicConstraints::initial_place_lessons(time_constraints &tconstraints)
             }
         }
     }
-    // Now deal with the unfixed lessons. These need available-slot lists
+    return to_place;
+}
+
+void BasicConstraints::initial_place_lessons2(
+    std::vector<int> to_place, time_constraints &tconstraints)
+{
+    // Deal with the unfixed lessons. These need available-slot lists
     // and those with a placement time need to be placed.
     // First collect the (currently) available slots – before actually
     // placing any of the non-fixed lessons.
@@ -519,9 +527,10 @@ SameStartingTime::SameStartingTime(QJsonObject node)// : Constraint()
 {
     penalty = node.value("WEIGHT").toInt();
     auto llist = node.value("LESSONS").toArray();
-    lesson_indexes.resize(llist.size());
-    for (const auto lid : llist) {
-        lesson_indexes.push_back(lid.toInt());
+    int n = llist.size();
+    lesson_indexes.resize(n);
+    for (int i = 0; i < n; ++i) {
+        lesson_indexes[i] = llist[i].toInt();
     }
 }
 
