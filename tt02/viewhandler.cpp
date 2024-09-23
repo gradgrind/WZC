@@ -57,15 +57,14 @@ ViewHandler::~ViewHandler()
     if (basic_constraints) delete basic_constraints;
 }
 
-//TODO: A second call results in a crash!
 void ViewHandler::handle_load_file()
 {
     auto fileName = QFileDialog::getOpenFileName(nullptr,
         ("Open XML file"), "", ("XML Files (*.xml *.fet)"));
-    QFile data(fileName);
-    if (!data.open(QFile::ReadOnly | QIODevice::Text)) return;
+    QFile fdata(fileName);
+    if (!fdata.open(QFile::ReadOnly | QIODevice::Text)) return;
 
-    QTextStream indat(&data);
+    QTextStream indat(&fdata);
     QString tdat = indat.readAll();
     XMLNode xml = readXMLTree(tdat);
 
@@ -165,6 +164,7 @@ void ViewHandler::handle_load_file()
     dbdata->save(dbpath);
     qDebug() << "Saved data to" << dbpath;
 
+//TODO: This is crashing when basic_constraints not 0.
     if (basic_constraints) delete basic_constraints;
     basic_constraints = new BasicConstraints(dbdata);
     localConstraints(basic_constraints);

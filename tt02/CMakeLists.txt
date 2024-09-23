@@ -28,9 +28,7 @@ set(PROJECT_SOURCES
         showroom.h      showroom.cpp
         viewhandler.h   viewhandler.cpp
         basicconstraints.h  basicconstraints.cpp
-
         localconstraints.h  localconstraints.cpp
-
         differentdays.h differentdays.cpp
 )
 

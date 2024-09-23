@@ -16,14 +16,18 @@ struct ActivitySelectionSlots {
     std::vector<std::vector<int>> ttslots;
 };
 
+// Restrict possible starting times on the basis of various constraints
+// on activities.
 struct time_constraints {
+    // From constraint Activity has preferred starting times
     std::unordered_map<int, std::vector<std::vector<int>>> lesson_starting_times;
+    // From constraint Activities have preferred starting times
     std::vector<ActivitySelectionSlots> activities_starting_times;
+    // From constraint Activities have preferred slots
     std::vector<ActivitySelectionSlots> activities_slots;
-    //TODO ...
 };
 
-class BasicConstraints;
+class BasicConstraints; // forward declaration
 
 class Constraint
 {
@@ -41,6 +45,24 @@ class SameStartingTime : public Constraint
 {
 public:
     SameStartingTime(QJsonObject node);
+    //~SameStartingTime() { qDebug() << "~SameStartingTime"; }
+
+    int evaluate(BasicConstraints *constraint_data) override;
+    bool test(BasicConstraints *constraint_data, int l_id, int day);
+
+    std::vector<int> lesson_indexes;
+};
+
+class SoftActivityTimes : public Constraint
+{
+public:
+    SoftActivityTimes(
+        int weight,
+        std::vector<std::vector<int>> days,
+        std::vector<int> lessons,
+        bool slots
+    );
+    //~SoftActivityTimes() { qDebug() << "~SoftActivityTimes"; }
 
     int evaluate(BasicConstraints *constraint_data) override;
     bool test(BasicConstraints *constraint_data, int l_id, int day);
@@ -71,14 +93,25 @@ struct lesson_data{
     int hour;
     std::vector<int> rooms;
 
-    std::shared_ptr<SameStartingTime> parallel;
-    std::vector<std::shared_ptr<Constraint>> day_constraints;
+    // The referenced constraints are owned by BasicConstraints, so no
+    // destructor is needed here.
+    //std::shared_ptr<SameStartingTime> parallel;
+    SameStartingTime *parallel = nullptr;
+    //std::vector<std::shared_ptr<Constraint>> day_constraints;
+    std::vector<Constraint *> day_constraints;
 };
 
 class BasicConstraints
 {
 public:
     BasicConstraints(DBData *dbdata);
+    ~BasicConstraints() {
+        qDebug() << "~BasicConstraints"
+                 << general_constraints.size()
+                 << local_hard_constraints.size();
+        for (const auto &p : general_constraints) delete p;
+        for (const auto &p : local_hard_constraints) delete p;
+    }
 
     bool test_single_slot(lesson_data *ldata, int day, int hour);
     std::vector<int> find_clashes(lesson_data *ldata, int day, int hour);
@@ -118,7 +151,9 @@ public:
 
     std::unordered_map<int, int> lid2lix;
     std::vector<lesson_data> lessons;
-    std::vector<std::unique_ptr<Constraint>> general_constraints;
+    //std::vector<std::unique_ptr<Constraint>> general_constraints;
+    std::vector<Constraint *> general_constraints;
+    std::vector<Constraint *> local_hard_constraints;
 
 private:
     void slot_blockers();

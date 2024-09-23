@@ -10,9 +10,8 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
     for (int xid : db_data->Tables.value("LOCAL_CONSTRAINTS")) {
         auto node = db_data->Nodes.value(xid).DATA;
         int w = node.value("WEIGHT").toInt();
-
-//TODO?? Where do I deal with soft constraints?
-        if (w != 10) continue; // only hard constraints
+//TODO?? Where do I deal with soft constraints? BasicConstraints?
+//        if (w != 10) continue; // only hard constraints
 
         auto ntype = node.value("TYPE");
         if (node.contains("SLOTS")) {
@@ -27,7 +26,12 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             }
             if (ntype == "PREFERRED_STARTING_TIMES") {
                 int lid = node.value("LESSON").toInt();
-                constraints.lesson_starting_times[lid] = days;
+                if (w == 10) {
+                    constraints.lesson_starting_times[lid] = days;
+                } else {
+//TODO: need Class, slots = false, list of lids (only one element), days
+                    //constraints.soft_starting_times.push_back();
+                }
             } else {
                 std::vector<ActivitySelectionSlots> *alist;
                 if (ntype == "ACTIVITIES_PREFERRED_STARTING_TIMES") {
@@ -49,20 +53,18 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
         } else if (ntype == "DAYS_BETWEEN") {
             DifferentDays * dd = new DifferentDays(node);
             if (dd->isHard()) {
-                std::shared_ptr<DifferentDays> sdd(dd);
+                basic_constraints->local_hard_constraints.push_back(dd);
                 for (int lid : dd->lesson_indexes) {
                     basic_constraints->lessons[lid]
-                        .day_constraints.push_back(sdd);
+                        .day_constraints.push_back(dd);
                 }
             } else {
-                basic_constraints->general_constraints.push_back(
-                    std::unique_ptr<Constraint>(dd));
+                basic_constraints->general_constraints.push_back(dd);
             }
-            delete dd;
         } else if (ntype == "SAME_STARTING_TIME") {
-            SameStartingTime * sst = new SameStartingTime(node);
+           SameStartingTime * sst = new SameStartingTime(node);
             if (sst->isHard()) {
-                std::shared_ptr<SameStartingTime> ssst(sst);
+                basic_constraints->local_hard_constraints.push_back(sst);
                 for (int lid : sst->lesson_indexes) {
                     auto l = &basic_constraints->lessons[lid];
                     if (l->parallel) {
@@ -70,13 +72,11 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
                                  << "has multiple 'SameStartingTime' constraints";
                         continue;
                     }
-                    l->parallel = ssst;
+                    l->parallel = sst;
                 }
             } else {
-                basic_constraints->general_constraints.push_back(
-                    std::unique_ptr<Constraint>(sst));
+                basic_constraints->general_constraints.push_back(sst);
             }
-            delete sst;
         }
     }
     return constraints;
@@ -95,6 +95,9 @@ void localConstraints(BasicConstraints *basic_constraints)
     // Also set up the start_cells field (for unfixed lessons). This field
     // specifies which slots can potentially be used for the lesson – assuming
     // no basic clashes.
+    qDebug() << "tconstraints"
+             << basic_constraints->general_constraints.size()
+             << basic_constraints->local_hard_constraints.size();
     basic_constraints->initial_place_lessons2(unplaced, tconstraints);
 }
 

@@ -193,22 +193,30 @@ void BasicConstraints::with_slots(std::vector<ActivitySelectionSlots> &alist,
 // length and hard local starting time / slot constraints.
 // Finally take existing placed lessons into account, so this method
 // should be called before non-fixed lessons are placed.
+// Actually, it should probably be part of initial_place_lessons2, or a
+// local function only used by that.
 void BasicConstraints::find_slots(
     time_constraints &constraints, lesson_data *ld)
 {
+    // Only relevant for hard constraint:
     if (!ld->start_cells.empty()) {
         qFatal() << "BasicConstraints::find_slots called with"
             << "non-empty start_cells";
     }
+    // If there is a set of preferred starting times for the activity,
+    // take these as the basis
     if (constraints.lesson_starting_times.contains(ld->lesson_id)) {
         ld->start_cells = constraints.lesson_starting_times[ld->lesson_id];
     } else {
+        // Otherwise allow all slots as starting time
         ld->start_cells.resize(ndays);
         for (auto &dvec : ld->start_cells) {
             dvec.resize(nhours);
             for (int h = 0; h < nhours; ++h) dvec[h] = h;
         }
     }
+    // Include further restrictions on starting times, from constraints
+    // concerning multiple activities
     with_slots(constraints.activities_starting_times, ld, true);
     with_slots(constraints.activities_slots, ld, false);
     // Find possible placements taking blocked cells and already placed
