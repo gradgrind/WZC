@@ -6,7 +6,9 @@
 class DifferentDays : public Constraint
 {
 public:
-    DifferentDays(QJsonObject node);
+    DifferentDays(
+        BasicConstraints *constraint_data,
+        QJsonObject node);
     //~DifferentDays() { qDebug() << "~DifferentDays"; }
 
     int evaluate(BasicConstraints *constraint_data) override;

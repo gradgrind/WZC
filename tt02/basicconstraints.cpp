@@ -115,9 +115,11 @@ void BasicConstraints::slot_blockers()
     }
 }
 
-void BasicConstraints::with_slots(std::vector<ActivitySelectionSlots> &alist,
-                                  lesson_data *ld,
-                                  bool starting_time)
+void with_slots(
+    int ndays,
+    std::vector<ActivitySelectionSlots> &alist,
+    lesson_data *ld,
+    bool starting_time)
 {
     for (auto &a : alist) {
         if ((a.tag.isEmpty() || ld->tags.contains(a.tag))
@@ -128,7 +130,7 @@ void BasicConstraints::with_slots(std::vector<ActivitySelectionSlots> &alist,
             && (!a.sid || a.sid == ld->subject)
             && (!a.l || a.l == ld->length)) {
 
-            // If they are starting times, simply take them on, unless
+            // If they are starting times, simply take them on board, unless
             // there are already starting times for this lesson, then
             // build the intersection.
             // If they are available slots, the possible starting times
@@ -163,8 +165,10 @@ void BasicConstraints::with_slots(std::vector<ActivitySelectionSlots> &alist,
                 a.ttslots = ttslots;
             }
             if (ld->start_cells.empty()) {
-                ld->start_cells = a.ttslots;
-            } else {
+                qFatal() << "with_slots called with start_cells empty, lesson"
+                         << ld->lesson_id;
+            }
+            if (a.isHard()) {
                 for (int d = 0; d < ndays; ++d) {
                     const auto hvec = a.ttslots[d];
                     int hvecl = hvec.size();
@@ -184,44 +188,15 @@ void BasicConstraints::with_slots(std::vector<ActivitySelectionSlots> &alist,
                     }
                     ld->start_cells[d] = hlist;
                 }
+            } else {
+                // soft constraint
+                ld->soft_start_cells.push_back({
+                    .weight = a.weight,
+                    .days = a.ttslots,
+                });
             }
         }
     }
-}
-
-// Build basic starting-slots lists for a given lesson based on lesson
-// length and hard local starting time / slot constraints.
-// Finally take existing placed lessons into account, so this method
-// should be called before non-fixed lessons are placed.
-// Actually, it should probably be part of initial_place_lessons2, or a
-// local function only used by that.
-void BasicConstraints::find_slots(
-    time_constraints &constraints, lesson_data *ld)
-{
-    // Only relevant for hard constraint:
-    if (!ld->start_cells.empty()) {
-        qFatal() << "BasicConstraints::find_slots called with"
-            << "non-empty start_cells";
-    }
-    // If there is a set of preferred starting times for the activity,
-    // take these as the basis
-    if (constraints.lesson_starting_times.contains(ld->lesson_id)) {
-        ld->start_cells = constraints.lesson_starting_times[ld->lesson_id];
-    } else {
-        // Otherwise allow all slots as starting time
-        ld->start_cells.resize(ndays);
-        for (auto &dvec : ld->start_cells) {
-            dvec.resize(nhours);
-            for (int h = 0; h < nhours; ++h) dvec[h] = h;
-        }
-    }
-    // Include further restrictions on starting times, from constraints
-    // concerning multiple activities
-    with_slots(constraints.activities_starting_times, ld, true);
-    with_slots(constraints.activities_slots, ld, false);
-    // Find possible placements taking blocked cells and already placed
-    // lessons into account
-    ld->start_cells = find_possible_places(ld);
 }
 
 // Initial placement of the lessons. Call this only once!
@@ -350,8 +325,84 @@ void BasicConstraints::initial_place_lessons2(
     // First collect the (currently) available slots – before actually
     // placing any of the non-fixed lessons.
     for (int lix : to_place) {
-        find_slots(tconstraints, &lessons[lix]);
+        auto ld = &lessons[lix];
+        // Build basic starting-slots lists for a given lesson based on lesson
+        // length and hard local starting time / slot constraints.
+        // Finally take existing placed lessons into account, so this method
+        // should be called before non-fixed lessons are placed.
+        if (!ld->start_cells.empty()) {
+            // Only relevant for hard constraint:
+            qFatal() << "BasicConstraints::initial_place_lessons2 called with"
+                     << "non-empty start_cells";
+        }
+        // If there is a set of preferred starting times for the activity,
+        // take these as the basis
+        if (tconstraints.lesson_starting_times.contains(ld->lesson_id)) {
+            auto lst = tconstraints.lesson_starting_times.at(ld->lesson_id);
+            if (lst.isHard()) {
+                ld->start_cells = lst.days;
+            } else {
+                ld->soft_start_cells.push_back(lst);
+            }
+        }
+        if (ld->start_cells.empty()) {
+            // Otherwise initially allow all slots as starting time
+            ld->start_cells.resize(ndays);
+            for (auto &dvec : ld->start_cells) {
+                dvec.resize(nhours);
+                for (int h = 0; h < nhours; ++h) dvec[h] = h;
+            }
+        }
+        // Include further restrictions on starting times, from constraints
+        // concerning multiple activities
+        with_slots(ndays, tconstraints.activities_starting_times, ld, true);
+        with_slots(ndays, tconstraints.activities_slots, ld, false);
+        // Find possible placements taking blocked cells and already placed
+        // lessons into account
+        ld->start_cells = find_possible_places(ld);
     }
+
+//TODO: The local soft constraints should probably be added here, after
+// the hard ones are finished. That is so that the week slots to test can
+// be filtered by the hard constraints.
+    // For every lesson with soft starting time constraints, prepare a
+    // constraint covering the slots which are not already blocked by a
+    // hard constraint, each slot with its own penalty/weight. If a slot is
+    // covered by more than one constraint, use the highest weight.
+
+    for (int lix : to_place) {
+        auto ld = &lessons.at(lix);
+        if (ld->soft_start_cells.empty()) continue;
+
+        std::vector<std::vector<WeightedHour>> soft_start_slots;
+
+        for (int d = 0; d < ndays; ++d) {
+            const auto dlist = ld->start_cells.at(d);
+            for (int h : dlist) {
+                // Go through each constraint, looking for a penalty (if the
+                // slot is not included).
+                for (const auto &ssc : ld->soft_start_cells) {
+                    const auto cd = ssc.days.at(d);
+                    int w = ssc.weight;
+                    for (int hh : cd) {
+                        if (hh == h) {
+                            // Compare with existing penalty for this slot.
+                            // If none, add it. If greater, update it.
+//TODO
+
+
+
+                        } else if (hh > h) break;
+                    }
+
+
+                }
+            }
+        }
+    }
+
+
+
     // Check placements (if any) and place the lessons
     for (int lix : to_place) {
         auto ldata = &lessons.at(lix);
@@ -531,16 +582,41 @@ std::vector<int> BasicConstraints::find_clashes(
 }
 
 
-SameStartingTime::SameStartingTime(QJsonObject node)// : Constraint()
+SameStartingTime::SameStartingTime(
+    BasicConstraints *constraint_data,
+    QJsonObject node)// : Constraint()
 {
     penalty = node.value("WEIGHT").toInt();
     auto llist = node.value("LESSONS").toArray();
     int n = llist.size();
     lesson_indexes.resize(n);
     for (int i = 0; i < n; ++i) {
-        lesson_indexes[i] = llist[i].toInt();
+        lesson_indexes[i] = constraint_data->lid2lix[llist[i].toInt()];
     }
+//TODO--
+    qDebug() << "SameStartingTime" << penalty << lesson_indexes;
 }
 
 //TODO
 int SameStartingTime::evaluate(BasicConstraints *constraint_data) { return 0; }
+
+SoftActivityTimes::SoftActivityTimes(
+    BasicConstraints *constraint_data,
+    int weight,
+    std::vector<std::vector<int>> days,
+    std::vector<int> lesson_ids,
+    bool allslots)
+        : Constraint(), week_slots{days},  all_slots{allslots}
+{
+    penalty = weight;
+    int n = lesson_ids.size();
+    lesson_indexes.resize(n);
+    for (int i = 0; i < n; ++i) {
+        lesson_indexes[i] = constraint_data->lid2lix[lesson_ids[i]];
+    }
+//TODO--
+    qDebug() << "SoftActivityTimes" << penalty << all_slots << lesson_indexes;
+}
+
+//TODO
+int SoftActivityTimes::evaluate(BasicConstraints *constraint_data) { return 0; }

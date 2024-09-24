@@ -20,7 +20,9 @@
  * "basicconstraints.h".
  *
  */
-DifferentDays::DifferentDays(QJsonObject node) : Constraint()
+DifferentDays::DifferentDays(
+    BasicConstraints *constraint_data,
+    QJsonObject node) : Constraint()
 {
     penalty = node.value("WEIGHT").toInt();
     gap = node.value("NDAYS").toInt();
@@ -30,6 +32,8 @@ DifferentDays::DifferentDays(QJsonObject node) : Constraint()
     for (int i = 0; i < n; ++i) {
         lesson_indexes[i] = llist[i].toInt();
     }
+//TODO--
+    qDebug() << "DifferentDays" << penalty << lesson_indexes;
 }
 
 // Handle constraints "different days" and "days between".

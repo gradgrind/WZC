@@ -7,20 +7,34 @@ struct TTSlot {
     int day, hour;
 };
 
+struct WeightedHour {
+    int weight, hour;
+};
+
 struct ActivitySelectionSlots {
+    int weight;
     QString tag;
     int tid;
     int gid;
     int sid;
     int l;
     std::vector<std::vector<int>> ttslots;
+
+    bool isHard() { return (weight == 10); }
+};
+
+struct LessonStartingSlots {
+    int weight;
+    std::vector<std::vector<int>> days;
+
+    bool isHard() { return (weight == 10); }
 };
 
 // Restrict possible starting times on the basis of various constraints
 // on activities.
 struct time_constraints {
     // From constraint Activity has preferred starting times
-    std::unordered_map<int, std::vector<std::vector<int>>> lesson_starting_times;
+    std::unordered_map<int, LessonStartingSlots> lesson_starting_times;
     // From constraint Activities have preferred starting times
     std::vector<ActivitySelectionSlots> activities_starting_times;
     // From constraint Activities have preferred slots
@@ -44,7 +58,9 @@ protected:
 class SameStartingTime : public Constraint
 {
 public:
-    SameStartingTime(QJsonObject node);
+    SameStartingTime(
+        BasicConstraints *constraint_data,
+        QJsonObject node);
     //~SameStartingTime() { qDebug() << "~SameStartingTime"; }
 
     int evaluate(BasicConstraints *constraint_data) override;
@@ -57,17 +73,19 @@ class SoftActivityTimes : public Constraint
 {
 public:
     SoftActivityTimes(
+        BasicConstraints *constraint_data,
         int weight,
         std::vector<std::vector<int>> days,
-        std::vector<int> lessons,
-        bool slots
+        std::vector<int> lesson_ids,
+        bool allslots
     );
     //~SoftActivityTimes() { qDebug() << "~SoftActivityTimes"; }
 
     int evaluate(BasicConstraints *constraint_data) override;
-    bool test(BasicConstraints *constraint_data, int l_id, int day);
 
     std::vector<int> lesson_indexes;
+    const std::vector<std::vector<int>> week_slots;
+    const bool all_slots;
 };
 
 struct lesson_data{
@@ -86,19 +104,15 @@ struct lesson_data{
     int length;
     bool fixed = false;
     std::vector<std::vector<int>> start_cells; // set only when not "fixed"
-    // used only for placed lessons:
-//TODO: Actually, at least "day" should always be set, to -1 for unplaced
-// lessons.
-    int day;
+    int day = -1; // -1 indicates unplaced lesson
     int hour;
     std::vector<int> rooms;
 
     // The referenced constraints are owned by BasicConstraints, so no
     // destructor is needed here.
-    //std::shared_ptr<SameStartingTime> parallel;
     SameStartingTime *parallel = nullptr;
-    //std::vector<std::shared_ptr<Constraint>> day_constraints;
     std::vector<Constraint *> day_constraints;
+    std::vector<LessonStartingSlots> soft_start_cells;
 };
 
 class BasicConstraints
@@ -145,23 +159,14 @@ public:
     QList<int> i_r;
     // week-blocks for rooms:
     std::vector<std::vector<std::vector<int>>> r_weeks;
-//?
-    // placement resources for each lesson
-    //std::unordered_map<int, lesson_data> lesson_resources;
 
     std::unordered_map<int, int> lid2lix;
     std::vector<lesson_data> lessons;
-    //std::vector<std::unique_ptr<Constraint>> general_constraints;
     std::vector<Constraint *> general_constraints;
     std::vector<Constraint *> local_hard_constraints;
 
 private:
     void slot_blockers();
-    void with_slots(
-        std::vector<ActivitySelectionSlots> &alist,
-        lesson_data *ld,
-        bool starting_time);
-    void find_slots(time_constraints &constraints, lesson_data *ld);
 };
 
 /*#DOC
@@ -175,7 +180,7 @@ could return a list of possible days, which can then restrict the range
 of subsequent tests.
 
 Initially I have the generally possible slots organized as a list of
-day-lists, these latter being lists of possible hours. The day-restrictor
+day-lists, these latter being lists of possible hours. The day-restricting
 constraints can reduce these slots.
 
 Then the basic tests can be run on the lesson (groups, teachers, rooms),
@@ -186,7 +191,7 @@ There can also be (hard-)parallel lessons. These also need to be tested,
 possibly leading to even smaller slot subsets.
 
 Actually, it might be sensible to run the parallel lessons through their
-own day-restrictor constraints at the beginning of the procedure.
+own day-restricting constraints at the beginning of the procedure.
 */
 
 #endif // BASICCONSTRAINTS_H

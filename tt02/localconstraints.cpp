@@ -10,9 +10,6 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
     for (int xid : db_data->Tables.value("LOCAL_CONSTRAINTS")) {
         auto node = db_data->Nodes.value(xid).DATA;
         int w = node.value("WEIGHT").toInt();
-//TODO?? Where do I deal with soft constraints? BasicConstraints?
-//        if (w != 10) continue; // only hard constraints
-
         auto ntype = node.value("TYPE");
         if (node.contains("SLOTS")) {
             //NOTE: I assume the times are sorted in the SLOTS list.
@@ -26,32 +23,35 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             }
             if (ntype == "PREFERRED_STARTING_TIMES") {
                 int lid = node.value("LESSON").toInt();
-                if (w == 10) {
-                    constraints.lesson_starting_times[lid] = days;
-                } else {
-//TODO: need Class, slots = false, list of lids (only one element), days
-                    //constraints.soft_starting_times.push_back();
-                }
+                constraints.lesson_starting_times[lid] = {
+                    .weight = w, .days = days};
             } else {
-                std::vector<ActivitySelectionSlots> *alist;
                 if (ntype == "ACTIVITIES_PREFERRED_STARTING_TIMES") {
-                    alist = &constraints.activities_starting_times;
+                    constraints.activities_starting_times.push_back({
+                        .weight = w,
+                        .tag = node.value("ACTIVITY_TAG").toString(),
+                        .tid = node.value("TEACHER").toInt(),
+                        .gid = node.value("STUDENTS").toInt(),
+                        .sid = node.value("SUBJECT").toInt(),
+                        .l = node.value("LENGTH").toInt(),
+                        .ttslots = days,
+                    });
                 } else if (ntype == "ACTIVITIES_PREFERRED_TIME_SLOTS") {
-                    alist = &constraints.activities_slots;
+                    constraints.activities_slots.push_back({
+                        .weight = w,
+                        .tag = node.value("ACTIVITY_TAG").toString(),
+                        .tid = node.value("TEACHER").toInt(),
+                        .gid = node.value("STUDENTS").toInt(),
+                        .sid = node.value("SUBJECT").toInt(),
+                        .l = node.value("LENGTH").toInt(),
+                        .ttslots = days,
+                    });
                 } else {
                     qFatal() << "Unexpected constraint:" << ntype;
                 }
-                alist->push_back({
-                    .tag = node.value("ACTIVITY_TAG").toString(),
-                    .tid = node.value("TEACHER").toInt(),
-                    .gid = node.value("STUDENTS").toInt(),
-                    .sid = node.value("SUBJECT").toInt(),
-                    .l = node.value("LENGTH").toInt(),
-                    .ttslots = days,
-                });
             }
         } else if (ntype == "DAYS_BETWEEN") {
-            DifferentDays * dd = new DifferentDays(node);
+            DifferentDays * dd = new DifferentDays(basic_constraints, node);
             if (dd->isHard()) {
                 basic_constraints->local_hard_constraints.push_back(dd);
                 for (int lid : dd->lesson_indexes) {
@@ -62,7 +62,8 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
                 basic_constraints->general_constraints.push_back(dd);
             }
         } else if (ntype == "SAME_STARTING_TIME") {
-           SameStartingTime * sst = new SameStartingTime(node);
+           SameStartingTime * sst = new SameStartingTime(
+                basic_constraints, node);
             if (sst->isHard()) {
                 basic_constraints->local_hard_constraints.push_back(sst);
                 for (int lid : sst->lesson_indexes) {
