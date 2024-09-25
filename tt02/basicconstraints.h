@@ -18,6 +18,7 @@ struct ActivitySelectionSlots {
     int gid;
     int sid;
     int l;
+    // This has a list for each day containing the allowed times
     std::vector<std::vector<int>> ttslots;
 
     bool isHard() { return (weight == 10); }
@@ -25,7 +26,8 @@ struct ActivitySelectionSlots {
 
 struct LessonStartingSlots {
     int weight;
-    std::vector<std::vector<int>> days;
+    // This has a list for each day containing the allowed times
+    std::vector<std::vector<int>> ttslots;
 
     bool isHard() { return (weight == 10); }
 };
@@ -39,6 +41,9 @@ struct time_constraints {
     std::vector<ActivitySelectionSlots> activities_starting_times;
     // From constraint Activities have preferred slots
     std::vector<ActivitySelectionSlots> activities_slots;
+//TODO--
+    // Soft constraints on lesson starting times, lesson-id -> week array
+//    std::unordered_map<int, std::vector<LessonStartingSlots>> soft_start;
 };
 
 class BasicConstraints; // forward declaration
@@ -72,19 +77,24 @@ public:
 class SoftActivityTimes : public Constraint
 {
 public:
-    SoftActivityTimes(
-        BasicConstraints *constraint_data,
+    SoftActivityTimes(BasicConstraints *constraint_data,
         int weight,
-        std::vector<std::vector<int>> days,
-        std::vector<int> lesson_ids,
-        bool allslots
+        // For each day a list of allowed time slots
+        std::vector<std::vector<int>> &ttslots,
+        // The times can refer to starting times or permissible
+        // slots, true for slots
+        bool allslots // false for starting times, true for slots
     );
     //~SoftActivityTimes() { qDebug() << "~SoftActivityTimes"; }
 
+    void add_lesson_id(
+        BasicConstraints *constraint_data, int lesson_id);
     int evaluate(BasicConstraints *constraint_data) override;
 
     std::vector<int> lesson_indexes;
-    const std::vector<std::vector<int>> week_slots;
+    // This should have a full week of slots containing true for
+    // permitted slots
+    std::vector<std::vector<bool>> week_slots;
     const bool all_slots;
 };
 
@@ -103,6 +113,7 @@ struct lesson_data{
     QStringList tags;
     int length;
     bool fixed = false;
+    // This has a list of possible starting hours for each day
     std::vector<std::vector<int>> start_cells; // set only when not "fixed"
     int day = -1; // -1 indicates unplaced lesson
     int hour;
@@ -110,9 +121,11 @@ struct lesson_data{
 
     // The referenced constraints are owned by BasicConstraints, so no
     // destructor is needed here.
+//TODO: Are these still relevant?
     SameStartingTime *parallel = nullptr;
     std::vector<Constraint *> day_constraints;
-    std::vector<LessonStartingSlots> soft_start_cells;
+
+    std::vector<Constraint *> soft_constraints;
 };
 
 class BasicConstraints
@@ -127,9 +140,10 @@ public:
         for (const auto &p : local_hard_constraints) delete p;
     }
 
-    bool test_single_slot(lesson_data *ldata, int day, int hour);
+    bool test_single_slot(lesson_data &ldata, int day, int hour);
     std::vector<int> find_clashes(lesson_data *ldata, int day, int hour);
-    std::vector<std::vector<int>> find_possible_places(lesson_data *ldata);
+    // Returns a list of possible starting hours for each day
+    std::vector<std::vector<int>> find_possible_places(lesson_data &ldata);
     bool test_possible_place(lesson_data *ldata, int day, int hour);
     bool test_place(lesson_data *ldata, int day, int hour);
     std::vector<int> initial_place_lessons();
@@ -166,6 +180,11 @@ public:
     std::vector<Constraint *> local_hard_constraints;
 
 private:
+    void multi_slot_constraints(
+        std::vector<ActivitySelectionSlots> &alist,
+        std::vector<int> &to_place, // list of unfixed lesson indexes
+        bool allslots // false for starting times, true for slots
+    );
     void slot_blockers();
 };
 

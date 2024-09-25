@@ -177,7 +177,7 @@ void ViewHandler::handle_load_file()
 void ViewHandler::onClick(int day, int hour, Tile *tile) {
     if (tile) {
         int lid = tile->lid;
-        auto ldata = &basic_constraints->lessons[
+        auto &ldata = basic_constraints->lessons[
             basic_constraints->lid2lix[lid]];
         qDebug() << "TILE CLICKED:" << day << hour
                  << QString("[%1|%2]").arg(tile->tag).arg(lid);
@@ -188,9 +188,9 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         //TODO: parallel lessons
         //grid->clearCellOK();
 
-        if (ldata->start_cells.empty()) {
+        if (ldata.start_cells.empty()) {
             // This should be a "fixed" lesson
-            if (ldata->fixed) {
+            if (ldata.fixed) {
                 qDebug() << "FIXED";
                 return;
             }
@@ -200,7 +200,7 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
             return;
         }
 
-        qDebug() << "START-CELLS:" << ldata->start_cells;
+        qDebug() << "START-CELLS:" << ldata.start_cells;
 //TODO: The start-cells seem too restrictive. Are the wrong cells getting
 // added somehow?
         auto free = basic_constraints->find_possible_places(ldata);

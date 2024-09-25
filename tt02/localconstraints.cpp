@@ -24,7 +24,7 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             if (ntype == "PREFERRED_STARTING_TIMES") {
                 int lid = node.value("LESSON").toInt();
                 constraints.lesson_starting_times[lid] = {
-                    .weight = w, .days = days};
+                    .weight = w, .ttslots = days};
             } else {
                 if (ntype == "ACTIVITIES_PREFERRED_STARTING_TIMES") {
                     constraints.activities_starting_times.push_back({
