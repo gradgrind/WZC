@@ -144,8 +144,8 @@ public:
     std::vector<int> find_clashes(lesson_data *ldata, int day, int hour);
     // Returns a list of possible starting hours for each day
     std::vector<std::vector<int>> find_possible_places(lesson_data &ldata);
-    bool test_possible_place(lesson_data *ldata, int day, int hour);
-    bool test_place(lesson_data *ldata, int day, int hour);
+    bool test_possible_place(lesson_data &ldata, int day, int hour);
+    bool test_place(lesson_data &ldata, int day, int hour);
     std::vector<int> initial_place_lessons();
     void initial_place_lessons2(
         std::vector<int> to_place, time_constraints &tconstraints);
