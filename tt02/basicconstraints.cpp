@@ -123,12 +123,15 @@ void BasicConstraints::multi_slot_constraints(
     for (auto &a : alist) {
         SoftActivityTimes *sat = nullptr; // only needed for soft constraints
         bool hard = a.isHard();
-        if (!hard) sat = new SoftActivityTimes(
-            this,
-            a.weight,
-            a.ttslots,
-            allslots
-        );
+        if (!hard) {
+            sat = new SoftActivityTimes(
+                this,
+                a.weight,
+                a.ttslots,
+                allslots
+            );
+            general_constraints.push_back(sat);
+        }
         for (int lix : to_place) {
             auto &ld = lessons[lix];
             if ((a.tag.isEmpty() || ld.tags.contains(a.tag))
@@ -582,7 +585,7 @@ SameStartingTime::SameStartingTime(
         lesson_indexes[i] = constraint_data->lid2lix[llist[i].toInt()];
     }
 //TODO--
-    qDebug() << "SameStartingTime" << penalty << lesson_indexes;
+//    qDebug() << "SameStartingTime" << penalty << lesson_indexes;
 }
 
 //TODO
@@ -607,7 +610,7 @@ SoftActivityTimes::SoftActivityTimes(
         }
     }
 //TODO--
-    qDebug() << "SoftActivityTimes" << penalty << all_slots << lesson_indexes;
+//    qDebug() << "SoftActivityTimes" << penalty << all_slots << lesson_indexes;
 }
 
 void SoftActivityTimes::add_lesson_id(

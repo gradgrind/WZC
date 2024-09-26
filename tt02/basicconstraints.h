@@ -7,10 +7,6 @@ struct TTSlot {
     int day, hour;
 };
 
-struct WeightedHour {
-    int weight, hour;
-};
-
 struct ActivitySelectionSlots {
     int weight;
     QString tag;
@@ -41,9 +37,6 @@ struct time_constraints {
     std::vector<ActivitySelectionSlots> activities_starting_times;
     // From constraint Activities have preferred slots
     std::vector<ActivitySelectionSlots> activities_slots;
-//TODO--
-    // Soft constraints on lesson starting times, lesson-id -> week array
-//    std::unordered_map<int, std::vector<LessonStartingSlots>> soft_start;
 };
 
 class BasicConstraints; // forward declaration
@@ -133,9 +126,6 @@ class BasicConstraints
 public:
     BasicConstraints(DBData *dbdata);
     ~BasicConstraints() {
-        qDebug() << "~BasicConstraints"
-                 << general_constraints.size()
-                 << local_hard_constraints.size();
         for (const auto &p : general_constraints) delete p;
         for (const auto &p : local_hard_constraints) delete p;
     }

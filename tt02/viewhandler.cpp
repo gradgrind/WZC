@@ -164,11 +164,9 @@ void ViewHandler::handle_load_file()
     dbdata->save(dbpath);
     qDebug() << "Saved data to" << dbpath;
 
-//TODO: This is crashing when basic_constraints not 0.
     if (basic_constraints) delete basic_constraints;
     basic_constraints = new BasicConstraints(dbdata);
     localConstraints(basic_constraints);
-
     grid->setClickHandler([this](int d, int h, Tile *t){
         onClick(d, h, t);
     });

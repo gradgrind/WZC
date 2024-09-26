@@ -54,8 +54,8 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             DifferentDays * dd = new DifferentDays(basic_constraints, node);
             if (dd->isHard()) {
                 basic_constraints->local_hard_constraints.push_back(dd);
-                for (int lid : dd->lesson_indexes) {
-                    basic_constraints->lessons[lid]
+                for (int lix : dd->lesson_indexes) {
+                    basic_constraints->lessons.at(lix)
                         .day_constraints.push_back(dd);
                 }
             } else {
@@ -96,9 +96,6 @@ void localConstraints(BasicConstraints *basic_constraints)
     // Also set up the start_cells field (for unfixed lessons). This field
     // specifies which slots can potentially be used for the lesson – assuming
     // no basic clashes.
-    qDebug() << "tconstraints"
-             << basic_constraints->general_constraints.size()
-             << basic_constraints->local_hard_constraints.size();
     basic_constraints->initial_place_lessons2(unplaced, tconstraints);
 }
 

@@ -30,10 +30,10 @@ DifferentDays::DifferentDays(
     int n = llist.size();
     lesson_indexes.resize(n);
     for (int i = 0; i < n; ++i) {
-        lesson_indexes[i] = llist[i].toInt();
+        lesson_indexes[i] = constraint_data->lid2lix[llist[i].toInt()];
     }
 //TODO--
-    qDebug() << "DifferentDays" << penalty << lesson_indexes;
+//    qDebug() << "DifferentDays" << penalty << lesson_indexes;
 }
 
 // Handle constraints "different days" and "days between".
