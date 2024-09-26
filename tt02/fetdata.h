@@ -18,7 +18,9 @@ struct FetInfo{
     QHash<int, class_divs> class_subgroup_divisions;
     QList<int> course_list;
     QHash<QString, int> activity_lesson;
-    QList<DBNode> nodes;
+    QMap<int, QJsonObject> nodes;
+
+    int next_index() { return nodes.size() + 1; } // 1-based indexing
 };
 
 FetInfo fetData(XMLNode xmlin);
