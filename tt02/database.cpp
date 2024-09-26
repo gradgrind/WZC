@@ -5,22 +5,52 @@
 #include <QJsonDocument>
 //#include <QElapsedTimer>
 
-DBData::DBData(QList<DBNode> node_list) : Nodes {node_list}
+DBData::DBData(QMap<int, QJsonObject> node_map) : Nodes {node_map}
 {
-    for (const auto & node : Nodes) {
-        Tables[node.DB_TABLE].append(node.Id);
+    for (auto i = Nodes.cbegin(), end = Nodes.cend(); i != end; ++i) {
+        Tables[i.value().value("TYPE").toString()].append(i.key());
     }
     for (int d : Tables.value("DAYS")) {
-        days[d] = Nodes.value(d).DATA.value("X").toInt();
+        days[d] = Nodes.value(d).value("X").toInt();
     }
     for (int h : Tables.value("HOURS")) {
-        hours[h] = Nodes.value(h).DATA.value("X").toInt();
+        hours[h] = Nodes.value(h).value("X").toInt();
     }
 }
 
-QString DBData::get_tag(int index)
+QString DBData::get_tag(int id)
 {
-    return Nodes.value(index).DATA.value("ID").toString();
+    return Nodes.value(id).value("ID").toString();
+}
+
+void DBData::load(QString path)
+{
+    QSqlDatabase db = QSqlDatabase::database();
+    if (db.isValid()) {
+        db.close();
+    } else {
+        db = QSqlDatabase::addDatabase("QSQLITE");
+    }
+    db.setDatabaseName(path);
+    if (!db.open()) {
+        qFatal() << "Opening database failed:" << path
+                 << "\n Error:" << db.lastError();
+    }
+    db_path = path;
+    QSqlQuery query("select Id, DATA from NODES");
+    Nodes.clear();
+    while (query.next()) {
+        int i = query.value(0).toInt();
+        QJsonParseError err;
+        auto json = QJsonDocument::fromJson(
+            query.value(1).toByteArray(), &err);
+        if (json.isNull()) {
+            qFatal() << "Bad JSON:" << err.errorString() << "in node" << i;
+        } else if (!json.isObject()) {
+            qFatal() << "Invalid JSON in node" << i;
+        }
+        Nodes[i] = json.object();
+    }
 }
 
 void DBData::save(QString path)
@@ -51,15 +81,13 @@ void DBData::save()
     query.exec("drop table if exists NODES");
     query.exec("create table NODES "
                "(Id integer primary key, "
-               "DB_TABLE text, "
                "DATA text)");
-    query.prepare("insert into NODES (Id, DB_TABLE, DATA) "
-                  "values (?, ?, ?)");
-    for (const auto &node : Nodes) {
-        query.bindValue(0, node.Id);
-        query.bindValue(1, node.DB_TABLE);
-        query.bindValue(2, QJsonDocument(node.DATA)
-                               .toJson(QJsonDocument::JsonFormat::Compact));
+    query.prepare("insert into NODES (Id, DATA) "
+                  "values (?, ?)");
+    for (auto i = Nodes.cbegin(), end = Nodes.cend(); i != end; ++i) {
+        query.bindValue(0, i.key());
+        query.bindValue(1, QJsonDocument(i.value())
+            .toJson(QJsonDocument::JsonFormat::Compact));
         query.exec();
     }
     db.commit();

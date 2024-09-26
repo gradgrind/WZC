@@ -57,6 +57,10 @@ ViewHandler::~ViewHandler()
     if (basic_constraints) delete basic_constraints;
 }
 
+
+//TODO: Don't touch DBData at first, produce a JSON representation of the
+// data, which can be saved to a file. This should then be the source for
+// building the DBData instance.
 void ViewHandler::handle_load_file()
 {
     auto fileName = QFileDialog::getOpenFileName(nullptr,
