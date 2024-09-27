@@ -40,12 +40,10 @@ void readDays(FetInfo &fet_info, QList<QVariant> item_list)
             int id = fet_info.next_index();
             fet_info.nodes[id] = QJsonObject{
                 {"Id", id},
-                {"DATA", QJsonObject{
-                    {"TYPE", "DAYS"},
-                    {"ID", name},
-                    {"NAME",  m.value("Long_Name")},
-                    {"X", i},
-                }}
+                {"TYPE", "DAYS"},
+                {"ID", name},
+                {"NAME",  m.value("Long_Name")},
+                {"X", i},
             };
             fet_info.days[name] = id;
             //qDebug() << id << fet_info.nodes[id];
@@ -76,14 +74,12 @@ void readHours(FetInfo &fet_info, QList<QVariant> item_list)
             int id = fet_info.next_index();
             fet_info.nodes[id] = QJsonObject{
                 {"Id", id},
-                {"DATA", QJsonObject{
-                    {"TYPE", "HOURS"},
-                    {"ID", name},
-                    {"NAME", lname[0]},
-                    {"X", i},
-                    {"START_TIME", start},
-                    {"END_TIME", end},
-                }}
+                {"TYPE", "HOURS"},
+                {"ID", name},
+                {"NAME", lname[0]},
+                {"X", i},
+                {"START_TIME", start},
+                {"END_TIME", end},
             };
             fet_info.hours[name] = id;
             //qDebug() << id << fet_info.nodes[id].DATA;
@@ -103,12 +99,10 @@ void readSubjects(FetInfo &fet_info, QList<QVariant> item_list)
             int id = fet_info.next_index();
             fet_info.nodes[id] = QJsonObject{
                 {"Id", id},
-                {"DATA", QJsonObject{
-                    {"TYPE", "SUBJECTS"},
-                    {"ID", name},
-                    {"NAME", m.value("Long_Name")},
-                    {"X", i},
-                }}
+                {"TYPE", "SUBJECTS"},
+                {"ID", name},
+                {"NAME", m.value("Long_Name")},
+                {"X", i},
             };
             fet_info.subjects[name] = id;
             //qDebug() << id << fet_info.nodes[id].DATA;
@@ -128,12 +122,10 @@ void readTeachers(FetInfo &fet_info, QList<QVariant> item_list)
             int id = fet_info.next_index();
             fet_info.nodes[id] = QJsonObject{
                 {"Id", id},
-                {"DATA", QJsonObject{
-                    {"TYPE", "TEACHERS"},
-                    {"ID", name},
-                    {"NAME", m.value("Long_Name")},
-                    {"X", i},
-                }}
+                {"TYPE", "TEACHERS"},
+                {"ID", name},
+                {"NAME", m.value("Long_Name")},
+                {"X", i},
             };
             fet_info.teachers[name] = id;
             //qDebug() << id << fet_info.nodes[id].DATA;
@@ -155,12 +147,10 @@ void readRooms(FetInfo &fet_info, QList<QVariant> item_list)
             int id = fet_info.next_index();
             QJsonObject data{
                 {"Id", id},
-                {"DATA", QJsonObject{
-                    {"TYPE", "ROOMS"},
-                    {"ID", name},
-                    {"NAME", m.value("Long_Name")},
-                    {"X", i},
-                }}
+                {"TYPE", "ROOMS"},
+                {"ID", name},
+                {"NAME", m.value("Long_Name")},
+                {"X", i},
             };
             fet_info.rooms[name] = id;
             QJsonArray compulsory;
@@ -258,12 +248,10 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
             int clid = fet_info.next_index();
             fet_info.nodes[clid] = QJsonObject{
                 {"Id", clid},
-                {"DATA", QJsonObject{
-                    {"TYPE", "CLASSES"},
-                    {"ID", name},
-                    {"NAME", m.value("Long_Name")},
-                    {"X", i},
-                }}
+                {"TYPE", "CLASSES"},
+                {"ID", name},
+                {"NAME", m.value("Long_Name")},
+                {"X", i},
             };
             fet_info.class_list.append(clid);
             i++;
@@ -301,13 +289,11 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
                     int id = fet_info.next_index();
                     fet_info.nodes[id] = QJsonObject{
                         {"Id", id},
-                        {"DATA", QJsonObject{
-                            {"TYPE", "GROUPS"},
-                            {"ID", gid[1]},
-                            {"CLASS", clid},
-                            {"SUBGROUPS", subgroups},
-                            {"STUDENTS", QJsonArray()},
-                        }}
+                        {"TYPE", "GROUPS"},
+                        {"ID", gid[1]},
+                        {"CLASS", clid},
+                        {"SUBGROUPS", subgroups},
+                        {"STUDENTS", QJsonArray()},
                     };
                     fet_info.groups[g0] = id;
                     group2index[gid[1]] = id;
@@ -324,13 +310,11 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
             int id = fet_info.next_index();
             fet_info.nodes[id] = QJsonObject{
                 {"Id", id},
-                {"DATA", QJsonObject{
-                    {"TYPE", "GROUPS"},
-                    {"ID", ""},
-                    {"CLASS", clid},
-                    {"SUBGROUPS", QJsonArray::fromStringList(sglist)},
-                    {"STUDENTS", QJsonArray()},
-                }}
+                {"TYPE", "GROUPS"},
+                {"ID", ""},
+                {"CLASS", clid},
+                {"SUBGROUPS", QJsonArray::fromStringList(sglist)},
+                {"STUDENTS", QJsonArray()},
             };
             fet_info.groups[name] = id;
             // Rebuild the divisions, starting with the whole-class "division"
@@ -409,15 +393,13 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
                         << "has unknown group:" << g;
                     }
                 }
-                int id = fet_info.next_index();
+                id = fet_info.next_index();
                 fet_info.nodes[id] = QJsonObject{
                     {"Id", id},
-                    {"DATA", QJsonObject{
-                        {"TYPE", "COURSES"},
-                        {"TEACHERS", tlist},
-                        {"SUBJECT", sid},
-                        {"STUDENTS", glist},
-                    }}
+                    {"TYPE", "COURSES"},
+                    {"TEACHERS", tlist},
+                    {"SUBJECT", sid},
+                    {"STUDENTS", glist},
                 };
                 fet_info.course_list.append(id);
                 if (cid != "0") {
@@ -428,13 +410,11 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
             int lid = fet_info.next_index();
             fet_info.nodes[lid] = QJsonObject{
                 {"Id", lid},
-                {"DATA", QJsonObject{
-                    {"TYPE", "LESSONS"},
-                    {"COURSE", id},
-                    {"LENGTH", m.value("Duration").toInt()},
-                    {"ACTIVITY_TAGS", QJsonArray::fromStringList(
-                                          m.values("Activity_Tag"))},
-                }}
+                {"TYPE", "LESSONS"},
+                {"COURSE", id},
+                {"LENGTH", m.value("Duration").toInt()},
+                {"ACTIVITY_TAGS", QJsonArray::fromStringList(
+                                      m.values("Activity_Tag"))},
             };
             fet_info.activity_lesson[m.value("Id")] = lid;
         }

@@ -8,9 +8,9 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
     time_constraints constraints;
     auto db_data = basic_constraints->db_data;
     for (int xid : db_data->Tables.value("LOCAL_CONSTRAINTS")) {
-        auto node = db_data->Nodes.value(xid).DATA;
+        auto node = db_data->Nodes.value(xid);
         int w = node.value("WEIGHT").toInt();
-        auto ntype = node.value("TYPE");
+        auto ntype = node.value("CTYPE");
         if (node.contains("SLOTS")) {
             //NOTE: I assume the times are sorted in the SLOTS list.
             std::vector<std::vector<int>> days(basic_constraints->ndays);

@@ -6,11 +6,11 @@ ShowRoom::ShowRoom(TT_Grid *grid, DBData *db_data, int room_id)
     QJsonValue r(room_id);
     // I need to go through all the lessons
     for (int lid : db_data->Tables.value("LESSONS")) {
-        auto node = db_data->Nodes.value(lid).DATA;
+        auto node = db_data->Nodes.value(lid);
         if (!node.value("ROOMS").toArray().contains(r)) continue;
 
         int course_id = node.value("COURSE").toInt();
-        auto course = db_data->Nodes.value(course_id).DATA;
+        auto course = db_data->Nodes.value(course_id);
         QStringList teachers;
         auto tlist = course.value("TEACHERS").toArray();
         for (const auto & t : tlist) {
@@ -21,7 +21,7 @@ ShowRoom::ShowRoom(TT_Grid *grid, DBData *db_data, int room_id)
         auto glist = course.value("STUDENTS").toArray();
         for (const auto & g : glist) {
             // Combine class and group
-            auto node = db_data->Nodes.value(g.toInt()).DATA;
+            auto node = db_data->Nodes.value(g.toInt());
             auto gtag = node.value("ID").toString();
             auto ctag = db_data->get_tag(node.value("CLASS").toInt());
             if (gtag.isEmpty()) {

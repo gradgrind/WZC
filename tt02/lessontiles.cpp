@@ -36,15 +36,14 @@ void class_divisions(DBData *db_data)
     // Loop through all classes
     for (int c : db_data->Tables["CLASSES"]) {
         class_divs divs;
-        auto cdata = db_data->Nodes.value(c).DATA;
+        auto cdata = db_data->Nodes.value(c);
         auto divarray = cdata.value("DIVISIONS").toArray();
         for (const auto &d : divarray) {
             division_list divlist;
             auto groups = d.toObject().value("Groups").toArray();
             for (const auto &g : groups) {
                 int gid = g.toInt();
-                auto sglist = db_data->Nodes.value(gid)
-                                  .DATA["SUBGROUPS"].toArray();
+                auto sglist = db_data->Nodes.value(gid)["SUBGROUPS"].toArray();
                 QSet<QString> gset;
                 for (const auto &sg : sglist) {
                     gset.insert(sg.toString());
@@ -68,8 +67,8 @@ QMap<int, QList<TileFraction>> course_divisions(DBData *db_data, QJsonArray grou
     for (const auto &v : groups) {
         int g = v.toInt();
         auto gnode = db_data->Nodes.value(g);
-        int cl = gnode.DATA.value("CLASS").toInt();
-        auto sglist = gnode.DATA.value("SUBGROUPS").toArray();
+        int cl = gnode.value("CLASS").toInt();
+        auto sglist = gnode.value("SUBGROUPS").toArray();
         for (const auto &sg : sglist) {
             class_subgroups[cl].insert(sg.toString());
         }

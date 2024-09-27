@@ -57,8 +57,8 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 }
             }
             int gix = fet_info.groups.value(gid);
-            auto gnode = &fet_info.nodes[gix];
-            gnode->DATA["NOT_AVAILABLE"] = daylist;
+            auto &gnode = fet_info.nodes[gix];
+            gnode["NOT_AVAILABLE"] = daylist;
         //
         } else if (n.name == "ConstraintTeacherNotAvailableTimes") {
             auto m = readSimpleItems(n);
@@ -80,8 +80,8 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 }
             }
             int tix = fet_info.teachers.value(tid);
-            auto tnode = &fet_info.nodes[tix];
-            tnode->DATA["NOT_AVAILABLE"] = daylist;
+            auto &tnode = fet_info.nodes[tix];
+            tnode["NOT_AVAILABLE"] = daylist;
         //
         } else if (n.name == "ConstraintActivityPreferredStartingTime") {
             auto m = readSimpleItems(n);
@@ -90,10 +90,10 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             auto hour = m.value("Preferred_Hour");
             bool fixed = m.value("Permanently_Locked") == "true";
             int aix = fet_info.activity_lesson.value(aid);
-            auto anode = &fet_info.nodes[aix];
-            anode->DATA["DAY"] = fet_info.days.value(day);
-            anode->DATA["HOUR"] = fet_info.hours.value(hour);
-            anode->DATA["FIXED"] = fixed;
+            auto &anode = fet_info.nodes[aix];
+            anode["DAY"] = fet_info.days.value(day);
+            anode["HOUR"] = fet_info.hours.value(hour);
+            anode["FIXED"] = fixed;
         //
         } else if (n.name == "ConstraintMinDaysBetweenActivities") {
             auto m = readSimpleItems(n);
@@ -103,18 +103,16 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 lids.append(fet_info.activity_lesson.value(aid));
             }
             // Add to LOCAL_CONSTRAINTS table.
-            int hcid = fet_info.nodes.length();
+            int hcid = fet_info.next_index();
             int days = m.value("MinDays").toInt();
-            fet_info.nodes.append({
-                .Id = hcid,
-                .DB_TABLE = "LOCAL_CONSTRAINTS",
-                .DATA = {
-                    {"TYPE", "DAYS_BETWEEN"},
-                    {"NDAYS", days},
-                    {"LESSONS", lids},
-                    {"WEIGHT", w},
-                },
-            });
+            fet_info.nodes[hcid] = QJsonObject{
+                {"Id", hcid},
+                {"TYPE", "LOCAL_CONSTRAINTS"},
+                {"CTYPE", "DAYS_BETWEEN"},
+                {"NDAYS", days},
+                {"LESSONS", lids},
+                {"WEIGHT", w},
+            };
         //
         } else if (n.name == "ConstraintActivityPreferredStartingTimes") {
             auto m = readSimpleItems(n);
@@ -134,17 +132,15 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 }
             }
             // Add to LOCAL_CONSTRAINTS table.
-            int hcid = fet_info.nodes.length();
-            fet_info.nodes.append({
-                .Id = hcid,
-                .DB_TABLE = "LOCAL_CONSTRAINTS",
-                .DATA = {
-                    {"TYPE", "PREFERRED_STARTING_TIMES"},
-                    {"LESSON", lid},
-                    {"SLOTS", times},
-                    {"WEIGHT", w},
-                },
-            });
+            int hcid = fet_info.next_index();
+            fet_info.nodes[hcid] = QJsonObject{
+                {"Id", hcid},
+                {"TYPE", "LOCAL_CONSTRAINTS"},
+                {"CTYPE", "PREFERRED_STARTING_TIMES"},
+                {"LESSON", lid},
+                {"SLOTS", times},
+                {"WEIGHT", w},
+            };
         //
         } else if (n.name == "ConstraintActivitiesPreferredStartingTimes") {
             auto m = readSimpleItems(n);
@@ -167,21 +163,19 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 }
             }
             // Add to LOCAL_CONSTRAINTS table.
-            int hcid = fet_info.nodes.length();
-            fet_info.nodes.append({
-                .Id = hcid,
-                .DB_TABLE = "LOCAL_CONSTRAINTS",
-                .DATA = {
-                    {"TYPE", "ACTIVITIES_PREFERRED_STARTING_TIMES"},
-                    {"ACTIVITY_TAG", atag}, // TODO: these need reading in
-                    {"TEACHER", t},
-                    {"STUDENTS", g},
-                    {"SUBJECT", s},
-                    {"LENGTH", l},
-                    {"SLOTS", times},
-                    {"WEIGHT", w},
-                },
-            });
+            int hcid = fet_info.next_index();
+            fet_info.nodes[hcid] = QJsonObject{
+                {"Id", hcid},
+                {"TYPE", "LOCAL_CONSTRAINTS"},
+                {"CTYPE", "ACTIVITIES_PREFERRED_STARTING_TIMES"},
+                {"ACTIVITY_TAG", atag}, // TODO: these need reading in
+                {"TEACHER", t},
+                {"STUDENTS", g},
+                {"SUBJECT", s},
+                {"LENGTH", l},
+                {"SLOTS", times},
+                {"WEIGHT", w},
+            };
         //
         } else if (n.name == "ConstraintActivitiesPreferredTimeSlots") {
             auto m = readSimpleItems(n);
@@ -204,21 +198,19 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 }
             }
             // Add to LOCAL_CONSTRAINTS table.
-            int hcid = fet_info.nodes.length();
-            fet_info.nodes.append({
-                .Id = hcid,
-                .DB_TABLE = "LOCAL_CONSTRAINTS",
-                .DATA = {
-                    {"TYPE", "ACTIVITIES_PREFERRED_TIME_SLOTS"},
-                    {"ACTIVITY_TAG", atag}, // TODO: these need reading in
-                    {"TEACHER", t},
-                    {"STUDENTS", g},
-                    {"SUBJECT", s},
-                    {"LENGTH", l},
-                    {"SLOTS", times},
-                    {"WEIGHT", w},
-                },
-            });
+            int hcid = fet_info.next_index();
+            fet_info.nodes[hcid] = QJsonObject{
+                {"Id", hcid},
+                {"TYPE", "LOCAL_CONSTRAINTS"},
+                {"CTYPE", "ACTIVITIES_PREFERRED_TIME_SLOTS"},
+                {"ACTIVITY_TAG", atag}, // TODO: these need reading in
+                {"TEACHER", t},
+                {"STUDENTS", g},
+                {"SUBJECT", s},
+                {"LENGTH", l},
+                {"SLOTS", times},
+                {"WEIGHT", w},
+            };
         //
         } else if (n.name == "ConstraintActivitiesSameStartingTime") {
             auto m = readSimpleItems(n);
@@ -228,16 +220,14 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 lids.append(fet_info.activity_lesson.value(aid));
             }
             // Add to LOCAL_CONSTRAINTS table.
-            int hcid = fet_info.nodes.length();
-            fet_info.nodes.append({
-                .Id = hcid,
-                .DB_TABLE = "LOCAL_CONSTRAINTS",
-                .DATA = {
-                    {"TYPE", "SAME_STARTING_TIME"},
-                    {"LESSONS", lids},
-                    {"WEIGHT", w},
-                },
-            });
+            int hcid = fet_info.next_index();
+            fet_info.nodes[hcid] = QJsonObject{
+                {"Id", hcid},
+                {"TYPE", "LOCAL_CONSTRAINTS"},
+                {"CTYPE", "SAME_STARTING_TIME"},
+                {"LESSONS", lids},
+                {"WEIGHT", w},
+            };
         }
 
 // ConstraintStudentsSetMaxGapsPerWeek

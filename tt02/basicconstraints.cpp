@@ -10,7 +10,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
 
     // Collect the atomic subgroups
     for (int gid : dbdata->Tables.value("GROUPS")) {
-        auto node = dbdata->Nodes.value(gid).DATA;
+        auto node = dbdata->Nodes.value(gid);
         auto sglist = node.value("SUBGROUPS").toArray();
         bool allsg = node.value("ID").toString().isEmpty();
         for (auto sg : sglist) {
@@ -56,7 +56,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
 
     // Make a weekly array for each real room
     for (int rid : dbdata->Tables.value("ROOMS")) {
-        auto node = dbdata->Nodes.value(rid).DATA;
+        auto node = dbdata->Nodes.value(rid);
         if (node.contains("ROOMS_NEEDED")) continue;
         // A real room
         r2i[rid] = i_r.length();
@@ -75,7 +75,7 @@ void BasicConstraints::slot_blockers()
 {
     // Block slots where teachers are "not available"
     for (int tid : db_data->Tables.value("TEACHERS")) {
-        auto node = db_data->Nodes.value(tid).DATA;
+        auto node = db_data->Nodes.value(tid);
         auto blist = node.value("NOT_AVAILABLE").toArray();
         for (auto b : blist) {
             auto bpair = b.toArray();
@@ -87,7 +87,7 @@ void BasicConstraints::slot_blockers()
     }
     // Block slots where student groups are "not available"
     for (int gid : db_data->Tables.value("GROUPS")) {
-        auto node = db_data->Nodes.value(gid).DATA;
+        auto node = db_data->Nodes.value(gid);
         auto blist = node.value("NOT_AVAILABLE").toArray();
         if (blist.isEmpty()) continue;
         auto sglist = node.value("SUBGROUPS").toArray();
@@ -102,7 +102,7 @@ void BasicConstraints::slot_blockers()
     }
     // Block slots where rooms are "not available"
     for (int rid : db_data->Tables.value("ROOMS")) {
-        auto node = db_data->Nodes.value(rid).DATA;
+        auto node = db_data->Nodes.value(rid);
         if (node.contains("ROOMS_NEEDED")) continue;
         auto blist = node.value("NOT_AVAILABLE").toArray();
         for (auto b : blist) {
@@ -223,7 +223,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
     // Place fixed lessons first.
     for (int cid : db_data->Tables.value("COURSES")) {
         lesson_data ldc; // lesson data for the course
-        auto node = db_data->Nodes.value(cid).DATA;
+        auto node = db_data->Nodes.value(cid);
         ldc.subject = node.value("SUBJECT").toInt();
         auto glist = node.value("STUDENTS").toArray();
         for(auto g : glist) {
@@ -242,7 +242,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         std::vector<int> rvec;
         for (auto rv : rlist) {
             int rid = rv.toInt();
-            auto node = db_data->Nodes.value(rid).DATA;
+            auto node = db_data->Nodes.value(rid);
             if (node.contains("ROOMS_NEEDED")) {
                 // Virtual room
                 auto srl = node.value("ROOMS_NEEDED").toArray();
@@ -269,7 +269,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         // Note that they are only valid if there is a slot placement.
         for (int lid : db_data->course_lessons.value(cid)) {
             lesson_data ld(ldc);
-            auto lnode = db_data->Nodes.value(lid).DATA;
+            auto lnode = db_data->Nodes.value(lid);
             auto rlist = lnode.value("ROOMS").toArray();
             for (auto r : rlist) {
                 ld.rooms.push_back(r2i.value(r.toInt()));

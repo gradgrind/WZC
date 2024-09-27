@@ -18,17 +18,21 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             // overwrite an existing roomspec value for a course with
             // multiple lessons.
             int aix = fet_info.activity_lesson.value(aid);
-            int cid = fet_info.nodes[aix].DATA.value("COURSE").toInt();
-            auto cnode = &fet_info.nodes[cid];
+            int cid = fet_info.nodes[aix].value("COURSE").toInt();
+//TODO--
+            qDebug() << "§§§cid:" << aix << fet_info.nodes[aix];
+//TODO: There's something wrong here, it shouldn't be 0!
+
+            auto &cnode = fet_info.nodes[cid];
             // Don't overwrite an existing roomspec value
-            if (cnode->DATA.contains("ROOMSPEC")) continue;
+            if (cnode.contains("ROOMSPEC")) continue;
             QJsonArray room_list;
             auto fet_room_list = m.values("Preferred_Room");
             for (const auto &r : fet_room_list) {
                 int rr = fet_info.rooms.value(r);
                 // If this is a "virtual" room, it should be the only room
                 // in this list (to avoid overcomplexity ...)
-                auto node = fet_info.nodes.value(rr).DATA;
+                auto node = fet_info.nodes.value(rr);
                 if (node.contains("ROOMS_NEEDED")
                         and (fet_room_list.length() != 1)) {
                     qFatal() << "Room constraint, virtual room is not"
@@ -36,7 +40,7 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 }
                 room_list.append(rr);
             }
-            cnode->DATA["ROOMSPEC"] = room_list;
+            cnode["ROOMSPEC"] = room_list;
         } else if (n.name == "ConstraintActivityPreferredRoom") {
             // If the acceptable room is initially set using this
             // constraint, there may be two entries. The later one
@@ -57,9 +61,9 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 }
             }
             int aix = fet_info.activity_lesson.value(aid);
-            auto anode = &fet_info.nodes[aix];
-            anode->DATA["ROOMS"] = room_list;
-            //qDebug() << "ROOM" << aid << fet_info.nodes[aix].DATA;
+            auto &anode = fet_info.nodes[aix];
+            anode["ROOMS"] = room_list;
+            //qDebug() << "ROOM" << aid << fet_info.nodes[aix];
         }
     }
 }
