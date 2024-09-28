@@ -30,6 +30,7 @@ set(PROJECT_SOURCES
         basicconstraints.h  basicconstraints.cpp
         localconstraints.h  localconstraints.cpp
         differentdays.h differentdays.cpp
+        placelesson.h   placelesson.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

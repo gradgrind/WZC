@@ -222,7 +222,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
     std::vector<int> to_place; // collect non-fixed lessons for later placement
     // Place fixed lessons first.
     for (int cid : db_data->Tables.value("COURSES")) {
-        lesson_data ldc; // lesson data for the course
+        LessonData ldc; // lesson data for the course
         auto node = db_data->Nodes.value(cid);
         ldc.subject = node.value("SUBJECT").toInt();
         auto glist = node.value("STUDENTS").toArray();
@@ -268,7 +268,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         // The occupied rooms are associated with the individual lessons.
         // Note that they are only valid if there is a slot placement.
         for (int lid : db_data->course_lessons.value(cid)) {
-            lesson_data ld(ldc);
+            LessonData ld(ldc);
             auto lnode = db_data->Nodes.value(lid);
             auto rlist = lnode.value("ROOMS").toArray();
             for (auto r : rlist) {
@@ -426,7 +426,7 @@ void BasicConstraints::initial_place_lessons2(
 // Test whether the given lesson is blocked at the given time (which is
 // permitted by the start_cells table).
 bool BasicConstraints::test_possible_place(
-    lesson_data &ldata, int day, int hour)
+    LessonData &ldata, int day, int hour)
 {
     for (int lx = 0; lx < ldata.length; ++lx) {
         for (int i : ldata.groups) {
@@ -450,7 +450,7 @@ bool BasicConstraints::test_possible_place(
 }
 
 // Test whether the given lesson can be placed at the given time.
-bool BasicConstraints::test_place(lesson_data &ldata, int day, int hour)
+bool BasicConstraints::test_place(LessonData &ldata, int day, int hour)
 {
     const auto & dvec = ldata.start_cells[day];
     for (int h : dvec) {
@@ -462,7 +462,7 @@ bool BasicConstraints::test_place(lesson_data &ldata, int day, int hour)
 }
 
 std::vector<std::vector<int>> BasicConstraints::find_possible_places(
-    lesson_data &ldata)
+    LessonData &ldata)
 {
     std::vector<std::vector<int>> free(ndays);
     if (ldata.length == 1) {
@@ -504,7 +504,7 @@ std::vector<std::vector<int>> BasicConstraints::find_possible_places(
 // according to whether the placement is possible. It doesn't change
 // anything.
 bool BasicConstraints::test_single_slot(
-    lesson_data &ldata, int day, int hour)
+    LessonData &ldata, int day, int hour)
 {
     for (int i : ldata.groups) {
         if (sg_weeks[i][day][hour]) return false;
@@ -531,7 +531,7 @@ bool BasicConstraints::test_single_slot(
 // This seems to take 10-20 times as long as the simple test above!
 // So use it only when the details are needed.
 std::vector<int> BasicConstraints::find_clashes(
-    lesson_data *ldata, int day, int hour)
+    LessonData *ldata, int day, int hour)
 {
     std::vector<int> clashes;
     for (int i : ldata->groups) {

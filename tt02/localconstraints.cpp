@@ -62,7 +62,7 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
                 basic_constraints->general_constraints.push_back(dd);
             }
         } else if (ntype == "SAME_STARTING_TIME") {
-           SameStartingTime * sst = new SameStartingTime(
+            SameStartingTime * sst = new SameStartingTime(
                 basic_constraints, node);
             if (sst->isHard()) {
                 basic_constraints->local_hard_constraints.push_back(sst);

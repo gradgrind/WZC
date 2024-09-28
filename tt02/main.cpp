@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
     */
 
     view.setFixedSize(A4.toSize());
+    // That determines the size and scaling of the view.
+    // setScreenRect is not used (should it be?)
 
     //readxml_test();
 
