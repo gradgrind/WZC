@@ -52,7 +52,7 @@ void class_divisions(DBData *db_data)
             }
             divs.append(divlist);
         }
-        //qDebug() << "CLASS" << cdata["ID"].toString() << p_class_divs(divs);
+        //qDebug() << "CLASS" << cdata["TAG"].toString() << p_class_divs(divs);
         class_groups[c] = divs;
     }
     db_data->class_subgroup_divisions = class_groups;

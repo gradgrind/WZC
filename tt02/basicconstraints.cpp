@@ -12,7 +12,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
     for (int gid : dbdata->Tables.value("GROUPS")) {
         auto node = dbdata->Nodes.value(gid);
         auto sglist = node.value("SUBGROUPS").toArray();
-        bool allsg = node.value("ID").toString().isEmpty();
+        bool allsg = node.value("TAG").toString().isEmpty();
         for (auto sg : sglist) {
             auto sgstr = sg.toString();
             g2sg[gid].append(sgstr);
@@ -342,7 +342,7 @@ void BasicConstraints::initial_place_lessons2(
         // Build basic starting-slots lists for a given lesson based on lesson
         // length and hard local starting time / slot constraints.
         // As existing placed lessons should be taken into account, this
-        // is done before useing the method find_possile_places.
+        // is done before using the method find_possile_places.
         if (!ld.start_cells.empty()) {
             // Only relevant for hard constraint:
             qFatal() << "BasicConstraints::initial_place_lessons2 called with"

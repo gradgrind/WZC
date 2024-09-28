@@ -93,7 +93,7 @@ void ViewHandler::new_data()
         auto node = dbdata->Nodes.value(d);
         auto day = node.value("NAME").toString();
         if (day.isEmpty()) {
-            day = node.value("ID").toString();
+            day = node.value("TAG").toString();
         }
         dlist.append(day);
     }
@@ -187,7 +187,7 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         auto &ldata = basic_constraints->lessons[
             basic_constraints->lid2lix[lid]];
         qDebug() << "TILE CLICKED:" << day << hour
-                 << QString("[%1|%2]").arg(tile->tag).arg(lid);
+                 << QString("[%1|%2]").arg(tile->ref).arg(lid);
         grid->clearCellOK();
         // Select tile
         grid->select_tile(tile);
@@ -232,7 +232,7 @@ void ViewHandler::handle_rb_class()
         auto node = dbdata->Nodes.value(c);
         choice->addItem(QString("%2: %1")
             .arg(node.value("NAME").toString(),
-            node.value("ID").toString()));
+            node.value("TAG").toString()));
         indexmap.append(c);
     }
 }
@@ -245,7 +245,7 @@ void ViewHandler::handle_rb_teacher()
         auto node = dbdata->Nodes.value(c);
         choice->addItem(QString("%2: %1")
                             .arg(node.value("NAME").toString(),
-                                 node.value("ID").toString()));
+                                 node.value("TAG").toString()));
         indexmap.append(c);
     }
 }
@@ -260,7 +260,7 @@ void ViewHandler::handle_rb_room()
         if (node.contains("ROOMS_NEEDED")) continue;
         choice->addItem(QString("%2: %1")
                             .arg(node.value("NAME").toString(),
-                                 node.value("ID").toString()));
+                                 node.value("TAG").toString()));
         indexmap.append(c);
     }
 }

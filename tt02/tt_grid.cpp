@@ -73,7 +73,7 @@ void TT_Grid::handle_context_menu(QList<QGraphicsItem *> items)
 
     QString tiledata;
     if (tile) {
-        tiledata = QString("[%1|%2]").arg(tile->tag).arg(tile->lid);
+        tiledata = QString("[%1|%2]").arg(tile->ref).arg(tile->lid);
     }
     qDebug() << "CONTEXT MENU:" << cellx << celly
              << tiledata;
@@ -238,7 +238,7 @@ Tile::Tile(
     }
 
     lid = lesson_id;
-    tag = data.value("TAG").toString();
+    ref = data.value("REF").toString();
     length = data.value("LENGTH").toInt(1);
     divs = data.value("DIVS").toInt(1);
     div0 = data.value("DIV0").toInt(0);

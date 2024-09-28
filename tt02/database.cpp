@@ -20,7 +20,7 @@ DBData::DBData(QMap<int, QJsonObject> node_map) : Nodes {node_map}
 
 QString DBData::get_tag(int id)
 {
-    return Nodes.value(id).value("ID").toString();
+    return Nodes.value(id).value("TAG").toString();
 }
 
 void DBData::load(QString path)

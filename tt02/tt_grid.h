@@ -94,7 +94,7 @@ public:
     void place(qreal x, qreal y, qreal w, qreal h);
 
     int lid;
-    QString tag;
+    QString ref;
     int length;
     int divs;
     int div0;

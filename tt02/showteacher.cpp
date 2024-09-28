@@ -10,7 +10,7 @@ ShowTeacher::ShowTeacher(TT_Grid *grid, DBData *db_data, int teacher_id)
         for (const auto & g : glist) {
             // Combine class and group
             auto node = db_data->Nodes.value(g.toInt());
-            auto gtag = node.value("ID").toString();
+            auto gtag = node.value("TAG").toString();
             auto ctag = db_data->get_tag(node.value("CLASS").toInt());
             if (gtag.isEmpty()) {
                 groups.append(ctag);
