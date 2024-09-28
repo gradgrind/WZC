@@ -57,6 +57,10 @@ ViewHandler::~ViewHandler()
     if (basic_constraints) delete basic_constraints;
 }
 
+
+//TODO: Don't touch DBData at first, produce a JSON representation of the
+// data, which can be saved to a file. This should then be the source for
+// building the DBData instance.
 void ViewHandler::handle_load_file()
 {
     auto fileName = QFileDialog::getOpenFileName(nullptr,
@@ -71,30 +75,37 @@ void ViewHandler::handle_load_file()
     auto fetdata = fetData(xml);
     if (dbdata) delete dbdata;
     dbdata = new DBData(fetdata.nodes);
+    auto dbpath = fileName.section(".", 0, -2) + ".sqlite";
+    dbdata->save(dbpath);
+    qDebug() << "Saved data to" << dbpath;
+    new_data();
+}
 
+void ViewHandler::new_data()
+{
     // Make lesson lists for the courses.
     for (int lid : dbdata->Tables["LESSONS"]) {
-        auto ldata = dbdata->Nodes[lid].DATA;
+        auto ldata = dbdata->Nodes[lid];
         dbdata->course_lessons[ldata["COURSE"].toInt()].append(lid);
     }
-    QStringList dlist;
+    QStringList dlist; // Ordered list of days (short-names)
     for (int d : dbdata->Tables["DAYS"]) {
-        auto node = dbdata->Nodes.value(d).DATA;
+        auto node = dbdata->Nodes.value(d);
         auto day = node.value("NAME").toString();
         if (day.isEmpty()) {
             day = node.value("ID").toString();
         }
         dlist.append(day);
     }
-    QStringList hlist;
-    QList<int> breaks;
+    QStringList hlist; // Ordered list of hours (short-names)
+    QList<int> breaks; // Ordered list of hour indexes which follow breaks
     // Determine the breaks by looking at the start and end times of
     // the periods
     int t0 = 0;
     int i = 0;
     for (int h : dbdata->Tables["HOURS"]) {
         hlist.append(dbdata->get_tag(h));
-        auto node = dbdata->Nodes.value(h).DATA;
+        auto node = dbdata->Nodes.value(h);
         int t1 = time2mins(node.value("START_TIME").toString());
         int t2 = time2mins(node.value("END_TIME").toString());
         if (t1 >= 0 and t2 >= 0) {
@@ -105,6 +116,8 @@ void ViewHandler::handle_load_file()
         }
         i++;
     }
+
+    // If a grid already exists, delete it. Then make a new (empty) one.
     if (grid) delete grid;
     grid = new TT_Grid(view, dlist, hlist, breaks);
 
@@ -118,7 +131,7 @@ void ViewHandler::handle_load_file()
     // Collect the group tile information for each course,
     // add the course-ids to the lists for the classes and teachers.
     for (int course_id : dbdata->Tables["COURSES"]) {
-        auto cdata = dbdata->Nodes[course_id].DATA;
+        auto cdata = dbdata->Nodes[course_id];
         auto groups = cdata["STUDENTS"].toArray();
         auto llist = course_divisions(dbdata, groups);
 
@@ -159,10 +172,6 @@ void ViewHandler::handle_load_file()
                  << groups << "->" << ll.join(",");
         */
     }
-
-    auto dbpath = fileName.section(".", 0, -2) + ".sqlite";
-    dbdata->save(dbpath);
-    qDebug() << "Saved data to" << dbpath;
 
     if (basic_constraints) delete basic_constraints;
     basic_constraints = new BasicConstraints(dbdata);
@@ -220,7 +229,7 @@ void ViewHandler::handle_rb_class()
     choice->clear();
     indexmap.clear();
     for (int c : dbdata->Tables.value("CLASSES")) {
-        auto node = dbdata->Nodes.value(c).DATA;
+        auto node = dbdata->Nodes.value(c);
         choice->addItem(QString("%2: %1")
             .arg(node.value("NAME").toString(),
             node.value("ID").toString()));
@@ -233,7 +242,7 @@ void ViewHandler::handle_rb_teacher()
     choice->clear();
     indexmap.clear();
     for (int c : dbdata->Tables.value("TEACHERS")) {
-        auto node = dbdata->Nodes.value(c).DATA;
+        auto node = dbdata->Nodes.value(c);
         choice->addItem(QString("%2: %1")
                             .arg(node.value("NAME").toString(),
                                  node.value("ID").toString()));
@@ -246,7 +255,7 @@ void ViewHandler::handle_rb_room()
     choice->clear();
     indexmap.clear();
     for (int c : dbdata->Tables.value("ROOMS")) {
-        auto node = dbdata->Nodes.value(c).DATA;
+        auto node = dbdata->Nodes.value(c);
         // Don't show room groups
         if (node.contains("ROOMS_NEEDED")) continue;
         choice->addItem(QString("%2: %1")

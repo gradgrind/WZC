@@ -31,6 +31,7 @@ private:
 
 private slots:
     void handle_load_file();
+    void new_data();
     void handle_rb_class();
     void handle_rb_teacher();
     void handle_rb_room();

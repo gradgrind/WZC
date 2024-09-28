@@ -91,7 +91,7 @@ public:
     const bool all_slots;
 };
 
-struct lesson_data{
+struct LessonData{
     // Only 100%-constraints are handled here.
     int lesson_id;
 
@@ -130,12 +130,12 @@ public:
         for (const auto &p : local_hard_constraints) delete p;
     }
 
-    bool test_single_slot(lesson_data &ldata, int day, int hour);
-    std::vector<int> find_clashes(lesson_data *ldata, int day, int hour);
+    bool test_single_slot(LessonData &ldata, int day, int hour);
+    std::vector<int> find_clashes(LessonData *ldata, int day, int hour);
     // Returns a list of possible starting hours for each day
-    std::vector<std::vector<int>> find_possible_places(lesson_data &ldata);
-    bool test_possible_place(lesson_data &ldata, int day, int hour);
-    bool test_place(lesson_data &ldata, int day, int hour);
+    std::vector<std::vector<int>> find_possible_places(LessonData &ldata);
+    bool test_possible_place(LessonData &ldata, int day, int hour);
+    bool test_place(LessonData &ldata, int day, int hour);
     std::vector<int> initial_place_lessons();
     void initial_place_lessons2(
         std::vector<int> to_place, time_constraints &tconstraints);
@@ -165,7 +165,7 @@ public:
     std::vector<std::vector<std::vector<int>>> r_weeks;
 
     std::unordered_map<int, int> lid2lix;
-    std::vector<lesson_data> lessons;
+    std::vector<LessonData> lessons;
     std::vector<Constraint *> general_constraints;
     std::vector<Constraint *> local_hard_constraints;
 

@@ -4,12 +4,12 @@
 ShowTeacher::ShowTeacher(TT_Grid *grid, DBData *db_data, int teacher_id)
 {
     for (int course_id : db_data->teacher_courses[teacher_id]) {
-        auto course = db_data->Nodes.value(course_id).DATA;
+        auto course = db_data->Nodes.value(course_id);
         QStringList groups;
         auto glist = course.value("STUDENTS").toArray();
         for (const auto & g : glist) {
             // Combine class and group
-            auto node = db_data->Nodes.value(g.toInt()).DATA;
+            auto node = db_data->Nodes.value(g.toInt());
             auto gtag = node.value("ID").toString();
             auto ctag = db_data->get_tag(node.value("CLASS").toInt());
             if (gtag.isEmpty()) {
@@ -22,7 +22,7 @@ ShowTeacher::ShowTeacher(TT_Grid *grid, DBData *db_data, int teacher_id)
         QString subject = db_data->get_tag(course.value("SUBJECT").toInt());
         // The rooms need to be done on a lesson basis!
         for (int lid : db_data->course_lessons.value(course_id)) {
-            auto ldata = db_data->Nodes.value(lid).DATA;
+            auto ldata = db_data->Nodes.value(lid);
             int len = ldata.value("LENGTH").toInt();
             QStringList rooms;
             auto rlist = ldata.value("ROOMS").toArray();

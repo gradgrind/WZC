@@ -10,7 +10,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
 
     // Collect the atomic subgroups
     for (int gid : dbdata->Tables.value("GROUPS")) {
-        auto node = dbdata->Nodes.value(gid).DATA;
+        auto node = dbdata->Nodes.value(gid);
         auto sglist = node.value("SUBGROUPS").toArray();
         bool allsg = node.value("ID").toString().isEmpty();
         for (auto sg : sglist) {
@@ -56,7 +56,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
 
     // Make a weekly array for each real room
     for (int rid : dbdata->Tables.value("ROOMS")) {
-        auto node = dbdata->Nodes.value(rid).DATA;
+        auto node = dbdata->Nodes.value(rid);
         if (node.contains("ROOMS_NEEDED")) continue;
         // A real room
         r2i[rid] = i_r.length();
@@ -75,7 +75,7 @@ void BasicConstraints::slot_blockers()
 {
     // Block slots where teachers are "not available"
     for (int tid : db_data->Tables.value("TEACHERS")) {
-        auto node = db_data->Nodes.value(tid).DATA;
+        auto node = db_data->Nodes.value(tid);
         auto blist = node.value("NOT_AVAILABLE").toArray();
         for (auto b : blist) {
             auto bpair = b.toArray();
@@ -87,7 +87,7 @@ void BasicConstraints::slot_blockers()
     }
     // Block slots where student groups are "not available"
     for (int gid : db_data->Tables.value("GROUPS")) {
-        auto node = db_data->Nodes.value(gid).DATA;
+        auto node = db_data->Nodes.value(gid);
         auto blist = node.value("NOT_AVAILABLE").toArray();
         if (blist.isEmpty()) continue;
         auto sglist = node.value("SUBGROUPS").toArray();
@@ -102,7 +102,7 @@ void BasicConstraints::slot_blockers()
     }
     // Block slots where rooms are "not available"
     for (int rid : db_data->Tables.value("ROOMS")) {
-        auto node = db_data->Nodes.value(rid).DATA;
+        auto node = db_data->Nodes.value(rid);
         if (node.contains("ROOMS_NEEDED")) continue;
         auto blist = node.value("NOT_AVAILABLE").toArray();
         for (auto b : blist) {
@@ -222,8 +222,8 @@ std::vector<int> BasicConstraints::initial_place_lessons()
     std::vector<int> to_place; // collect non-fixed lessons for later placement
     // Place fixed lessons first.
     for (int cid : db_data->Tables.value("COURSES")) {
-        lesson_data ldc; // lesson data for the course
-        auto node = db_data->Nodes.value(cid).DATA;
+        LessonData ldc; // lesson data for the course
+        auto node = db_data->Nodes.value(cid);
         ldc.subject = node.value("SUBJECT").toInt();
         auto glist = node.value("STUDENTS").toArray();
         for(auto g : glist) {
@@ -242,7 +242,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         std::vector<int> rvec;
         for (auto rv : rlist) {
             int rid = rv.toInt();
-            auto node = db_data->Nodes.value(rid).DATA;
+            auto node = db_data->Nodes.value(rid);
             if (node.contains("ROOMS_NEEDED")) {
                 // Virtual room
                 auto srl = node.value("ROOMS_NEEDED").toArray();
@@ -268,8 +268,8 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         // The occupied rooms are associated with the individual lessons.
         // Note that they are only valid if there is a slot placement.
         for (int lid : db_data->course_lessons.value(cid)) {
-            lesson_data ld(ldc);
-            auto lnode = db_data->Nodes.value(lid).DATA;
+            LessonData ld(ldc);
+            auto lnode = db_data->Nodes.value(lid);
             auto rlist = lnode.value("ROOMS").toArray();
             for (auto r : rlist) {
                 ld.rooms.push_back(r2i.value(r.toInt()));
@@ -426,7 +426,7 @@ void BasicConstraints::initial_place_lessons2(
 // Test whether the given lesson is blocked at the given time (which is
 // permitted by the start_cells table).
 bool BasicConstraints::test_possible_place(
-    lesson_data &ldata, int day, int hour)
+    LessonData &ldata, int day, int hour)
 {
     for (int lx = 0; lx < ldata.length; ++lx) {
         for (int i : ldata.groups) {
@@ -450,7 +450,7 @@ bool BasicConstraints::test_possible_place(
 }
 
 // Test whether the given lesson can be placed at the given time.
-bool BasicConstraints::test_place(lesson_data &ldata, int day, int hour)
+bool BasicConstraints::test_place(LessonData &ldata, int day, int hour)
 {
     const auto & dvec = ldata.start_cells[day];
     for (int h : dvec) {
@@ -462,7 +462,7 @@ bool BasicConstraints::test_place(lesson_data &ldata, int day, int hour)
 }
 
 std::vector<std::vector<int>> BasicConstraints::find_possible_places(
-    lesson_data &ldata)
+    LessonData &ldata)
 {
     std::vector<std::vector<int>> free(ndays);
     if (ldata.length == 1) {
@@ -504,7 +504,7 @@ std::vector<std::vector<int>> BasicConstraints::find_possible_places(
 // according to whether the placement is possible. It doesn't change
 // anything.
 bool BasicConstraints::test_single_slot(
-    lesson_data &ldata, int day, int hour)
+    LessonData &ldata, int day, int hour)
 {
     for (int i : ldata.groups) {
         if (sg_weeks[i][day][hour]) return false;
@@ -531,7 +531,7 @@ bool BasicConstraints::test_single_slot(
 // This seems to take 10-20 times as long as the simple test above!
 // So use it only when the details are needed.
 std::vector<int> BasicConstraints::find_clashes(
-    lesson_data *ldata, int day, int hour)
+    LessonData *ldata, int day, int hour)
 {
     std::vector<int> clashes;
     for (int i : ldata->groups) {
