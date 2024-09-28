@@ -49,3 +49,5 @@ The database objects are used to build the internal structures necessary for dis
  - TAG (string): The short name (abbreviation) for the teacher.
  - NAME (string): THe full name for the teacher (not used for timetable processing, can be empty).
  - NOT_AVAILABLE: An Array of pairs, each pair containing a day and hour in which the teacher is not available. The day and hour members are keys to the node table.
+
+#### ROOMS
