@@ -75,17 +75,20 @@ void ViewHandler::handle_load_file()
     auto fetdata = fetData(xml);
     if (dbdata) delete dbdata;
     dbdata = new DBData(fetdata.nodes);
-
     auto dbpath = fileName.section(".", 0, -2) + ".sqlite";
     dbdata->save(dbpath);
     qDebug() << "Saved data to" << dbpath;
+    new_data();
+}
 
+void ViewHandler::new_data()
+{
     // Make lesson lists for the courses.
     for (int lid : dbdata->Tables["LESSONS"]) {
         auto ldata = dbdata->Nodes[lid];
         dbdata->course_lessons[ldata["COURSE"].toInt()].append(lid);
     }
-    QStringList dlist;
+    QStringList dlist; // Ordered list of days (short-names)
     for (int d : dbdata->Tables["DAYS"]) {
         auto node = dbdata->Nodes.value(d);
         auto day = node.value("NAME").toString();
@@ -94,8 +97,8 @@ void ViewHandler::handle_load_file()
         }
         dlist.append(day);
     }
-    QStringList hlist;
-    QList<int> breaks;
+    QStringList hlist; // Ordered list of hours (short-names)
+    QList<int> breaks; // Ordered list of hour indexes which follow breaks
     // Determine the breaks by looking at the start and end times of
     // the periods
     int t0 = 0;
@@ -113,6 +116,8 @@ void ViewHandler::handle_load_file()
         }
         i++;
     }
+
+    // If a grid already exists, delete it. Then make a new (empty) one.
     if (grid) delete grid;
     grid = new TT_Grid(view, dlist, hlist, breaks);
 

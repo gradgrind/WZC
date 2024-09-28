@@ -58,7 +58,8 @@ void class_divisions(DBData *db_data)
     db_data->class_subgroup_divisions = class_groups;
 }
 
-QMap<int, QList<TileFraction>> course_divisions(DBData *db_data, QJsonArray groups)
+QMap<int, QList<TileFraction>> course_divisions(
+    DBData *db_data, QJsonArray groups)
 {
     // For the results
     QMap<int, QList<TileFraction>> results;

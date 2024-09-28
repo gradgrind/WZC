@@ -340,16 +340,15 @@ void readClasses(FetInfo &fet_info, QList<QVariant> item_list)
                 });
             }
             // Set the divisions on the class
-//TODO: Does this actually work?!
-            fet_info.nodes.value(clid)["DIVISIONS"] = divisions;
+            fet_info.nodes[clid]["DIVISIONS"] = divisions;
 
-            //
+            /*
             qDebug() << clid << "CLASS" << fet_info.nodes[clid];
             while (clid < id) {
                 clid++;
                 qDebug() << clid << "  GROUP" << fet_info.nodes[clid];
             }
-            //
+            */
         }
     }
 }

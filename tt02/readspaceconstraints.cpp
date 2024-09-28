@@ -19,10 +19,6 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             // multiple lessons.
             int aix = fet_info.activity_lesson.value(aid);
             int cid = fet_info.nodes[aix].value("COURSE").toInt();
-//TODO--
-            qDebug() << "§§§cid:" << aix << fet_info.nodes[aix];
-//TODO: There's something wrong here, it shouldn't be 0!
-
             auto &cnode = fet_info.nodes[cid];
             // Don't overwrite an existing roomspec value
             if (cnode.contains("ROOMSPEC")) continue;
