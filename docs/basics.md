@@ -21,7 +21,7 @@ Apart from its main content each object has an "Id" field, which is just the obj
  - LESSONS
  - LOCAL_CONSTRAINTS
 
-The database objects are used to build the internal structures necessary for displaying, editing and constructting the timetable.
+The database objects are used to build the internal structures necessary for displaying, editing and constructing the timetable.
 
 #### DAYS
 
@@ -56,7 +56,7 @@ The database objects are used to build the internal structures necessary for dis
  - TAG (string): The short name (abbreviation) for the room, its primary identifier.
  - NAME (string): The full name for the room (not used for timetable processing, can be empty).
  - NOT_AVAILABLE: An Array of pairs, each pair containing a day and hour in which the room is not available. The day and hour members are keys to the node table.
- - ROOMS_NEEDED: An optional Array of ROOMS keys. When present it defines the room as a room group, specifiying that it is not a real room itself, but requires multiple real rooms.
+ - ROOMS_NEEDED: An optional Array of ROOMS keys. When present it defines the room as a room group, specifying that it is not a real room itself, but requires multiple real rooms.
  - $REF (string, optional): Where the data is imported from another program, this can be used as to reference a room (or room group) in the other program.
 
 #### CLASSES
@@ -83,6 +83,30 @@ TODO: Not yet defined, unnecessary for the timetable.
 
 #### COURSES
 
+Note that entries of this type need not be courses in the classical sense, but types of activities which bind resources (teachers and/or students and/or rooms) under a given name (the "SUBJECT").
 
+ - SUBJECT (int): SUBJECTS key, the course subject.
+ - TEACHERS: An Array of TEACHERS keys, the teachers involved.
+ - GROUPS: An Array of GROUPS keys, the student groups involved.
+ - ROOMSPEC: An Array of ROOMS keys. **TODO**: Currently this is a bit complicated, I might rework it. It is probably a bit of a compromise, allowing a compulsory room (which can be a room group, thus multiple compulsory rooms) and/or (?) a single choice from a list of possible rooms (not room groups).
 
 #### LESSONS
+
+Note that the entries of this type need not be lessons in the classical sense, but activities in general which bind resources (teachers and/or students and/or rooms) in timetable slots.
+
+ - COURSE (int): The COURSES key of the course to which this lesson belongs.
+ - LENGTH (int): Number of hours/periods covered by the lesson.
+ - FIXED (bool): Determines whether the lesson may be moved.
+ - DAY (int): 0-based index of the weekday, -1 if the lesson is unplaced.
+ - HOUR (int) 0-based index of the hour/period within the school day, undefined if the lesson is unplaced.
+ - ROOMS: An Array of ROOMS keys, the rooms occupied by the lesson. The entries must be real rooms (not room groups) and are only relevant when the lesson is placed (DAY >= 0).
+ - ACTIVITY_TAG0S: An Array of strings used to build groups of lessons.
+
+#### LOCAL_CONSTRAINTS
+
+ - CTYPE (string): The type of constraint.
+ - WEIGHT (int): The "weight" of the constraint, i.e. some measure of its importance. It is basically the penalty score if the constraint fails. A value of 0 means the constraint is ineffective (not active).
+
+Hard constraints currently have weight 10, but a larger value may be desirable, to give a wider range.
+
+There will be other fields, based on the CTYPE field. See the [Constraints](constraints.md#constraints) documentation.
