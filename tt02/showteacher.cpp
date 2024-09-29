@@ -6,7 +6,7 @@ ShowTeacher::ShowTeacher(TT_Grid *grid, DBData *db_data, int teacher_id)
     for (int course_id : db_data->teacher_courses[teacher_id]) {
         auto course = db_data->Nodes.value(course_id);
         QStringList groups;
-        auto glist = course.value("STUDENTS").toArray();
+        auto glist = course.value("GROUPS").toArray();
         for (const auto & g : glist) {
             // Combine class and group
             auto node = db_data->Nodes.value(g.toInt());

@@ -398,7 +398,7 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
                     {"TYPE", "COURSES"},
                     {"TEACHERS", tlist},
                     {"SUBJECT", sid},
-                    {"STUDENTS", glist},
+                    {"GROUPS", glist},
                 };
                 fet_info.course_list.append(id);
                 if (cid != "0") {

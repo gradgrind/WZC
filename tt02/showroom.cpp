@@ -18,7 +18,7 @@ ShowRoom::ShowRoom(TT_Grid *grid, DBData *db_data, int room_id)
         }
         QString teacher = teachers.join(",");
         QStringList groups;
-        auto glist = course.value("STUDENTS").toArray();
+        auto glist = course.value("GROUPS").toArray();
         for (const auto & g : glist) {
             // Combine class and group
             auto node = db_data->Nodes.value(g.toInt());

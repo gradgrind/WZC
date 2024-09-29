@@ -40,14 +40,49 @@ The database objects are used to build the internal structures necessary for dis
 #### SUBJECTS
 
  - X (int): The 0-based index of the subject, for ordering.
- - TAG (string): The short name (abbreviation) for the subject.
+ - TAG (string): The short name (abbreviation) for the subject, its primary identifier.
  - NAME (string): THe full name for the subject.
 
 #### TEACHERS
 
  - X (int): The 0-based index of the teacher, for ordering.
- - TAG (string): The short name (abbreviation) for the teacher.
+ - TAG (string): The short name (abbreviation) for the teacher, their primary identifier.
  - NAME (string): THe full name for the teacher (not used for timetable processing, can be empty).
  - NOT_AVAILABLE: An Array of pairs, each pair containing a day and hour in which the teacher is not available. The day and hour members are keys to the node table.
 
 #### ROOMS
+
+ - X (int): The 0-based index of the room, for ordering.
+ - TAG (string): The short name (abbreviation) for the room, its primary identifier.
+ - NAME (string): The full name for the room (not used for timetable processing, can be empty).
+ - NOT_AVAILABLE: An Array of pairs, each pair containing a day and hour in which the room is not available. The day and hour members are keys to the node table.
+ - ROOMS_NEEDED: An optional Array of ROOMS keys. When present it defines the room as a room group, specifiying that it is not a real room itself, but requires multiple real rooms.
+ - $REF (string, optional): Where the data is imported from another program, this can be used as to reference a room (or room group) in the other program.
+
+#### CLASSES
+
+ - X (int): The 0-based index of the class, for ordering.
+ - TAG (string): The short name (abbreviation) for the class, its primary identifier.
+ - NAME (string): The full name for the class (not used for timetable processing, can be empty).
+ - DIVISIONS: An Array of Objects describing the ways in which the class can be divided into groups. Each Object has a "DivTag" field (string), which is just a name for the division, and a "Groups" field, which is an Array of GROUPS keys. The order of the groups should be retained in the display of divided lessons. The "whole class" group has the special DivTag "*" and only one GROUPS key.
+
+#### GROUPS
+
+ - TAG (string): The short name (abbreviation) for the group, its primary identifier. This does not include the class.
+ - CLASS (int). The "CLASSES" key of the class to which this group belongs.
+ - NOT_AVAILABLE: An Array of pairs, each pair containing a day and hour in which the group is not available. The day and hour members are keys to the node table.
+ - STUDENTS: An Array of the "STUDENTS" keys of the students belonging to this group. This is not relevant for the timetable and can be empty.
+ - SUBGROUPS: An Array of strings representing the "atomic" subgroups of students comprising this group. The exact nature of the strings is not relevant, but it can be helpful if the class tag is included somehow.
+
+**Atomic Subgroups** are here defined as the groups of students which are never divided in lessons. This corresponds roughly to the Cartesian product of the class divisions and can be constructed from these. They are useful in several places in the timetable algorithms.
+ 
+
+#### STUDENTS
+
+TODO: Not yet defined, unnecessary for the timetable.
+
+#### COURSES
+
+
+
+#### LESSONS

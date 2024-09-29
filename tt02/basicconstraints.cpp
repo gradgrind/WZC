@@ -225,7 +225,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         LessonData ldc; // lesson data for the course
         auto node = db_data->Nodes.value(cid);
         ldc.subject = node.value("SUBJECT").toInt();
-        auto glist = node.value("STUDENTS").toArray();
+        auto glist = node.value("GROUPS").toArray();
         for(auto g : glist) {
             for (const auto &sg : g2sg.value(g.toInt())) {
                 ldc.groups.push_back(sg2i.value(sg));

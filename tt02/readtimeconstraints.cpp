@@ -170,7 +170,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 {"CTYPE", "ACTIVITIES_PREFERRED_STARTING_TIMES"},
                 {"ACTIVITY_TAG", atag}, // TODO: these need reading in
                 {"TEACHER", t},
-                {"STUDENTS", g},
+                {"GROUPS", g},
                 {"SUBJECT", s},
                 {"LENGTH", l},
                 {"SLOTS", times},
@@ -205,7 +205,7 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 {"CTYPE", "ACTIVITIES_PREFERRED_TIME_SLOTS"},
                 {"ACTIVITY_TAG", atag}, // TODO: these need reading in
                 {"TEACHER", t},
-                {"STUDENTS", g},
+                {"GROUPS", g},
                 {"SUBJECT", s},
                 {"LENGTH", l},
                 {"SLOTS", times},

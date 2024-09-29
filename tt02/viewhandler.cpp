@@ -132,7 +132,7 @@ void ViewHandler::new_data()
     // add the course-ids to the lists for the classes and teachers.
     for (int course_id : dbdata->Tables["COURSES"]) {
         auto cdata = dbdata->Nodes[course_id];
-        auto groups = cdata["STUDENTS"].toArray();
+        auto groups = cdata["GROUPS"].toArray();
         auto llist = course_divisions(dbdata, groups);
 
         dbdata->course_tileinfo[course_id] = llist;
