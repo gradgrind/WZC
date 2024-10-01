@@ -19,3 +19,7 @@ The list of affected lessons is built when the data is loaded, so the filter is 
 ## ACTIVITIES_PREFERRED_TIME_SLOTS
 
 This is very similar to ACTIVITIES_PREFERRED_STARTING_TIMES, but  for lessons with length > 1 it is more restrictive as it refers to the slots which may be occupied. If this is a hard constraint, the possible starting times for a lesson are determined (using the length) and saved with the lesson when the data is loaded. These can be affected by more than one constraint.
+
+## DAYS_BETWEEN
+
+This specifies a list of lessons which should not be on the same day. The desired distance can be specified as a number of days (1 means simply not on the same day). It can be hard or soft.

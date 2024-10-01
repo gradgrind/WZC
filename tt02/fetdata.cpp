@@ -407,7 +407,8 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
             }
             // Make LESSONS node
             int lid = fet_info.next_index();
-            fet_info.nodes[lid] = QJsonObject{
+
+            auto data = QJsonObject{
                 {"Id", lid},
                 {"TYPE", "LESSONS"},
                 {"COURSE", id},
@@ -415,6 +416,10 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
                 {"ACTIVITY_TAGS", QJsonArray::fromStringList(
                                       m.values("Activity_Tag"))},
             };
+            //TODO: There is probably a better way of handling this:
+            auto c = m.value("Comments");
+            if (!c.isEmpty()) data["$REF"] = c;
+            fet_info.nodes[lid] = data;
             fet_info.activity_lesson[m.value("Id")] = lid;
         }
     }
