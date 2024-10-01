@@ -22,7 +22,7 @@ void placeLesson(
     for (int x : ldata.teachers) {
         basic_constraints->t_weeks[x][newday][newhour] = lesson;
     }
-    for (int x : ldata.groups) {
+    for (int x : ldata.atomic_groups) {
         basic_constraints->sg_weeks[x][newday][newhour] = lesson;
     }
 

@@ -96,13 +96,13 @@ struct LessonData{
     int lesson_id;
 
     // The contained values (int) are the indexes into the week-blocks
-    // for the corresponding items.
+    // for the corresponding items (not the db ids).
     std::vector<int> teachers;
-    std::vector<int> groups;
+    std::vector<int> atomic_groups;
     std::vector<int> rooms_needed;
     std::vector<int> rooms_choice;
 
-    int subject;
+    int subject; // the subject's db id
     QStringList tags;
     int length;
     bool fixed = false;
@@ -143,7 +143,7 @@ public:
     DBData * db_data;
     int ndays;
     int nhours;
-    // group index -> list of atomic subgroups:
+    // group id -> list of atomic subgroups:
     QHash<int, QList<QString>> g2sg;
     // atomic subgroup -> week-block index:
     QHash<QString, int> sg2i;

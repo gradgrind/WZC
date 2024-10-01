@@ -15,9 +15,9 @@ Soft constraints are evaluated when a (complete) timetable suggestion has been b
 
 ## "Firm" Constraints
 
-Some constraints lie somewhere between the very hard ones mentioned above and normal soft ones. In some settings they could be regarded as critical conditions, in others just highly desirable. Among these could be lessons which should not take place on the same day (e.g. multiple lessons in the same subject), or two lessons which should start at the same time, or where lessons have limits on their starting times. Those just mentioned are special cases because they are concerned with local properties of lessons and they could be evaluated before the whole timetable is complete. Another example would be the handling of "double" (etc.) lessons. Is it permissible to split them? In these cases, it might be possible to optimize the algorithm if the constraints are "hard".
+Some constraints lie somewhere between the very hard ones mentioned above and normal soft ones. In some settings they could be regarded as critical conditions, in others just highly desirable. Among these could be lessons which should not take place on the same day (e.g. multiple lessons in the same subject), or two lessons which should start at the same time, or where lessons have limits on their starting times. Those just mentioned are special cases because they are concerned with local properties of lessons and they could be evaluated before the whole timetable is complete. Another example would be the handling of "double" (etc.) lessons. Is it permissible to split them? In these cases, it might be possible to optimize the algorithm if the constraints are "hard". See [Local Constraints](local_constraints.md#local-constraints).
 
-Otherwise constraints which can be hard or soft can be handled as soft constraints. If they can abort the evaluation, they should be put at the front of the soft-constraints list to avoid unnecessary processing of the other constraints.
+Otherwise, constraints which can be hard or soft can be handled as soft constraints. If they can abort the evaluation, they should be put at the front of the soft-constraints list to avoid unnecessary processing of the other constraints.
 
 ## The Question of Completion
 
@@ -35,4 +35,4 @@ If there are other hard constraints preventing the generation of a complete time
 
 ## How much can be automated?
 
-In view of the complicated nature of the problem and the need for not only deductive powers and troubleshooting skills, but also pedagogical knowledge and awareness of the school organism, I would not expect too much of any algorithm which tries to manipulate the constraints or lessons in an attempt to "improve" the timetable. It may be possible to implement some empirical rules derived from practical experience with the process, but the timetabler should always be aware of any adjustments that are tried. It might be better to offer suggestions, perhaps with aids to implementing them.
+In view of the complicated nature of the problem and the need for not only deductive powers and troubleshooting skills, but also pedagogical knowledge and awareness of the school organism, I would not expect too much of any algorithm which tries to manipulate the constraints or lessons in an attempt to "improve" the timetable. It may be possible to implement some empirical rules derived from practical experience with the process, but the timetabler should always be aware of any adjustments that are tried. It might be better to just offer suggestions, perhaps with aids to implementing them.

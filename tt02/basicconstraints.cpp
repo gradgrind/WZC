@@ -23,7 +23,8 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
             }
         }
     }
-    //qDebug() << "sg2i:" << sg2i;
+    //qDebug() << "\n!!! g2sg:" << g2sg;
+    //qDebug() << "\n!!! sg2i:" << sg2i;
 
     // Make a weekly array for each atomic subgroup
     ndays = dbdata->days.size();
@@ -137,10 +138,19 @@ void BasicConstraints::multi_slot_constraints(
             if ((a.tag.isEmpty() || ld.tags.contains(a.tag))
                 && (!a.tid || (std::find(
                     ld.teachers.begin(),
-                    ld.teachers.end(), a.tid) != ld.teachers.end()))
-                && (!a.gid || (std::find(
-                    ld.groups.begin(),
-                    ld.groups.end(), a.gid) != ld.groups.end()))
+                    ld.teachers.end(), t2i.value(a.tid)) != ld.teachers.end()))
+                && (!a.gid ||
+                        // Test all atomic groups included in a.gid
+                        [&]() -> bool {
+                            for (const auto &sg : g2sg.value(a.gid)) {
+                                int agi = sg2i.value(sg);
+                                if (std::find(ld.atomic_groups.begin(),
+                                    ld.atomic_groups.end(),
+                                    agi) != ld.atomic_groups.end()) return true;
+                            }
+                            return false;
+                        }()
+                    )
                 && (!a.sid || a.sid == ld.subject)
                 && (!a.l || a.l == ld.length)) {
                 // The lesson matches
@@ -228,7 +238,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         auto glist = node.value("GROUPS").toArray();
         for(auto g : glist) {
             for (const auto &sg : g2sg.value(g.toInt())) {
-                ldc.groups.push_back(sg2i.value(sg));
+                ldc.atomic_groups.push_back(sg2i.value(sg));
             }
         }
         auto tlist = node.value("TEACHERS").toArray();
@@ -318,7 +328,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
                 for (int t : ld.teachers) {
                     t_weeks.at(t).at(d).at(hh) = lix;
                 }
-                for (int sg : ld.groups) {
+                for (int sg : ld.atomic_groups) {
                     sg_weeks.at(sg).at(d).at(hh) = lix;
                 }
                 for (int r : ld.rooms) {
@@ -413,7 +423,7 @@ void BasicConstraints::initial_place_lessons2(
             for (int t : ldata.teachers) {
                 t_weeks.at(t).at(d).at(hh) = lix;
             }
-            for (int sg : ldata.groups) {
+            for (int sg : ldata.atomic_groups) {
                 sg_weeks.at(sg).at(d).at(hh) = lix;
             }
             for (int r : ldata.rooms) {
@@ -429,7 +439,7 @@ bool BasicConstraints::test_possible_place(
     LessonData &ldata, int day, int hour)
 {
     for (int lx = 0; lx < ldata.length; ++lx) {
-        for (int i : ldata.groups) {
+        for (int i : ldata.atomic_groups) {
             if (sg_weeks[i][day][hour+lx]) return false;
         }
         for (int i : ldata.teachers) {
@@ -506,7 +516,7 @@ std::vector<std::vector<int>> BasicConstraints::find_possible_places(
 bool BasicConstraints::test_single_slot(
     LessonData &ldata, int day, int hour)
 {
-    for (int i : ldata.groups) {
+    for (int i : ldata.atomic_groups) {
         if (sg_weeks[i][day][hour]) return false;
     }
     for (int i : ldata.teachers) {
@@ -534,7 +544,7 @@ std::vector<int> BasicConstraints::find_clashes(
     LessonData *ldata, int day, int hour)
 {
     std::vector<int> clashes;
-    for (int i : ldata->groups) {
+    for (int i : ldata->atomic_groups) {
         int lix = sg_weeks[i][day][hour];
         if (lix && std::find(
                 clashes.begin(), clashes.end(), lix) == clashes.end()) {
