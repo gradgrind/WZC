@@ -151,15 +151,15 @@ public:
     QList<QString> i_sg;
     // week-blocks for atomic subgroups:
     std::vector<std::vector<std::vector<int>>> sg_weeks;
-    // teacher index -> week-block index:
+    // teacher id -> week-block index:
     QHash<int, int> t2i;
-    // week-block index -> teacher index:
+    // week-block index -> teacher id:
     QList<int> i_t;
     // week-blocks for teachers:
     std::vector<std::vector<std::vector<int>>> t_weeks;
-    // room index -> week-block index:
+    // room id -> week-block index:
     QHash<int, int> r2i;
-    // week-block index -> room index:
+    // week-block index -> room id:
     QList<int> i_r;
     // week-blocks for rooms:
     std::vector<std::vector<std::vector<int>>> r_weeks;
