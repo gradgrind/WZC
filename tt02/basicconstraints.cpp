@@ -58,7 +58,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
     // Make a weekly array for each real room
     for (int rid : dbdata->Tables.value("ROOMS")) {
         auto node = dbdata->Nodes.value(rid);
-        if (node.contains("ROOMS_NEEDED")) continue;
+        if (node.contains("ROOM_CHOICE")) continue;
         // A real room
         r2i[rid] = i_r.length();
         i_r.append(rid);
@@ -104,7 +104,7 @@ void BasicConstraints::slot_blockers()
     // Block slots where rooms are "not available"
     for (int rid : db_data->Tables.value("ROOMS")) {
         auto node = db_data->Nodes.value(rid);
-        if (node.contains("ROOMS_NEEDED")) continue;
+        if (node.contains("ROOM_CHOICE")) continue;
         auto blist = node.value("NOT_AVAILABLE").toArray();
         for (auto b : blist) {
             auto bpair = b.toArray();
@@ -245,6 +245,7 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         for (auto t : tlist) {
             ldc.teachers.push_back(t2i.value(t.toInt()));
         }
+//TODO!
         // Get the possible-rooms list, which can contain a virtual room
         // (as the only member, which is checked in "readspaceconstraints").
         // The input is a simple list.
@@ -253,9 +254,9 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         for (auto rv : rlist) {
             int rid = rv.toInt();
             auto node = db_data->Nodes.value(rid);
-            if (node.contains("ROOMS_NEEDED")) {
+            if (node.contains("ROOM_CHOICE")) {
                 // Virtual room
-                auto srl = node.value("ROOMS_NEEDED").toArray();
+                auto srl = node.value("ROOM_CHOICE").toArray();
                 for (auto sr : std::as_const(srl)) {
                     ldc.rooms_needed.push_back(r2i.value(sr.toInt()));
                 }

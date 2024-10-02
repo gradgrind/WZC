@@ -138,6 +138,11 @@ void readRooms(FetInfo &fet_info, QList<QVariant> item_list)
 {
     // Assume that the real rooms upon which the virtual rooms depend
     // appear before the virtual rooms which use them!
+    // Only a simplified subset of FETs possibilities is supported here.
+    // Specifically, virtual rooms may contain any number of single-member
+    // sets (i.e. compulsory rooms), but only one set with more than one room
+    // (after elimination of any rooms specified as compulsory in other sets).
+    // Additional multi-room sets will be ignored.
     int i = 0;
     for (const auto &v : item_list) {
         auto n = v.value<XMLNode>();
@@ -153,16 +158,11 @@ void readRooms(FetInfo &fet_info, QList<QVariant> item_list)
                 {"X", i},
             };
             fet_info.rooms[name] = id;
-            QJsonArray compulsory;
-            QList<int> choices;
             if (m.value("Virtual") == "true") {
-                // I make a compromise with the rooms, allowing a little
-                // flexibility, but not so much that the implementation
-                // becomes unmanageable. Thus there are two entries for
-                // room requirements (as distinct from room allocation
-                // when a lesson has been placed): "ROOMS_NEEDED" is a list
-                // of necessary rooms, "ROOM_CHOICE" is a list from which
-                // one room must be taken.
+                QList<int> compulsory;
+                QList<QList<int>> choices;
+                // "FIXED_ROOMS" is the list of necessary rooms,
+                // "ROOM_CHOICE" is the list from which one room must be taken.
                 for (const auto &vc : n.children) {
                     auto nc = vc.value<XMLNode>();
                     if (nc.name == "Set_of_Real_Rooms") {
@@ -180,37 +180,55 @@ void readRooms(FetInfo &fet_info, QList<QVariant> item_list)
                             }
                         }
                         if (choices1.size() > 1) {
-                            if (!choices.empty()) {
-                                qFatal() << "Virtual room" << name
-                                         << "has more than one choice list"
-                                         << "(currently not supported)";
-                            } else {
-                                choices = choices1;
-                            }
+                            choices.append(choices1);
                         } else {
                             compulsory.append(choices1[0]);
                         }
                     }
                 }
-                // Remove any rooms from the choices list which are in
+                // Remove any rooms from the choices lists which are in
                 // the compulsory list.
-                if (!choices.empty()) {
-                    QJsonArray choices1;
-                    for (int r : choices) {
-                        if (!compulsory.contains(r)) {
-                            choices1.append(r);
+                QJsonArray choice_array;
+                while (!choices.empty()) {
+                    bool extended = false;
+                    QList<QList<int>> choices2;
+                    for (const auto & clist : choices) {
+                        QList<int> clist2;
+                        for (int r : clist) {
+                            if (!compulsory.contains(r)) clist2.append(r);
+                        }
+                        if (clist2.length() > 1) choices2.append(clist2);
+                        else if (!clist2.empty()) {
+                            compulsory.append(clist[0]);
+                            extended = true;
                         }
                     }
-                    if (choices1.size() > 1) {
-                        data["ROOMS_CHOICE"] = choices1;
-                    } else if (choices1.empty()) {
-                        qFatal() << "Virtual room" << name
-                                 << "has choice with no independent rooms";
-                    } else {
-                        compulsory.append(choices1[0]);
+                    if (!extended) {
+                        // The lists have been maximally shortened. Take the
+                        // first one as the choices list.
+                        if (!choices2.empty()) {
+                            for (int r : choices2[0]) {
+                                choice_array.append(r);
+                            }
+                            data["ROOM_CHOICE"] = choice_array;
+                            if (choices2.length() > 1) {
+                                qWarning() << "Virtual room" << name
+                                           << "has more than one choice list"
+                                           << "(excess ignored)";
+                            }
+                        }
+                        break;
                     }
+                    // Otherwise repeat with the modified lists
+                    choices = choices2;
                 }
-                data["ROOMS_NEEDED"] = compulsory;
+                // Even if it is empty the FIXED_ROOMS field should be present
+                // to act as a flag for the virtual nature of this room.
+                QJsonArray compulsory_array;
+                for (int r : compulsory) {
+                    compulsory_array.append(r);
+                }
+                data["FIXED_ROOMS"] = compulsory_array;
             }
             //TODO: There is probably a better way of handling this:
             auto c = m.value("Comments");
