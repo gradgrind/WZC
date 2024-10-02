@@ -31,6 +31,7 @@ set(PROJECT_SOURCES
         localconstraints.h  localconstraints.cpp
         differentdays.h differentdays.cpp
         placelesson.h   placelesson.cpp
+        statecache.h    statecache.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

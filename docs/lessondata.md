@@ -4,15 +4,10 @@ This structure is used when dealing with the timetable. It represents a single l
 
 ## Member variables
 
- - *lesson_id*: Reference to the database entry for the lesson (int)
- - *teachers*: Week-block indexes (int) of the teachers involved in the lesson
- - *atomic_groups*: Week-block indexes (int) of the atomic groups involved in the lesson
- - *rooms_needed*: Week-block indexes (int) of the rooms necessary for the lesson
+**Specific to the lesson**
 
-**TODO:** Make room-choice lists only soft constraints. There would probably still need to be some storage here for the chosen rooms.
- - *rooms_choice*: An optional list of room-week-block indexes (int), one of which is required.
- 
- - *subject*: The subject's database id (int)
+ - *lesson_id*: Reference to the database entry for the lesson (int)
+ - *flexible_room*: Index (int) of room chosen from a list of possibilities, -1 if no room. The acceptable rooms are specified in a soft constraint.
  - *tags*: An optional list of tags (string) used to identify groups of lessons
  - *length*: Lesson length (int), the number of slots occupied by this lesson
  - *fixed*: The placement of this lesson is fixed (bool)
@@ -20,8 +15,12 @@ This structure is used when dealing with the timetable. It represents a single l
  - *hour*: The 0-based index of the hour at which this lessons starts (valid only if *day* is not 0).  
  - *start_cells*: A vector with one entry for each school day. Each entry is a list of possible starting hours for the day. It is set only when the lesson is not "fixed".
 
-**TODO:** The following member is awaiting clarification of room handling
- - *rooms*: A list of the occupied rooms (valid only if the lesson is placed, i.e. *day* is not 0).
+**Shared with other lessons belonging to the course**
+
+ - *teachers*: List of week-block indexes (int) of the teachers involved in the lesson
+ - *atomic_groups*: List of week-block indexes (int) of the atomic groups involved in the lesson
+ - *fixed_rooms*: List of week-block indexes (int) of the rooms necessary for the lesson
+ - *subject*: The subject's database id (int)
 
 **TODO:** To what extent is the following still relevant?
 
