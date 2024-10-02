@@ -104,7 +104,8 @@ void BasicConstraints::slot_blockers()
     // Block slots where rooms are "not available"
     for (int rid : db_data->Tables.value("ROOMS")) {
         auto node = db_data->Nodes.value(rid);
-        if (node.contains("ROOM_CHOICE")) continue;
+        // Don't bother with virtual rooms:
+        if (node.contains("FIXED_ROOMS")) continue;
         auto blist = node.value("NOT_AVAILABLE").toArray();
         for (auto b : blist) {
             auto bpair = b.toArray();
@@ -246,45 +247,34 @@ std::vector<int> BasicConstraints::initial_place_lessons()
             ldc.teachers.push_back(t2i.value(t.toInt()));
         }
 //TODO!
-        // Get the possible-rooms list, which can contain a virtual room
-        // (as the only member, which is checked in "readspaceconstraints").
-        // The input is a simple list.
-        auto rlist = node.value("ROOMSPEC").toArray();
-        std::vector<int> rvec;
-        for (auto rv : rlist) {
-            int rid = rv.toInt();
-            auto node = db_data->Nodes.value(rid);
-            if (node.contains("ROOM_CHOICE")) {
-                // Virtual room
-                auto srl = node.value("ROOM_CHOICE").toArray();
-                for (auto sr : std::as_const(srl)) {
-                    ldc.rooms_needed.push_back(r2i.value(sr.toInt()));
-                }
-                srl = node.value("ROOMS_CHOICE").toArray();
-                for (auto sr : std::as_const(srl)) {
-                    rvec.push_back(r2i.value(sr.toInt()));
-                }
-            } else {
-                // A real room
-                rvec.push_back(r2i.value(rid));
-            }
+        // Get the room specification, which can contain a list of necessary
+        // rooms, "FIXED_ROOMS", and a list of rooms from which one is to be
+        // chosen, "ROOM_CHOICE".
+
+        for (const auto &r : node.value("FIXED_ROOMS").toArray()) {
+            ldc.fixed_rooms.push_back(r2i.value(r.toInt()));
         }
-        if (rvec.size() > 1) {
-            ldc.rooms_choice = rvec;
-        } else if (!rvec.empty()) {
-            // Add to compulsory room list
-            ldc.rooms_needed.push_back(rvec[0]);
+        //TODO: Is something like this better?:
+        //QJsonArray rarray{node.value("FIXED_ROOMS").toArray()};
+        //for (auto r : std::as_const(rarray))
+
+        /* TODO -> soft constraint?
+        for (const auto &r : node.value("ROOM_CHOICE").toArray()) {
+            ldc.rooms_choice.push_back(r2i.value(r.toInt()));
         }
+        */
 
         // The occupied rooms are associated with the individual lessons.
         // Note that they are only valid if there is a slot placement.
         for (int lid : db_data->course_lessons.value(cid)) {
             LessonData ld(ldc);
             auto lnode = db_data->Nodes.value(lid);
-            auto rlist = lnode.value("ROOMS").toArray();
-            for (auto r : rlist) {
-                ld.rooms.push_back(r2i.value(r.toInt()));
-            }
+//TODO; flexible_room
+//            auto rlist = lnode.value("ROOMS").toArray();
+//            for (auto r : rlist) {
+//                ld.rooms.push_back(r2i.value(r.toInt()));
+//            }
+
             ld.lesson_id = lid;
             int l = lnode.value("LENGTH").toInt();
             ld.length = l;
@@ -315,6 +305,10 @@ std::vector<int> BasicConstraints::initial_place_lessons()
                 continue;
             }
             ld.fixed = true;
+            QJsonValue cr = lnode.value("FLEXIBLE_ROOM");
+            if (!cr.isUndefined()) {
+                ld.flexible_room = cr.toInt();
+            }
             lessons.push_back(ld);
             // Test placement before actually doing it. This only checks the
             // most basic criteria, i.e. clashes. Other hard constraints are
@@ -332,8 +326,11 @@ std::vector<int> BasicConstraints::initial_place_lessons()
                 for (int sg : ld.atomic_groups) {
                     sg_weeks.at(sg).at(d).at(hh) = lix;
                 }
-                for (int r : ld.rooms) {
+                for (int r : ld.fixed_rooms) {
                     r_weeks.at(r).at(d).at(hh) = lix;
+                }
+                if (ld.flexible_room >= 0) {
+                    r_weeks.at(ld.flexible_room).at(d).at(hh) = lix;
                 }
             }
         }

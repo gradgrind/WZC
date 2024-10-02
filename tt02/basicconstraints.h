@@ -99,8 +99,8 @@ struct LessonData{
     // for the corresponding items (not the db ids).
     std::vector<int> teachers;
     std::vector<int> atomic_groups;
-    std::vector<int> rooms_needed;
-    std::vector<int> rooms_choice;
+    std::vector<int> fixed_rooms;
+//    std::vector<int> rooms_choice; // -> soft constraint?
 
     int subject; // the subject's db id
     QStringList tags;
@@ -108,9 +108,9 @@ struct LessonData{
     bool fixed = false;
     // This has a list of possible starting hours for each day
     std::vector<std::vector<int>> start_cells; // set only when not "fixed"
-    int day = -1; // -1 indicates unplaced lesson
+    int day{-1}; // -1 indicates unplaced lesson
     int hour;
-    std::vector<int> rooms;
+    int flexible_room{-1};
 
     // The referenced constraints are owned by BasicConstraints, so no
     // destructor is needed here.

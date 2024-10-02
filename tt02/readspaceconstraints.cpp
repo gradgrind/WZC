@@ -95,11 +95,12 @@ void readSpaceConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                     // this as the fixed room.
                     if (!cnode.contains("ROOM_CHOICE")) {
                         cnode["FIXED_ROOMS"] = QJsonArray{rr};
+                    } else {
+                        auto &anode = fet_info.nodes[aix];
+                        anode["FLEXIBLE_ROOM"] = rr;
                     }
-                    auto &anode = fet_info.nodes[aix];
-                    anode["FLEXIBLE_ROOM"] = rr;
                 }
-            } else {
+           } else {
                 // This lists the actually used rooms of a virtual room.
                 // If there is a flexible room it must be found and set in
                 // the lesson. That requires an existing room specification.
