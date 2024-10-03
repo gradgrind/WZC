@@ -1,9 +1,10 @@
 #include "showteacher.h"
 #include <QJsonArray>
 
-ShowTeacher::ShowTeacher(TT_Grid *grid, DBData *db_data, int teacher_id)
+ShowTeacher::ShowTeacher(TT_Grid *grid, TimetableData *tt_data, int teacher_id)
 {
-    for (int course_id : db_data->teacher_courses[teacher_id]) {
+    DBData *db_data = tt_data->db_data;
+    for (int course_id : tt_data->teacher_courses[teacher_id]) {
         auto course = db_data->Nodes.value(course_id);
         QStringList groups;
         auto glist = course.value("GROUPS").toArray();

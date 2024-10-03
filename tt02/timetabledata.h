@@ -1,10 +1,23 @@
-#ifndef LESSONTILES_H
-#define LESSONTILES_H
+#ifndef TIMETABLEDATA_H
+#define TIMETABLEDATA_H
 #include "database.h"
 
-void class_divisions(DBData *db_data);
+class TimetableData
+{
+public:
+    TimetableData(DBData *dbdata);
 
-QMap<int, QList<TileFraction>> course_divisions(
-    DBData *db_data, QJsonArray groups);
+    DBData *db_data; // not owned here
+    QHash<int, class_divs> class_subgroup_divisions;
+    // The tiles are divided only for the class view. The map below
+    // supplies a list of tiles for each involved class.
+    QHash<int, QMap<int, QList<TileFraction>>> course_tileinfo;
+    QHash<int, QList<int>> teacher_courses;
+    QHash<int, QList<int>> class_courses;
 
-#endif // LESSONTILES_H
+private:
+    QHash<int, class_divs> class_divisions();
+    QMap<int, QList<TileFraction>> course_divisions(const QJsonArray groups);
+};
+
+#endif // TIMETABLEDATA_H

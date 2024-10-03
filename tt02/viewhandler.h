@@ -3,6 +3,7 @@
 
 #include "basicconstraints.h"
 #include "database.h"
+#include "timetabledata.h"
 #include "tt_grid.h"
 #include <QWidget>
 #include <QListWidget>
@@ -15,7 +16,13 @@ class ViewHandler : public QWidget
 
 public:
     ViewHandler(QGraphicsView *gview);
-    ~ViewHandler();
+    ~ViewHandler()
+    {
+        if (dbdata) delete dbdata;
+        if (ttdata) delete ttdata;
+        if (grid) delete grid;
+        if (basic_constraints) delete basic_constraints;
+    }
 
 private:
     QWidget *viewtype;
@@ -25,13 +32,14 @@ private:
     QRadioButton *rb_room;
     QList<int> indexmap;
     DBData *dbdata = nullptr;
+    TimetableData *ttdata = nullptr;
     QGraphicsView *view;
     TT_Grid *grid = nullptr;
     BasicConstraints *basic_constraints = nullptr;
 
 private slots:
     void handle_load_file();
-    void new_data();
+    void new_timetable_data();
     void handle_rb_class();
     void handle_rb_teacher();
     void handle_rb_room();

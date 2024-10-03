@@ -21,7 +21,7 @@ set(PROJECT_SOURCES
         fetdata.h       fetdata.cpp
         readtimeconstraints.cpp  readtimeconstraints.h
         readspaceconstraints.h   readspaceconstraints.cpp
-        lessontiles.h   lessontiles.cpp
+        timetabledata.h   timetabledata.cpp
         database.h      database.cpp
         showclass.h     showclass.cpp
         showteacher.h   showteacher.cpp

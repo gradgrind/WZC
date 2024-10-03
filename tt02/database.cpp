@@ -7,15 +7,33 @@
 
 DBData::DBData(QMap<int, QJsonObject> node_map) : Nodes {node_map}
 {
+    // Currently I assume that any editing of the basic data in "Nodes" will
+    // also update the "Tables" structure appropriately.
     for (auto i = Nodes.cbegin(), end = Nodes.cend(); i != end; ++i) {
         Tables[i.value().value("TYPE").toString()].append(i.key());
     }
+    reload();
+}
+
+void DBData::reload()
+{
+    // days: mapping, day's database-id -> 0-based day index
+    days.clear();
     for (int d : Tables.value("DAYS")) {
         days[d] = Nodes.value(d).value("X").toInt();
     }
+    // hours: mapping, hour's database-id -> 0-based hour index
+    hours.clear();
     for (int h : Tables.value("HOURS")) {
         hours[h] = Nodes.value(h).value("X").toInt();
     }
+    // Make lesson lists for the courses (values are lesson database-ids).
+    course_lessons.clear();
+    for (int lid : Tables["LESSONS"]) {
+        auto ldata = Nodes[lid];
+        course_lessons[ldata["COURSE"].toInt()].append(lid);
+    }
+
 }
 
 QString DBData::get_tag(int id)

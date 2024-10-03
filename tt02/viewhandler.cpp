@@ -1,7 +1,6 @@
 #include "viewhandler.h"
 #include "readxml.h"
 #include "fetdata.h"
-#include "lessontiles.h"
 #include "showclass.h"
 #include "showteacher.h"
 #include "showroom.h"
@@ -50,14 +49,6 @@ ViewHandler::ViewHandler(QGraphicsView *gview) : QWidget(), view{gview}
         this, &ViewHandler::handle_item_chosen);
 }
 
-ViewHandler::~ViewHandler()
-{
-    if (dbdata) delete dbdata;
-    if (grid) delete grid;
-    if (basic_constraints) delete basic_constraints;
-}
-
-
 //TODO: Don't touch DBData at first, produce a JSON representation of the
 // data, which can be saved to a file. This should then be the source for
 // building the DBData instance.
@@ -78,16 +69,11 @@ void ViewHandler::handle_load_file()
     auto dbpath = fileName.section(".", 0, -2) + ".sqlite";
     dbdata->save(dbpath);
     qDebug() << "Saved data to" << dbpath;
-    new_data();
+    new_timetable_data();
 }
 
-void ViewHandler::new_data()
+void ViewHandler::new_timetable_data()
 {
-    // Make lesson lists for the courses.
-    for (int lid : dbdata->Tables["LESSONS"]) {
-        auto ldata = dbdata->Nodes[lid];
-        dbdata->course_lessons[ldata["COURSE"].toInt()].append(lid);
-    }
     QStringList dlist; // Ordered list of days (short-names)
     for (int d : dbdata->Tables["DAYS"]) {
         auto node = dbdata->Nodes.value(d);
@@ -122,56 +108,9 @@ void ViewHandler::new_data()
     grid = new TT_Grid(view, dlist, hlist, breaks);
 
     // Make course lists for all classes and teachers.
-
-    // Start with an analysis of the divisions and their groups/subgroups
-    // for all classes. The results of this are used by the calls to
-    // course_divisions.
-    class_divisions(dbdata);
-
-    // Collect the group tile information for each course,
-    // add the course-ids to the lists for the classes and teachers.
-    for (int course_id : dbdata->Tables["COURSES"]) {
-        auto cdata = dbdata->Nodes[course_id];
-        auto groups = cdata["GROUPS"].toArray();
-        auto llist = course_divisions(dbdata, groups);
-
-        dbdata->course_tileinfo[course_id] = llist;
-        auto tlist = cdata.value("TEACHERS").toArray();
-        for (const auto &t : tlist) {
-            int tid = t.toInt();
-            dbdata->teacher_courses[tid].append(course_id);
-        }
-        for (auto iter = llist.cbegin(), end = llist.cend();
-                iter != end; ++iter) {
-            int cl = iter.key();
-            dbdata->class_courses[cl].append(course_id);
-        }
-        viewtype->setEnabled(true);
-
-        /*
-        // Print the item
-        QStringList ll;
-        for (auto iter = llist.cbegin(), end = llist.cend();
-                iter != end; ++iter) {
-            int cl = iter.key();
-            for (const auto &llf : iter.value()) {
-                ll.append(QString("%1(%2:%3:%4:%5)")
-                              .arg(cl)
-                              .arg(llf.offset)
-                              .arg(llf.fraction)
-                              .arg(llf.total)
-                              .arg(llf.groups.join(",")));
-            }
-        }
-        QString subject = dbdata->get_tag(cdata.value("SUBJECT").toInt());
-        QStringList teachers;
-        for (const auto &t : tlist) {
-            teachers.append(dbdata->get_tag(t.toInt()));
-        }
-        qDebug() << "COURSE TILES" << subject << teachers.join(",")
-                 << groups << "->" << ll.join(",");
-        */
-    }
+    if (ttdata) delete ttdata;
+    ttdata = new TimetableData(dbdata);
+    viewtype->setEnabled(true);
 
     if (basic_constraints) delete basic_constraints;
     basic_constraints = new BasicConstraints(dbdata);
@@ -271,9 +210,9 @@ void ViewHandler::handle_item_chosen(int index)
     grid->setup_grid();
     // Which type of item is being handled?
     if (rb_class->isChecked()) {
-        ShowClass(grid, dbdata, indexmap.value(index));
+        ShowClass(grid, ttdata, indexmap.value(index));
     } else if (rb_teacher->isChecked()) {
-        ShowTeacher(grid, dbdata, indexmap.value(index));
+        ShowTeacher(grid, ttdata, indexmap.value(index));
     } else if (rb_room->isChecked()) {
         ShowRoom(grid, dbdata, indexmap.value(index));
     }
