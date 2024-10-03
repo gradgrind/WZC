@@ -8,7 +8,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
     // When the resource is "busy" in a time slot, the slot will contain
     // the index of the lesson-node.
 
-    // Collect the atomic subgroups
+    // Collect the atomic groups
     for (int gid : dbdata->Tables.value("GROUPS")) {
         auto node = dbdata->Nodes.value(gid);
         auto sglist = node.value("SUBGROUPS").toArray();
@@ -216,7 +216,6 @@ void BasicConstraints::multi_slot_constraints(
                 } else {
                     // Soft constraint
                     sat->add_lesson_id(this, ld.lesson_id);
-                    ld.soft_constraints.push_back(sat);
                 }
             }
         }
@@ -372,7 +371,6 @@ void BasicConstraints::initial_place_lessons2(
                 );
                 sat->add_lesson_id(this, ld.lesson_id);
                 general_constraints.push_back(sat);
-                ld.soft_constraints.push_back(sat);
             }
         }
         if (ld.start_cells.empty()) {
@@ -552,7 +550,7 @@ std::vector<int> BasicConstraints::find_clashes(
 
 SameStartingTime::SameStartingTime(
     BasicConstraints *constraint_data,
-    QJsonObject node)// : Constraint()
+    QJsonObject node)
 {
     penalty = node.value("WEIGHT").toInt();
     auto llist = node.value("LESSONS").toArray();
@@ -573,8 +571,7 @@ SoftActivityTimes::SoftActivityTimes(
     int weight,
     // For each day a list of allowed times
     std::vector<std::vector<int>> &ttslots,
-    bool allslots)
-        : Constraint(), all_slots{allslots}
+    bool allslots) : all_slots{allslots}
 {
     penalty = weight;
     week_slots.resize(

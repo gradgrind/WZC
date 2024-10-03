@@ -112,13 +112,14 @@ struct LessonData{
     int hour;
     int flexible_room{-1};
 
+    // Certain hard constraints are relevant for placement of the lesson, in
+    // particular when other lessons should have the same starting time
+    // or be on distinct days. These constraints are accessible via the
+    // following references.
     // The referenced constraints are owned by BasicConstraints, so no
     // destructor is needed here.
-//TODO: Are these still relevant?
     SameStartingTime *parallel = nullptr;
     std::vector<Constraint *> day_constraints;
-
-    std::vector<Constraint *> soft_constraints;
 };
 
 class BasicConstraints

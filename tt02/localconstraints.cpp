@@ -78,6 +78,8 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             } else {
                 basic_constraints->general_constraints.push_back(sst);
             }
+        } else {
+            qFatal() << "Unexpected constraint:" << ntype;
         }
     }
     return constraints;

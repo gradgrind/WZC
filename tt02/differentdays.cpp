@@ -22,7 +22,7 @@
  */
 DifferentDays::DifferentDays(
     BasicConstraints *constraint_data,
-    QJsonObject node) : Constraint()
+    QJsonObject node)
 {
     penalty = node.value("WEIGHT").toInt();
     gap = node.value("NDAYS").toInt();

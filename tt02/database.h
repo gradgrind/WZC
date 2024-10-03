@@ -5,9 +5,7 @@
 #include <QList>
 #include <QJsonObject>
 
-
-
-//TODO-- I had thought of a QJsonObject as database. This could have the
+// I had thought of a QJsonObject as database. This could have the
 // "correct" internal indexes of the elements. But editing this structure
 // would be practically impossible because of the potentially mangled references!
 // That was why I chose the sqlite form in the first place.
@@ -43,20 +41,7 @@ public:
     QHash<QString, QList<int>> Tables;
     QHash<int, int> days;   // db-index -> absolute index
     QHash<int, int> hours;  // db-index -> absolute index
-
-
-//    QHash<int, class_divs> class_subgroup_divisions;
-    // The tiles are divided only for the class view. The map below
-    // supplies a list of tiles for each involved class.
-//    QHash<int, QMap<int, QList<TileFraction>>> course_tileinfo;
-//    QHash<int, QList<int>> teacher_courses;
-//    QHash<int, QList<int>> class_courses;
-
-
     QHash<int, QList<int>> course_lessons;
-    //QHash<int, QList<int>> room_courses;
-    // It may be better to seek the courses for a room dynamically,
-    // as these might be changed interactively.
 
     DBData(QMap<int, QJsonObject> node_map);
     void reload();
