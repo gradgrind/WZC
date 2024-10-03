@@ -20,23 +20,25 @@ ShowTeacher::ShowTeacher(TT_Grid *grid, DBData *db_data, int teacher_id)
         }
         QString group = groups.join(",");
         QString subject = db_data->get_tag(course.value("SUBJECT").toInt());
-        // The rooms need to be done on a lesson basis!
+        QStringList rooms;
+        const auto rlist = course.value("FIXED_ROOMS").toArray();
+        for (const auto & r : rlist) {
+            rooms.append(db_data->get_tag(r.toInt()));
+        }
         for (int lid : db_data->course_lessons.value(course_id)) {
             auto ldata = db_data->Nodes.value(lid);
             int len = ldata.value("LENGTH").toInt();
-            QStringList rooms;
-            auto rlist = ldata.value("ROOMS").toArray();
-            for (const auto &r : rlist) {
-                rooms.append(db_data->get_tag(r.toInt()));
-            }
-            QString room = rooms.join(",");
+            // Add possible chosen room
+            QStringList roomlist(rooms);
+            auto fr{ldata.value("FLEXIBLE_ROOM")};
+            if (!fr.isUndefined()) roomlist.append(db_data->get_tag(fr.toInt()));
             int d = db_data->days.value(ldata.value("DAY").toInt());
             int h = db_data->hours.value(ldata.value("HOUR").toInt());
             Tile *t = new Tile(grid,
                 QJsonObject {
                     {"TEXT", group},
                     {"TL", subject},
-                    {"BR", room},
+                    {"BR", roomlist.join(",")},
                     {"LENGTH", len},
                     {"DIV0", 0},
                     {"DIVS", 1},
