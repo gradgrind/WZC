@@ -25,30 +25,8 @@ void placeLesson(
     for (int x : ldata.atomic_groups) {
         basic_constraints->sg_weeks[x][newday][newhour] = lesson;
     }
-
-    int nrooms = ldata.rooms_needed.size();
-//TODO: It might be sensible to do the resizing just once, when the lesson
-// is created.
-    if (ldata.rooms_choice.empty()) ldata.rooms.resize(nrooms);
-    else ldata.rooms.resize(nrooms + 1);
-    for (int i = 0; i < nrooms; ++i) {
-        int r = ldata.rooms_needed[i];
+    for (int r : ldata.fixed_rooms) {
         basic_constraints->r_weeks[r][newday][newhour] = lesson;
-        ldata.rooms[i] = r;
-    }
-    if (!ldata.rooms_choice.empty()) {
-        //TODO: Use first available one?
-        for (int r : ldata.rooms_choice) {
-            if (basic_constraints->r_weeks[r][newday][newhour] < 0) {
-                basic_constraints->r_weeks[r][newday][newhour] = lesson;
-                ldata.rooms[nrooms] = r;
-                goto chosen;
-            }
-        }
-        //TODO: Clarify the handling of unallocated rooms! Maybe one of the
-        // choices should be placed here even though it is already in use?
-        ldata.rooms[nrooms] = -1;
-    chosen:;
     }
 }
 

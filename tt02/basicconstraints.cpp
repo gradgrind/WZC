@@ -58,7 +58,7 @@ BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
     // Make a weekly array for each real room
     for (int rid : dbdata->Tables.value("ROOMS")) {
         auto node = dbdata->Nodes.value(rid);
-        if (node.contains("ROOMS_NEEDED")) continue;
+        if (node.contains("ROOM_CHOICE")) continue;
         // A real room
         r2i[rid] = i_r.length();
         i_r.append(rid);
@@ -104,7 +104,8 @@ void BasicConstraints::slot_blockers()
     // Block slots where rooms are "not available"
     for (int rid : db_data->Tables.value("ROOMS")) {
         auto node = db_data->Nodes.value(rid);
-        if (node.contains("ROOMS_NEEDED")) continue;
+        // Don't bother with virtual rooms:
+        if (node.contains("FIXED_ROOMS")) continue;
         auto blist = node.value("NOT_AVAILABLE").toArray();
         for (auto b : blist) {
             auto bpair = b.toArray();
@@ -245,45 +246,33 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         for (auto t : tlist) {
             ldc.teachers.push_back(t2i.value(t.toInt()));
         }
-        // Get the possible-rooms list, which can contain a virtual room
-        // (as the only member, which is checked in "readspaceconstraints").
-        // The input is a simple list.
-        auto rlist = node.value("ROOMSPEC").toArray();
-        std::vector<int> rvec;
-        for (auto rv : rlist) {
-            int rid = rv.toInt();
-            auto node = db_data->Nodes.value(rid);
-            if (node.contains("ROOMS_NEEDED")) {
-                // Virtual room
-                auto srl = node.value("ROOMS_NEEDED").toArray();
-                for (auto sr : std::as_const(srl)) {
-                    ldc.rooms_needed.push_back(r2i.value(sr.toInt()));
-                }
-                srl = node.value("ROOMS_CHOICE").toArray();
-                for (auto sr : std::as_const(srl)) {
-                    rvec.push_back(r2i.value(sr.toInt()));
-                }
-            } else {
-                // A real room
-                rvec.push_back(r2i.value(rid));
-            }
+//TODO!
+        // Get the room specification, which can contain a list of necessary
+        // rooms, "FIXED_ROOMS", and a list of rooms from which one is to be
+        // chosen, "ROOM_CHOICE".
+
+        const auto frarray = node.value("FIXED_ROOMS").toArray();
+        for (const auto &r : frarray) {
+            ldc.fixed_rooms.push_back(r2i.value(r.toInt()));
         }
-        if (rvec.size() > 1) {
-            ldc.rooms_choice = rvec;
-        } else if (!rvec.empty()) {
-            // Add to compulsory room list
-            ldc.rooms_needed.push_back(rvec[0]);
+
+        /* TODO -> soft constraint?
+        for (const auto &r : node.value("ROOM_CHOICE").toArray()) {
+            ldc.rooms_choice.push_back(r2i.value(r.toInt()));
         }
+        */
 
         // The occupied rooms are associated with the individual lessons.
         // Note that they are only valid if there is a slot placement.
         for (int lid : db_data->course_lessons.value(cid)) {
             LessonData ld(ldc);
             auto lnode = db_data->Nodes.value(lid);
-            auto rlist = lnode.value("ROOMS").toArray();
-            for (auto r : rlist) {
-                ld.rooms.push_back(r2i.value(r.toInt()));
-            }
+//TODO: flexible_room
+//            auto rlist = lnode.value("ROOMS").toArray();
+//            for (auto r : rlist) {
+//                ld.rooms.push_back(r2i.value(r.toInt()));
+//            }
+
             ld.lesson_id = lid;
             int l = lnode.value("LENGTH").toInt();
             ld.length = l;
@@ -314,6 +303,10 @@ std::vector<int> BasicConstraints::initial_place_lessons()
                 continue;
             }
             ld.fixed = true;
+            QJsonValue cr = lnode.value("FLEXIBLE_ROOM");
+            if (!cr.isUndefined()) {
+                ld.flexible_room = r2i.value(cr.toInt());
+            }
             lessons.push_back(ld);
             // Test placement before actually doing it. This only checks the
             // most basic criteria, i.e. clashes. Other hard constraints are
@@ -331,8 +324,11 @@ std::vector<int> BasicConstraints::initial_place_lessons()
                 for (int sg : ld.atomic_groups) {
                     sg_weeks.at(sg).at(d).at(hh) = lix;
                 }
-                for (int r : ld.rooms) {
+                for (int r : ld.fixed_rooms) {
                     r_weeks.at(r).at(d).at(hh) = lix;
+                }
+                if (ld.flexible_room >= 0) {
+                    r_weeks.at(ld.flexible_room).at(d).at(hh) = lix;
                 }
             }
         }
@@ -426,40 +422,48 @@ void BasicConstraints::initial_place_lessons2(
             for (int sg : ldata.atomic_groups) {
                 sg_weeks.at(sg).at(d).at(hh) = lix;
             }
-            for (int r : ldata.rooms) {
+            for (int r : ldata.fixed_rooms) {
                 r_weeks.at(r).at(d).at(hh) = lix;
+            }
+            if (ldata.flexible_room >= 0) {
+                r_weeks.at(ldata.flexible_room).at(d).at(hh) = lix;
             }
         }
     }
 }
 
-// Test whether the given lesson is blocked at the given time (which is
-// permitted by the start_cells table).
-bool BasicConstraints::test_possible_place(
+// This is a primitive test for a placement. It returns only true or false,
+// according to whether the placement is possible. It doesn't change
+// anything.
+bool BasicConstraints::test_single_slot(
     LessonData &ldata, int day, int hour)
 {
-    for (int lx = 0; lx < ldata.length; ++lx) {
-        for (int i : ldata.atomic_groups) {
-            if (sg_weeks[i][day][hour+lx]) return false;
-        }
-        for (int i : ldata.teachers) {
-            if (t_weeks[i][day][hour+lx]) return false;
-        }
-        // ldata->rooms is not relevant here
-        for (int i : ldata.rooms_needed) {
-            if (r_weeks[i][day][hour+lx]) return false;
-        }
-        if (ldata.rooms_choice.empty()) goto next;
-        for (int i : ldata.rooms_choice) {
-            if (!r_weeks[i][day][hour+lx]) goto next;
-        }
-        return false;
-    next:;
+    for (int i : ldata.atomic_groups) {
+        if (sg_weeks[i][day][hour]) return false;
+    }
+    for (int i : ldata.teachers) {
+        if (t_weeks[i][day][hour]) return false;
+    }
+    for (int i : ldata.fixed_rooms) {
+        if (r_weeks[i][day][hour]) return false;
     }
     return true;
 }
 
-// Test whether the given lesson can be placed at the given time.
+// Test whether the given lesson is blocked at the given time (which is
+// permitted by the start_cells table). This checks all slots covered by
+// the lesson.
+bool BasicConstraints::test_possible_place(
+    LessonData &ldata, int day, int hour)
+{
+    for (int lx = 0; lx < ldata.length; ++lx) {
+        if (!test_single_slot(ldata, day, hour+lx)) return false;
+    }
+    return true;
+}
+
+// Test whether the given lesson can be placed at the given time, taking
+// the permissible start times for the lesson into account.
 bool BasicConstraints::test_place(LessonData &ldata, int day, int hour)
 {
     const auto & dvec = ldata.start_cells[day];
@@ -510,29 +514,6 @@ std::vector<std::vector<int>> BasicConstraints::find_possible_places(
     return free;
 }
 
-// This is a primitive test for a placement. It returns only true or false,
-// according to whether the placement is possible. It doesn't change
-// anything.
-bool BasicConstraints::test_single_slot(
-    LessonData &ldata, int day, int hour)
-{
-    for (int i : ldata.atomic_groups) {
-        if (sg_weeks[i][day][hour]) return false;
-    }
-    for (int i : ldata.teachers) {
-        if (t_weeks[i][day][hour]) return false;
-    }
-    // ldata->rooms is not relevant here
-    for (int i : ldata.rooms_needed) {
-        if (r_weeks[i][day][hour]) return false;
-    }
-    if (ldata.rooms_choice.empty()) return true;
-    for (int i : ldata.rooms_choice) {
-        if (!r_weeks[i][day][hour]) return true;
-    }
-    return false;
-}
-
 //TODO: Add a test which returns details of the clashes, at least the
 // lessons/courses, maybe also the associated groups/teachers/rooms ...
 // That could be triggered by shift-click (which would place if ok?).
@@ -558,26 +539,12 @@ std::vector<int> BasicConstraints::find_clashes(
             clashes.push_back(lix);
         }
     }
-    for (int i : ldata->rooms_needed) {
+    for (int i : ldata->fixed_rooms) {
         int lix = r_weeks[i][day][hour];
         if (lix && std::find(
                 clashes.begin(), clashes.end(), lix) == clashes.end()) {
             clashes.push_back(lix);
         }
-    }
-    if (!ldata->rooms_choice.empty()) {
-        int lix;
-        for (int i : ldata->rooms_choice) {
-            lix = r_weeks[i][day][hour];
-            if (lix && std::find(
-                    clashes.begin(), clashes.end(), lix) != clashes.end()) {
-                // The room is attached to a lesson which already clashes
-                return clashes;
-            }
-        }
-        // Take the last room's lesson as the clash, just so that
-        // something gets listed (TODO: is there a better way?)
-        clashes.push_back(lix);
     }
     return clashes;
 }
