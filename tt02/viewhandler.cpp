@@ -123,8 +123,8 @@ void ViewHandler::new_timetable_data()
 void ViewHandler::onClick(int day, int hour, Tile *tile) {
     if (tile) {
         int lid = tile->lid;
-        auto &ldata = basic_constraints->lessons[
-            basic_constraints->lid2lix[lid]];
+        int lix = basic_constraints->lid2lix[lid];
+        auto &ldata = basic_constraints->lessons[lix];
         qDebug() << "TILE CLICKED:" << day << hour
                  << QString("[%1|%2]").arg(tile->ref).arg(lid);
         grid->clearCellOK();
@@ -147,8 +147,7 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         }
 
         qDebug() << "START-CELLS:" << ldata.start_cells;
-//TODO: The start-cells seem too restrictive. Are the wrong cells getting
-// added somehow?
+        qDebug() << "  -> free:" << basic_constraints->find_slots(lix);
         auto free = basic_constraints->find_possible_places(ldata);
         for (int d = 0; d < basic_constraints->ndays; ++d) {
             const auto &dvec = free[d];

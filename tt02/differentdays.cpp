@@ -46,8 +46,8 @@ int DifferentDays::evaluate(BasicConstraints *constraint_data)
 {
     std::vector<bool> dmap{fixed};
     int penalties{0};
-    for (int lid : lesson_indexes) {
-        int d = constraint_data->lessons[lid].day;
+    for (int lix : lesson_indexes) {
+        int d = constraint_data->lessons[lix].day;
         if (d < 0) continue; // unplaced lesson
         if (dmap[d]) {
             penalties += penalty;
@@ -74,13 +74,13 @@ int DifferentDays::evaluate(BasicConstraints *constraint_data)
 
 // This test is for hard constraints only. The lesson may already be placed,
 // in which case, its current day should not be checked.
-bool DifferentDays::test(BasicConstraints *constraint_data, int l_id, int day)
+bool DifferentDays::test(BasicConstraints *constraint_data, int l_ix, int day)
 {
-    int d0 = constraint_data->lessons[l_id].day;
+    int d0 = constraint_data->lessons[l_ix].day;
     if (day == d0) return true; // It must be OK on the same day.
     if (fixed[day]) return false;
-    for (int lid : lesson_indexes) {
-        int d = constraint_data->lessons[lid].day;
+    for (int lix : lesson_indexes) {
+        int d = constraint_data->lessons[lix].day;
         if (d < 0) continue; // unplaced lesson
         if (d == day) {
             return false; // "different days" only

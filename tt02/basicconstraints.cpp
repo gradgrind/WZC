@@ -512,6 +512,92 @@ std::vector<std::vector<int>> BasicConstraints::find_possible_places(
     return free;
 }
 
+//TODO: What about having the permitted starting slots as bool-map?
+// Because of parallel lessons this could be a bit more straightforward:
+// I could go through all lessons, but only test those which are permitted
+// in all parallel lessons. For the normal case, it would, however, be slower.
+// Shouldn't the normal case be optimized?
+// How hard is it to use the original lists? Perhaps by filtering each
+// lesson's permissible lists?
+
+std::vector<std::vector<int>> BasicConstraints::find_slots(int lesson_index)
+{
+    LessonData &ldata = lessons[lesson_index];
+    std::vector<std::vector<int>> start_slots{ldata.start_cells};
+    if (!ldata.parallel) {
+        for (const auto c : ldata.day_constraints) {
+            for (int d = 0; d < ndays; ++d) {
+                if (!start_slots[d].empty()) {
+                    if (!c->test(this, lesson_index, d)) {
+                        start_slots[d].clear();
+                    }
+                }
+            }
+        }
+        for (int d = 0; d < ndays; ++d) {
+            std::vector<int> &ssd = start_slots[d];
+            for (int i = 0; i < ssd.size(); ++i) {
+                int h = ssd[i];
+                if (h < 0) continue;
+                if (!test_possible_place(ldata, d, h)) {
+                    ssd[i] = -1; // mark as invalid
+                }
+            }
+        }
+        return start_slots;
+    }
+    for (int lix : ldata.parallel->lesson_indexes) {
+        // Filter days using day-constraints
+        LessonData &ld = lessons[lix];
+        for (const auto c : ld.day_constraints) {
+            for (int d = 0; d < ndays; ++d) {
+                if (!start_slots[d].empty()) {
+                    if (!c->test(this, lix, d)) {
+                        start_slots[d].clear();
+                    }
+                }
+            }
+        }
+        if (lix == lesson_index) continue;
+        // Filter using start-cells
+        std::vector<std::vector<int>> &ss1 = ld.start_cells;
+        for (int d = 0; d < start_slots.size(); ++d) {
+            std::vector<int> &hl0 = start_slots[d];
+            if (hl0.empty()) continue;
+            std::vector<int> &hl1 = ss1[d];
+            int i = 0;
+            for (int j = 0; j < hl0.size(); ++j) {
+                int h = hl0[j];
+                while (i < hl1.size()) {
+                    if (hl1[i] == h) goto keep;
+                    if (hl1[i] > h) break;
+                    ++i;
+                }
+                hl0[j] = -1; // mark as invalid
+            keep:;
+            }
+        }
+    }
+    for (int lix : ldata.parallel->lesson_indexes) {
+        // Test theoretically available slots
+        LessonData &ld = lessons[lix];
+        for (int d = 0; d < ndays; ++d) {
+            std::vector<int> &ssd = start_slots[d];
+            for (int i = 0; i < ssd.size(); ++i) {
+                int h = ssd[i];
+                if (h < 0) continue;
+                if (!test_possible_place(ld, d, h)) {
+                    ssd[i] = -1; // mark as invalid
+                }
+            }
+        }
+    }
+    return start_slots;
+}
+
+
+
+
 //TODO: Add a test which returns details of the clashes, at least the
 // lessons/courses, maybe also the associated groups/teachers/rooms ...
 // That could be triggered by shift-click (which would place if ok?).
