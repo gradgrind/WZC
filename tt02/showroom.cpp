@@ -30,21 +30,27 @@ ShowRoom::ShowRoom(TT_Grid *grid, DBData *db_data, int room_id)
                 }
             }
             QString subject = db_data->get_tag(course.value("SUBJECT").toInt());
-            int d = db_data->days.value(ldata.value("DAY").toInt());
-            int h = db_data->hours.value(ldata.value("HOUR").toInt());
-            Tile *t = new Tile(grid,
-                               QJsonObject {
-                                           {"TEXT", groups.join(",")},
-                                           {"TL", subject},
-                                           {"BR", teachers.join(",")},
-                                           {"LENGTH", ldata.value("LENGTH").toInt()},
-                                           {"DIV0", 0},
-                                           {"DIVS", 1},
-                                           {"NDIVS", 1},
-                                           },
-                               lid
-                               );
-            grid->place_tile(t, d, h);
+            int d0 = ldata.value("DAY").toInt();
+            if (d0 == 0) {
+//TODO: Collect unplaced lessons
+
+            } else {
+                int d = db_data->days.value(d0);
+                int h = db_data->hours.value(ldata.value("HOUR").toInt());
+                Tile *t = new Tile(grid,
+                    QJsonObject {
+                       {"TEXT", groups.join(",")},
+                       {"TL", subject},
+                       {"BR", teachers.join(",")},
+                       {"LENGTH", ldata.value("LENGTH").toInt()},
+                       {"DIV0", 0},
+                       {"DIVS", 1},
+                       {"NDIVS", 1},
+                    },
+                    lid
+                );
+                grid->place_tile(t, d, h);
+            }
         }
     }
 }

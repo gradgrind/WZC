@@ -27,23 +27,29 @@ ShowClass::ShowClass(TT_Grid *grid, TimetableData *tt_data, int class_id)
             QStringList roomlist(rooms);
             auto fr{ldata.value("FLEXIBLE_ROOM")};
             if (!fr.isUndefined()) roomlist.append(db_data->get_tag(fr.toInt()));
-            int d = db_data->days.value(ldata.value("DAY").toInt());
-            int h = db_data->hours.value(ldata.value("HOUR").toInt());
-            for (const auto &tf : tiles) {
-                Tile *t = new Tile(grid,
-                    QJsonObject {
-                        {"TEXT", subject},
-                        {"TL", teacher},
-                        {"TR", tf.groups.join(",")},
-                        {"BR", roomlist.join(",")},
-                        {"LENGTH", len},
-                        {"DIV0", tf.offset},
-                        {"DIVS", tf.fraction},
-                        {"NDIVS", tf.total},
-                    },
-                    lid
-                );
-                grid->place_tile(t, d, h);
+            int d0 = ldata.value("DAY").toInt();
+            if (d0 == 0) {
+//TODO: Collect unplaced lessons
+
+            } else {
+                int d = db_data->days.value(d0);
+                int h = db_data->hours.value(ldata.value("HOUR").toInt());
+                for (const auto &tf : tiles) {
+                    Tile *t = new Tile(grid,
+                        QJsonObject {
+                            {"TEXT", subject},
+                            {"TL", teacher},
+                            {"TR", tf.groups.join(",")},
+                            {"BR", roomlist.join(",")},
+                            {"LENGTH", len},
+                            {"DIV0", tf.offset},
+                            {"DIVS", tf.fraction},
+                            {"NDIVS", tf.total},
+                        },
+                        lid
+                    );
+                    grid->place_tile(t, d, h);
+                }
             }
         }
     }
