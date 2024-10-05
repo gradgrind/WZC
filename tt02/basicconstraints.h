@@ -7,6 +7,8 @@ struct TTSlot {
     int day, hour;
 };
 
+bool is_hard(int w) { return (w == 10); }
+
 struct ActivitySelectionSlots {
     int weight;
     QString tag;
@@ -17,7 +19,7 @@ struct ActivitySelectionSlots {
     // This has a list for each day containing the allowed times
     std::vector<std::vector<int>> ttslots;
 
-    bool isHard() { return (weight == 10); }
+    bool isHard() { return is_hard(weight); }
 };
 
 struct LessonStartingSlots {
@@ -25,7 +27,7 @@ struct LessonStartingSlots {
     // This has a list for each day containing the allowed times
     std::vector<std::vector<int>> ttslots;
 
-    bool isHard() { return (weight == 10); }
+    bool isHard() { return is_hard(weight); }
 };
 
 // Restrict possible starting times on the basis of various constraints
@@ -53,7 +55,7 @@ public:
             BasicConstraints *constraint_data, int l_ix, int day,
             std::vector<int> &conflicts)
         { return false; }
-    bool isHard() { return (penalty == 10); }
+    bool isHard() { return is_hard(penalty); }
 
 protected:
     int penalty;
@@ -62,9 +64,7 @@ protected:
 class SameStartingTime : public Constraint
 {
 public:
-    SameStartingTime(
-        BasicConstraints *constraint_data,
-        QJsonObject node);
+    SameStartingTime(std::vector<int> &lesson_indexes, int weight);
     //~SameStartingTime() { qDebug() << "~SameStartingTime"; }
 
     int evaluate(BasicConstraints *constraint_data) override;
@@ -111,8 +111,11 @@ struct LessonData{
     QStringList tags;
     int length;
     bool fixed = false;
-    // This has a list of possible starting hours for each day
-    std::vector<std::vector<int>> start_cells; // set only when not "fixed"
+    // This has an array of possible starting hours for each day,
+    // set only when not "fixed". For parallel lessons it is shared.
+    // The vector is owned by the BasicConstraints object.
+    std::vector<std::vector<int>> *start_cells;
+
     int day{-1}; // -1 indicates unplaced lesson
     int hour;
     int flexible_room{-1};
@@ -123,8 +126,12 @@ struct LessonData{
     // following references.
     // The referenced constraints are owned by BasicConstraints, so no
     // destructor is needed here.
-    SameStartingTime *parallel = nullptr;
     std::vector<Constraint *> day_constraints;
+
+//TODO: new
+    std::vector<int> parallel_lessons;
+//TODO--
+//    SameStartingTime *parallel = nullptr;
 };
 
 class BasicConstraints
@@ -134,6 +141,7 @@ public:
     ~BasicConstraints() {
         for (const auto &p : general_constraints) delete p;
         for (const auto &p : local_hard_constraints) delete p;
+        for (const auto &p : start_cells_arrays) delete p;
     }
 
     // Returns a list of possible starting hours for each day
@@ -185,6 +193,12 @@ private:
         bool allslots // false for starting times, true for slots
     );
     void slot_blockers();
+    void place_fixed_lesson(int lesson_index);
+    void set_times(
+        std::vector<std::vector<bool>> &slotflags,
+        std::unordered_map<int, LessonStartingSlots> &starting_times,
+        int lix);
+    std::vector<std::vector<int> *> start_cells_arrays;
 };
 
 /*#DOC

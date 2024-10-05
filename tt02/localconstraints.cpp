@@ -62,21 +62,64 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
                 basic_constraints->general_constraints.push_back(dd);
             }
         } else if (ntype == "SAME_STARTING_TIME") {
-            SameStartingTime * sst = new SameStartingTime(
-                basic_constraints, node);
-            if (sst->isHard()) {
-                basic_constraints->local_hard_constraints.push_back(sst);
-                for (int lid : sst->lesson_indexes) {
-                    auto l = &basic_constraints->lessons[lid];
-                    if (l->parallel) {
-                        qDebug() << "Lesson" << l->lesson_id
+            auto llist = node.value("LESSONS").toArray();
+            int n = llist.size();
+            std::vector<int> lesson_indexes(n);
+            for (int i = 0; i < n; ++i) {
+                lesson_indexes[i] = basic_constraints->lid2lix[llist[i].toInt()];
+            }
+            int weight = node.value("WEIGHT").toInt();
+            if (is_hard(weight)) {
+                for (int lix : lesson_indexes) {
+                    auto &l = basic_constraints->lessons[lix];
+                    if (!l.parallel_lessons.empty()) {
+                        qFatal() << "Lesson" << l.lesson_id
                                  << "has multiple 'SameStartingTime' constraints";
-                        continue;
                     }
-                    l->parallel = sst;
+                    if (l.fixed) {
+                        for (int lix2 : lesson_indexes) {
+                            if (lix2 != lix) {
+                                auto &l2 = basic_constraints->lessons[lix2];
+                                l2.day_constraints.clear();
+//TODO: Check basic placement parameters (like straight fixed lesson)
+
+                                l2.day = l.day;
+                                l2.hour = l.hour;
+                            }
+
+                    }
+
+                }
+
+                for (int lix : lesson_indexes) {
+                    auto l = &basic_constraints->lessons[lix];
+                    if (!l->parallel_lessons.empty()) {
+                        qFatal() << "Lesson" << l->lesson_id
+                                 << "has multiple 'SameStartingTime' constraints";
+                    }
+//TODO: Need to handle fixed lessons
+
+                    if (l->fixed) {
+                        for (int lix2 : lesson_indexes) {
+                            if (lix2 != lix) {
+                                auto l2 = &basic_constraints->lessons[lix2];
+                                l2->parallel_lessons.clear();
+                                l2->day_constraints.clear();
+                                l
+                            }
+                        }
+
+                    }
+
+                    for (int lix2 : lesson_indexes) {
+                        if (lix2 != lix) {
+                            l->parallel_lessons.push_back(lix2);
+                        }
+                    }
                 }
             } else {
-                basic_constraints->general_constraints.push_back(sst);
+                basic_constraints->general_constraints.push_back(
+                    new SameStartingTime(lesson_indexes, weight));
             }
         } else {
             qFatal() << "Unexpected constraint:" << ntype;
