@@ -245,33 +245,15 @@ std::vector<int> BasicConstraints::initial_place_lessons()
         for (auto t : tlist) {
             ldc.teachers.push_back(t2i.value(t.toInt()));
         }
-//TODO!
-        // Get the room specification, which can contain a list of necessary
-        // rooms, "FIXED_ROOMS", and a list of rooms from which one is to be
-        // chosen, "ROOM_CHOICE".
-
         const auto frarray = node.value("FIXED_ROOMS").toArray();
         for (const auto &r : frarray) {
             ldc.fixed_rooms.push_back(r2i.value(r.toInt()));
         }
-
-        /* TODO -> soft constraint?
-        for (const auto &r : node.value("ROOM_CHOICE").toArray()) {
-            ldc.rooms_choice.push_back(r2i.value(r.toInt()));
-        }
-        */
-
         // The occupied rooms are associated with the individual lessons.
         // Note that they are only valid if there is a slot placement.
         for (int lid : db_data->course_lessons.value(cid)) {
             LessonData ld(ldc);
             auto lnode = db_data->Nodes.value(lid);
-//TODO: flexible_room
-//            auto rlist = lnode.value("ROOMS").toArray();
-//            for (auto r : rlist) {
-//                ld.rooms.push_back(r2i.value(r.toInt()));
-//            }
-
             ld.lesson_id = lid;
             int l = lnode.value("LENGTH").toInt();
             ld.length = l;
@@ -511,14 +493,6 @@ std::vector<std::vector<int>> BasicConstraints::find_possible_places(
     }
     return free;
 }
-
-//TODO: What about having the permitted starting slots as bool-map?
-// Because of parallel lessons this could be a bit more straightforward:
-// I could go through all lessons, but only test those which are permitted
-// in all parallel lessons. For the normal case, it would, however, be slower.
-// Shouldn't the normal case be optimized?
-// How hard is it to use the original lists? Perhaps by filtering each
-// lesson's permissible lists?
 
 std::vector<std::vector<int>> BasicConstraints::find_slots(int lesson_index)
 {

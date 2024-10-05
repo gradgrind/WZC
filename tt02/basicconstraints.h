@@ -49,6 +49,10 @@ public:
     virtual int evaluate(BasicConstraints *constraint_data) = 0;
     virtual bool test(BasicConstraints *constraint_data, int l_ix, int day)
         { return false; }
+    virtual bool testx(
+            BasicConstraints *constraint_data, int l_ix, int day,
+            std::vector<int> &conflicts)
+        { return false; }
     bool isHard() { return (penalty == 10); }
 
 protected:
