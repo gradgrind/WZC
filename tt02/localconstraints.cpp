@@ -23,8 +23,14 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             }
             if (ntype == "PREFERRED_STARTING_TIMES") {
                 int lid = node.value("LESSON").toInt();
-                constraints.lesson_starting_times[lid] = {
-                    .weight = w, .ttslots = days};
+                if (is_hard(w)) {
+                    basic_constraints->set_start_cells_array(lid, days);
+                } else  {
+                    auto sat = new SoftActivityTimes(
+                        basic_constraints, w, days, false);
+                    sat->add_lesson_id(basic_constraints, lid);
+                    basic_constraints->general_constraints.push_back(sat);
+                }
             } else {
                 if (ntype == "ACTIVITIES_PREFERRED_STARTING_TIMES") {
                     constraints.activities_starting_times.push_back({
@@ -70,12 +76,9 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             }
             int weight = node.value("WEIGHT").toInt();
             if (is_hard(weight)) {
-                for (int lix : lesson_indexes) {
-                    auto &l = basic_constraints->lessons[lix];
-                    if (!l.parallel_lessons.empty()) {
-                        qFatal() << "Lesson" << l.lesson_id
-                                 << "has multiple 'SameStartingTime' constraints";
-                    }
+                constraints.parallel_lessons.push_back(lesson_indexes);
+/* //TODO: Maybe some of this is needed later when handling the parallel lessons
+
                     if (l.fixed) {
                         for (int lix2 : lesson_indexes) {
                             if (lix2 != lix) {
@@ -117,6 +120,8 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
                         }
                     }
                 }
+
+*/
             } else {
                 basic_constraints->general_constraints.push_back(
                     new SameStartingTime(lesson_indexes, weight));

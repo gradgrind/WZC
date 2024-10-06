@@ -33,8 +33,8 @@ struct LessonStartingSlots {
 // Restrict possible starting times on the basis of various constraints
 // on activities.
 struct time_constraints {
-    // From constraint Activity has preferred starting times
-    std::unordered_map<int, LessonStartingSlots> lesson_starting_times;
+    // Collect groups of hard-parallel lessons for later processing
+    std::vector<std::vector<int>> parallel_lessons;
     // From constraint Activities have preferred starting times
     std::vector<ActivitySelectionSlots> activities_starting_times;
     // From constraint Activities have preferred slots
@@ -96,6 +96,10 @@ public:
     const bool all_slots;
 };
 
+void restrict_week_slots(
+    std::vector<std::vector<int>> &weekslots,
+    std::vector<std::vector<int>> &newslots);
+
 struct LessonData{
     // Only 100%-constraints are handled here.
     int lesson_id;
@@ -112,7 +116,7 @@ struct LessonData{
     int length;
     bool fixed = false;
     // This has an array of possible starting hours for each day,
-    // set only when not "fixed". For parallel lessons it is shared.
+    // irrelevant when "fixed". For parallel lessons it is shared.
     // The vector is owned by the BasicConstraints object.
     std::vector<std::vector<int>> *start_cells;
 
@@ -123,15 +127,14 @@ struct LessonData{
     // Certain hard constraints are relevant for placement of the lesson, in
     // particular when other lessons should have the same starting time
     // or be on distinct days. These constraints are accessible via the
-    // following references.
+    // references in day_constraints. For "fixed" lessons these are not
+    // relevant.
     // The referenced constraints are owned by BasicConstraints, so no
     // destructor is needed here.
     std::vector<Constraint *> day_constraints;
 
 //TODO: new
     std::vector<int> parallel_lessons;
-//TODO--
-//    SameStartingTime *parallel = nullptr;
 };
 
 class BasicConstraints
@@ -141,13 +144,12 @@ public:
     ~BasicConstraints() {
         for (const auto &p : general_constraints) delete p;
         for (const auto &p : local_hard_constraints) delete p;
-        for (const auto &p : start_cells_arrays) delete p;
     }
 
     // Returns a list of possible starting hours for each day
     std::vector<std::vector<int>> find_slots(int lesson_index);
 
-
+//TODO: All needed?
     std::vector<std::vector<int>> find_possible_places(LessonData &ldata);
     bool test_possible_place(LessonData &ldata, int day, int hour);
     bool test_place(LessonData &ldata, int day, int hour);
@@ -186,19 +188,29 @@ public:
     std::vector<Constraint *> general_constraints;
     std::vector<Constraint *> local_hard_constraints;
 
+    void set_start_cells_array(int lid, std::vector<std::vector<int>> &days);
+
 private:
+    void place_fixed_lesson(int lesson_index);
     void multi_slot_constraints(
         std::vector<ActivitySelectionSlots> &alist,
         std::vector<int> &to_place, // list of unfixed lesson indexes
         bool allslots // false for starting times, true for slots
     );
     void slot_blockers();
-    void place_fixed_lesson(int lesson_index);
     void set_times(
         std::vector<std::vector<bool>> &slotflags,
         std::unordered_map<int, LessonStartingSlots> &starting_times,
         int lix);
-    std::vector<std::vector<int> *> start_cells_arrays;
+    // The actual object referenced by the return pointer is owned by
+    // start_cells_arrays:
+    std::vector<std::vector<int>> * defaultStartCells(int lesson_index);
+    void setup_parallels(std::vector<std::vector<int>> &parallels);
+    // start_cells_arrays is primarily provided to manage the memory for
+    // the start_cells arrays of the lessons. It is a mapping because of the
+    // way it is built and used during construction.
+    // The keys are lesson indexes (in the lessons vector).
+    std::unordered_map<int, std::vector<std::vector<int>>> start_cells_arrays;
 };
 
 /*#DOC

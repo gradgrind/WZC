@@ -2,6 +2,54 @@
 #include <QJsonArray>
 #include <unordered_set>
 
+// Apply a filter to a set of permitted slots. The filter value is of the same
+// form as the original structure, a vector of integer-vectors containing the
+// permitted hours (periods) for each day. The original is modified in-place.
+void restrict_week_slots(
+    std::vector<std::vector<int>> &weekslots,
+    std::vector<std::vector<int>> &newslots)
+{
+    if (weekslots.empty()) {
+        weekslots = newslots;
+        return;
+    }
+    for (int d = 0; d < weekslots.size(); ++d) {
+        auto &dayslots = weekslots[d];
+        if (dayslots.empty()) continue;
+        int x = 0; // source read index
+        int i = 0; // source write index
+        int h0 = dayslots[0];
+        for (int h : newslots[d]) {
+            if (h >= h0) {
+                if (h == h0) {
+                    if (i != x) dayslots[i] = h;
+                    ++i;
+                }
+                ++x;
+                if (x < dayslots.size()) {
+                    h0 = dayslots[x];
+                } else {
+                    // No more source hours
+                    break;
+                }
+            }
+            // else (h < h0) -> next h
+        }
+        dayslots.resize(i);
+    }
+}
+
+void BasicConstraints::set_start_cells_array(
+    int lid, std::vector<std::vector<int>> &week_slots)
+{
+    int lix = lid2lix.at(lid);
+    if (start_cells_arrays.contains(lix)) {
+        qFatal() << "Multiple starting times constraints for"
+                 << "lesson id" << lid;
+    }
+    start_cells_arrays[lix] = week_slots;
+}
+
 BasicConstraints::BasicConstraints(DBData *dbdata) : db_data{dbdata}
 {
     // Each "resource" – (atomic) student group, teacher and room –
@@ -331,11 +379,90 @@ void BasicConstraints::place_fixed_lesson(int lesson_index)
 
 }
 
+//TODO: Move the creation of a non-restrictive start_cells to its own private
+// member function. Also extract the handling of parallel to its own private
+// member function.
+
+std::vector<std::vector<int>> * BasicConstraints::defaultStartCells(
+    int lesson_index)
+{
+    // A non-restrictive start_cells array is needed.
+    std::vector<std::vector<int>> sc0(
+        ndays, std::vector<int>(nhours));
+    for (int d = 0; d < ndays; ++d) {
+        for (int h = 0; h < nhours; ++h) {
+            sc0[d][h] = h;
+        }
+    }
+    start_cells_arrays[lesson_index] = sc0;
+    return &start_cells_arrays[lesson_index];
+}
+
+void BasicConstraints::setup_parallels(std::vector<std::vector<int>> &parallels)
+{
+    for (const std::vector<int> &plist : parallels) {
+        // Need to "unite" the start_cells arrays of hard-parallel lessons.
+        std::vector<std::vector<int>> *sc0;
+        for (int lix : plist) {
+            auto &l = lessons[lix];
+            if (!l.parallel_lessons.empty()) {
+                qFatal() << "Lesson" << l.lesson_id
+                         << "has multiple 'SameStartingTime' constraints";
+            }
+            // Only the first non-empty start_cells array will be picked up
+            // because the entries for the other index will be erased after
+            // they have been merged.
+            if (start_cells_arrays.contains(lix)) {
+                sc0 = &start_cells_arrays[lix];
+                l.start_cells = sc0;
+            }
+            for (int lix2 : plist) {
+                if (lix2 != lix) {
+                    l.parallel_lessons.push_back(lix2);
+                }
+                auto &l2 = lessons[lix2];
+                if (l2.fixed) {
+                    if (l.fixed) qFatal() << "Two fixed lessons are"
+                                 << "bound by hard"
+                                 << "Same-Starting-Time constraint:"
+                                 << l.lesson_id << "&" << l2.lesson_id;
+                    //TODO: Allow it if the times are the same?
+                    l.day = l2.day;
+                    l.hour = l2.hour;
+                    l.fixed = true;
+                    place_fixed_lesson(lix);
+                }
+                // If a start_cells array has been found, merge that from
+                // the current lesson and then erase the latter.
+                if (sc0 && start_cells_arrays.contains(lix2)) {
+                    restrict_week_slots(*sc0, start_cells_arrays[lix2]);
+                    start_cells_arrays.erase(lix2);
+                    l2.start_cells = sc0;
+                }
+            }
+        }
+        if (!sc0) {
+            sc0 = defaultStartCells(plist[0]);
+            // Store to each component lesson.
+            for (int lix : plist) {
+                auto &l = lessons[lix];
+                l.start_cells = sc0;
+            }
+        }
+    }
+}
+
+//TODO: Do without to_place. Just go through all lessons, the fixed ones
+// are easily recognized.
 void BasicConstraints::initial_place_lessons2(
     std::vector<int> to_place, time_constraints &tconstraints)
 {
-//TODO: Parallel lessons need to have identical start_cells!
-    std::unordered_set<int> done_parallels;
+    // Parallel lessons need to have identical start_cells.
+    setup_parallels(tconstraints.parallel_lessons);
+
+
+
+//TODO--    std::unordered_set<int> done_parallels;
     // Deal with the unfixed lessons. These need available-slot lists
     // and those with a placement time need to be placed.
     // First collect the (currently) available slots – before actually
