@@ -22,14 +22,6 @@ struct ActivitySelectionSlots {
     bool isHard() { return is_hard(weight); }
 };
 
-struct LessonStartingSlots {
-    int weight;
-    // This has a list for each day containing the allowed times
-    std::vector<std::vector<int>> ttslots;
-
-    bool isHard() { return is_hard(weight); }
-};
-
 // Restrict possible starting times on the basis of various constraints
 // on activities.
 struct time_constraints {
@@ -114,7 +106,7 @@ struct LessonData{
     int subject; // the subject's db id
     QStringList tags;
     int length;
-    bool fixed = false;
+    bool fixed{false};
     // This has an array of possible starting hours for each day,
     // irrelevant when "fixed". For parallel lessons it is shared.
     // The vector is owned by the BasicConstraints object.
@@ -124,6 +116,8 @@ struct LessonData{
     int hour;
     int flexible_room{-1};
 
+    std::vector<int> parallel_lessons;  // indexes of hard-parallel lessons
+
     // Certain hard constraints are relevant for placement of the lesson, in
     // particular when other lessons should have the same starting time
     // or be on distinct days. These constraints are accessible via the
@@ -132,9 +126,6 @@ struct LessonData{
     // The referenced constraints are owned by BasicConstraints, so no
     // destructor is needed here.
     std::vector<Constraint *> day_constraints;
-
-//TODO: new
-    std::vector<int> parallel_lessons;
 };
 
 class BasicConstraints
@@ -153,9 +144,8 @@ public:
     std::vector<std::vector<int>> find_possible_places(LessonData &ldata);
     bool test_possible_place(LessonData &ldata, int day, int hour);
     bool test_place(LessonData &ldata, int day, int hour);
-    std::vector<int> initial_place_lessons();
-    void initial_place_lessons2(
-        std::vector<int> to_place, time_constraints &tconstraints);
+    void initial_place_lessons();
+    void initial_place_lessons2(time_constraints &tconstraints);
     bool test_single_slot(LessonData &ldata, int day, int hour);
     std::vector<int> find_clashes(LessonData *ldata, int day, int hour);
 
@@ -194,14 +184,9 @@ private:
     void place_fixed_lesson(int lesson_index);
     void multi_slot_constraints(
         std::vector<ActivitySelectionSlots> &alist,
-        std::vector<int> &to_place, // list of unfixed lesson indexes
         bool allslots // false for starting times, true for slots
     );
     void slot_blockers();
-    void set_times(
-        std::vector<std::vector<bool>> &slotflags,
-        std::unordered_map<int, LessonStartingSlots> &starting_times,
-        int lix);
     // The actual object referenced by the return pointer is owned by
     // start_cells_arrays:
     std::vector<std::vector<int>> * defaultStartCells(int lesson_index);
