@@ -466,19 +466,11 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
     for (int lix = 1; lix < lessons.size(); ++lix) {
         auto &ldata = lessons.at(lix);
         if (ldata.fixed) continue;
-        const auto ok_slots = find_slots(lix);
-//TODO: Isn't this the new array?
 
-//        restrict_week_slots(*ldata.start_cells, ok_slots);
-
-        ldata.start_cells.resize(ndays, {});
-
-        for (int d = 0; d < sarray.size(); ++d) {
-            auto &dp = ldata.start_cells[d];
-            for (int h : sarray[d]) {
-                dp.push_back(h);
-            }
-        }
+//TODO: This checks all available places, but actually only the intended
+// one needs checking. The filtering might be useful though.
+        found_slots.clear();
+        find_slots(*ldata.start_cells, lix);
 
 
         // Check placement (if any) and place the lesson.
@@ -554,77 +546,34 @@ bool BasicConstraints::test_place(LessonData &ldata, int day, int hour)
     return false;
 }
 
-std::vector<std::vector<int>> BasicConstraints::find_possible_places(
-    LessonData &ldata)
-{
-    std::vector<std::vector<int>> free(ndays);
-    if (ldata.length == 1) {
-        for (int d = 0; d < ndays; ++d) {
-            const auto & dvec = ldata.start_cells[d];
-            for (int h : dvec) {
-                if (test_single_slot(ldata, d, h)) {
-                    free[d].push_back(h);
-                }
-            }
-        }
-    } else {
-        int l = ldata.length;
-        for (int d = 0; d < ndays; ++d) {
-            const auto & dvec = ldata.start_cells[d];
-            int hmax = 0;
-            for (int h : dvec) {
-                if (hmax < h) hmax = h;
-                while (test_single_slot(ldata, d, hmax)) {
-                    // Overrunning hmax should not be possible as the length
-                    // is taken into consideration when building start_cells.
-                    if (++hmax - h == l) {
-                        free[d].push_back(h);
-                        break;
-                    }
-                }
-                // If testing of hmax failed and it is in the range of the
-                // next h value, the test can be repeated. To avoid that it
-                // would be necessary to save the failed hmax and test for
-                // it later. It is not clear that this would be a great
-                // improvement.
-            }
-        }
-    }
-    return free;
-}
-
-//TODO: Maybe I should pass in a reference to the structure to be reduced?
-// If it is new, it would have to be built before calling.
-std::vector<std::vector<int>> BasicConstraints::find_slots(
+// Find slots (day, hour) where the given lesson can be placed.
+// The basic array of potentially available slots is passed by reference as
+// start_slots. Note that this can be modified, so it should normally not be
+// the start_cells array of the lesson. It could be a copy.
+// The resulting list of slots is returned in the member variable found_slots.
+// This is in order to avoid unnecessary memory management.
+void BasicConstraints::find_slots(
     std::vector<std::vector<int>> &start_slots,
     int lesson_index)
-{
+{    
+    found_slots.clear(); // doesn't reduce the capacity
     LessonData &ldata = lessons[lesson_index];
-    if (ldata.parallel_lessons.empty()) {
-        for (const auto c : ldata.day_constraints) {
-            for (int d = 0; d < ndays; ++d) {
-                std::vector<int> &ssd = start_slots[d];
-                if (!ssd.empty()) {
-                    if (!c->test(this, lesson_index, d)) {
-                        start_slots[d].clear();
-                    }
-                }
-            }
-        }
+    // Filter days using day-constraints. This cannot be handled entirely by
+    // the presetting of the lesson's start_cells array because the blocked
+    // days depend on non-fixed (as well as fixed) lessons, which makes them
+    // rather dynamic.
+    for (const auto c : ldata.day_constraints) {
         for (int d = 0; d < ndays; ++d) {
             std::vector<int> &ssd = start_slots[d];
-            for (int i = 0; i < ssd.size(); ++i) {
-                int h = ssd[i];
-                if (h < 0) continue;
-                if (!test_possible_place(ldata, d, h)) {
-                    ssd[i] = -1; // mark as invalid
+            if (!ssd.empty()) {
+                if (!c->test(this, lesson_index, d)) {
+                    start_slots[d].clear();
                 }
             }
         }
-        return start_slots;
     }
+    // Now the parallel lessons, if any.
     for (int lix : ldata.parallel_lessons) {
-        // Filter days using day-constraints
         LessonData &ld = lessons[lix];
         for (const auto c : ld.day_constraints) {
             for (int d = 0; d < ndays; ++d) {
@@ -635,41 +584,28 @@ std::vector<std::vector<int>> BasicConstraints::find_slots(
                 }
             }
         }
-        if (lix == lesson_index) continue;
-        // Filter using start-cells
-        std::vector<std::vector<int>> &ss1 = ld.start_cells;
-        for (int d = 0; d < start_slots.size(); ++d) {
-            std::vector<int> &hl0 = start_slots[d];
-            if (hl0.empty()) continue;
-            std::vector<int> &hl1 = ss1[d];
-            int i = 0;
-            for (int j = 0; j < hl0.size(); ++j) {
-                int h = hl0[j];
-                while (i < hl1.size()) {
-                    if (hl1[i] == h) goto keep;
-                    if (hl1[i] > h) break;
-                    ++i;
-                }
-                hl0[j] = -1; // mark as invalid
-            keep:;
+    }
+    // Now test the possible slots
+    for (int d = 0; d < ndays; ++d) {
+        std::vector<int> &ssd = start_slots[d];
+        for (int h : ssd) {
+            if (test_possible_place(ldata, d, h)) {
+                found_slots.push_back({d, h});
             }
         }
     }
-    for (int lix : ldata.parallel->lesson_indexes) {
-        // Test theoretically available slots
+    // Also for the parallel lessons, if any.
+    for (int lix : ldata.parallel_lessons) {
         LessonData &ld = lessons[lix];
         for (int d = 0; d < ndays; ++d) {
             std::vector<int> &ssd = start_slots[d];
-            for (int i = 0; i < ssd.size(); ++i) {
-                int h = ssd[i];
-                if (h < 0) continue;
-                if (!test_possible_place(ld, d, h)) {
-                    ssd[i] = -1; // mark as invalid
+            for (int h : ssd) {
+                if (test_possible_place(ldata, d, h)) {
+                    found_slots.push_back({d, h});
                 }
             }
         }
     }
-    return start_slots;
 }
 
 

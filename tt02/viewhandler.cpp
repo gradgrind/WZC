@@ -134,7 +134,7 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         //TODO: parallel lessons
         //grid->clearCellOK();
 
-        if (ldata.start_cells.empty()) {
+        if (!ldata.start_cells) {
             // This should be a "fixed" lesson
             if (ldata.fixed) {
                 qDebug() << "FIXED";
@@ -147,12 +147,13 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         }
 
         qDebug() << "START-CELLS:" << ldata.start_cells;
-        qDebug() << "  -> free:" << basic_constraints->find_slots(lix);
-        auto free = basic_constraints->find_possible_places(ldata);
-        for (int d = 0; d < basic_constraints->ndays; ++d) {
-            const auto &dvec = free[d];
-            for (int h : dvec)
-                grid->setCellOK(d, h);
+
+//TODO: Use a member variable for slot_array?
+        std::vector<std::vector<int>> slot_array{*ldata.start_cells};
+        basic_constraints->find_slots(slot_array, lix);
+        //qDebug() << "  -> free:" << basic_constraints->found_slots;
+        for (const auto [d, h] : basic_constraints->found_slots) {
+            grid->setCellOK(d, h);
         }
     } else {
         qDebug() << "CELL CLICKED:" << day << hour;

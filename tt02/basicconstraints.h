@@ -137,13 +137,13 @@ public:
         for (const auto &p : local_hard_constraints) delete p;
     }
 
-    // Returns a list of possible starting hours for each day
-    std::vector<std::vector<int>> find_slots(
+    // Returns a list of possible starting slots in found_slots.
+    void find_slots(
         std::vector<std::vector<int>> &start_slots,
         int lesson_index);
+    std::vector<TTSlot> found_slots;
 
 //TODO: All needed?
-    std::vector<std::vector<int>> find_possible_places(LessonData &ldata);
     bool test_possible_place(LessonData &ldata, int day, int hour);
     bool test_place(LessonData &ldata, int day, int hour);
     void initial_place_lessons();
