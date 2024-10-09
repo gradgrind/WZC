@@ -593,14 +593,18 @@ std::vector<std::vector<int>> BasicConstraints::find_possible_places(
     return free;
 }
 
-std::vector<std::vector<int>> BasicConstraints::find_slots(int lesson_index)
+//TODO: Maybe I should pass in a reference to the structure to be reduced?
+// If it is new, it would have to be built before calling.
+std::vector<std::vector<int>> BasicConstraints::find_slots(
+    std::vector<std::vector<int>> &start_slots,
+    int lesson_index)
 {
     LessonData &ldata = lessons[lesson_index];
-    std::vector<std::vector<int>> start_slots{*ldata.start_cells};
     if (ldata.parallel_lessons.empty()) {
         for (const auto c : ldata.day_constraints) {
             for (int d = 0; d < ndays; ++d) {
-                if (!start_slots[d].empty()) {
+                std::vector<int> &ssd = start_slots[d];
+                if (!ssd.empty()) {
                     if (!c->test(this, lesson_index, d)) {
                         start_slots[d].clear();
                     }

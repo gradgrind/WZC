@@ -137,7 +137,7 @@ void localConstraints(BasicConstraints *basic_constraints)
 {
     // Build the BasicConstraints::lessons list, placing the fixed lessons
     // and returning a list of the unfixed ones.
-    auto unplaced = basic_constraints->initial_place_lessons();
+    basic_constraints->initial_place_lessons();
     // Collect the hard local constraints which specify possible
     // starting times for individual lessons or lessons fulfilling
     // certain conditions. Also the lesson lengths are taken into account.
@@ -146,6 +146,6 @@ void localConstraints(BasicConstraints *basic_constraints)
     // Also set up the start_cells field (for unfixed lessons). This field
     // specifies which slots can potentially be used for the lesson – assuming
     // no basic clashes.
-    basic_constraints->initial_place_lessons2(unplaced, tconstraints);
+    basic_constraints->initial_place_lessons2(tconstraints);
 }
 

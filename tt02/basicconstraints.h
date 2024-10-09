@@ -138,7 +138,9 @@ public:
     }
 
     // Returns a list of possible starting hours for each day
-    std::vector<std::vector<int>> find_slots(int lesson_index);
+    std::vector<std::vector<int>> find_slots(
+        std::vector<std::vector<int>> &start_slots,
+        int lesson_index);
 
 //TODO: All needed?
     std::vector<std::vector<int>> find_possible_places(LessonData &ldata);
