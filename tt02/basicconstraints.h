@@ -7,7 +7,7 @@ struct TTSlot {
     int day, hour;
 };
 
-bool is_hard(int w) { return (w == 10); }
+inline bool is_hard(int w) { return (w == 10); };
 
 struct ActivitySelectionSlots {
     int weight;
@@ -88,10 +88,6 @@ public:
     const bool all_slots;
 };
 
-void restrict_week_slots(
-    std::vector<std::vector<int>> &weekslots,
-    std::vector<std::vector<int>> &newslots);
-
 struct LessonData{
     // Only 100%-constraints are handled here.
     int lesson_id;
@@ -137,6 +133,12 @@ public:
         for (const auto &p : local_hard_constraints) delete p;
     }
 
+    // Use the hard day constraints with the currently placed lessons
+    // to reduce the available slots. The array passed as reference in
+    // start_slots may be modified.
+    void filter_day_slots(
+        std::vector<std::vector<int>> &start_slots,
+        int lesson_index);
     // Returns a list of possible starting slots in found_slots.
     void find_slots(
         std::vector<std::vector<int>> &start_slots,

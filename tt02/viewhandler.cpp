@@ -49,9 +49,6 @@ ViewHandler::ViewHandler(QGraphicsView *gview) : QWidget(), view{gview}
         this, &ViewHandler::handle_item_chosen);
 }
 
-//TODO: Don't touch DBData at first, produce a JSON representation of the
-// data, which can be saved to a file. This should then be the source for
-// building the DBData instance.
 void ViewHandler::handle_load_file()
 {
     auto fileName = QFileDialog::getOpenFileName(nullptr,

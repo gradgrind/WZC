@@ -77,51 +77,6 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             int weight = node.value("WEIGHT").toInt();
             if (is_hard(weight)) {
                 constraints.parallel_lessons.push_back(lesson_indexes);
-/* //TODO: Maybe some of this is needed later when handling the parallel lessons
-
-                    if (l.fixed) {
-                        for (int lix2 : lesson_indexes) {
-                            if (lix2 != lix) {
-                                auto &l2 = basic_constraints->lessons[lix2];
-                                l2.day_constraints.clear();
-//TODO: Check basic placement parameters (like straight fixed lesson)
-
-                                l2.day = l.day;
-                                l2.hour = l.hour;
-                            }
-
-                    }
-
-                }
-
-                for (int lix : lesson_indexes) {
-                    auto l = &basic_constraints->lessons[lix];
-                    if (!l->parallel_lessons.empty()) {
-                        qFatal() << "Lesson" << l->lesson_id
-                                 << "has multiple 'SameStartingTime' constraints";
-                    }
-//TODO: Need to handle fixed lessons
-
-                    if (l->fixed) {
-                        for (int lix2 : lesson_indexes) {
-                            if (lix2 != lix) {
-                                auto l2 = &basic_constraints->lessons[lix2];
-                                l2->parallel_lessons.clear();
-                                l2->day_constraints.clear();
-                                l
-                            }
-                        }
-
-                    }
-
-                    for (int lix2 : lesson_indexes) {
-                        if (lix2 != lix) {
-                            l->parallel_lessons.push_back(lix2);
-                        }
-                    }
-                }
-
-*/
             } else {
                 basic_constraints->general_constraints.push_back(
                     new SameStartingTime(lesson_indexes, weight));

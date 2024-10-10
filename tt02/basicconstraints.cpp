@@ -370,7 +370,7 @@ void BasicConstraints::setup_parallels(std::vector<std::vector<int>> &parallels)
 {
     for (const std::vector<int> &plist : parallels) {
         // Need to "unite" the start_cells arrays of hard-parallel lessons.
-        std::vector<std::vector<int>> *sc0;
+        std::vector<std::vector<int>> *sc0{nullptr};
         for (int lix : plist) {
             auto &l = lessons[lix];
             if (!l.parallel_lessons.empty()) {
@@ -390,25 +390,26 @@ void BasicConstraints::setup_parallels(std::vector<std::vector<int>> &parallels)
             for (int lix2 : plist) {
                 if (lix2 != lix) {
                     l.parallel_lessons.push_back(lix2);
-                }
-                auto &l2 = lessons[lix2];
-                if (l2.fixed) {
-                    if (l.fixed) qFatal() << "Two fixed lessons are"
-                                 << "bound by hard"
-                                 << "Same-Starting-Time constraint:"
-                                 << l.lesson_id << "&" << l2.lesson_id;
-                    //TODO: Allow it if the times are the same?
-                    l.day = l2.day;
-                    l.hour = l2.hour;
-                    l.fixed = true;
-                    place_fixed_lesson(lix);
-                }
-                // If a start_cells array has been found, merge that from
-                // the current lesson and then erase the latter.
-                if (sc0 && start_cells_arrays.contains(lix2)) {
-                    restrict_week_slots(*sc0, start_cells_arrays[lix2]);
-                    start_cells_arrays.erase(lix2);
-                    l2.start_cells = sc0;
+                    auto &l2 = lessons[lix2];
+                    if (l2.fixed) {
+                        if (l.fixed) qFatal() << "Two fixed lessons are"
+                                     << "bound by hard"
+                                     << "Same-Starting-Time constraint:"
+                                     << l.lesson_id << "&" << l2.lesson_id;
+//TODO: Allow it if the times are the same?
+
+                        l.day = l2.day;
+                        l.hour = l2.hour;
+                        l.fixed = true;
+                        place_fixed_lesson(lix);
+                    }
+                    // If a start_cells array has been found, merge that from
+                    // the current lesson and then erase the latter.
+                    if (sc0 && start_cells_arrays.contains(lix2)) {
+                        restrict_week_slots(*sc0, start_cells_arrays[lix2]);
+                        start_cells_arrays.erase(lix2);
+                        l2.start_cells = sc0;
+                    }
                 }
             }
         }
@@ -424,8 +425,8 @@ void BasicConstraints::setup_parallels(std::vector<std::vector<int>> &parallels)
     }
 }
 
-//TODO: Do without to_place. Just go through all lessons, the fixed ones
-// are easily recognized.
+// Go through all lessons, placing the non-fixed ones which have a start-
+// time. The fixed ones have already been placed.
 void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 {
     // Parallel lessons need to share start_cells.
@@ -467,12 +468,12 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         auto &ldata = lessons.at(lix);
         if (ldata.fixed) continue;
 
-//TODO: This checks all available places, but actually only the intended
-// one needs checking. The filtering might be useful though.
-        found_slots.clear();
-        find_slots(*ldata.start_cells, lix);
+//TODO: Can this be placed in the previous loop?
+        // Remove start-cells if there are day clashes with fixed lessons.
+        filter_day_slots(*ldata.start_cells, lix);
 
 
+//TODO: This should be done when all the lessons have been filtered!
         // Check placement (if any) and place the lesson.
         int d = ldata.day;
         if (d < 0) continue;
@@ -485,6 +486,11 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
                      << "@ Slot" << d << h;
         }
         // Now do the placement
+
+//TODO: What about parallel rooms?!
+// If one is placed here, it should not be placed again, when it is
+// reached in the loop!
+
         for (int i = 0; i < ldata.length; i++) {
             int hh = h + i;
             for (int t : ldata.teachers) {
@@ -537,7 +543,7 @@ bool BasicConstraints::test_possible_place(
 // the permissible start times for the lesson into account.
 bool BasicConstraints::test_place(LessonData &ldata, int day, int hour)
 {
-    const auto & dvec = ldata.start_cells[day];
+    const auto & dvec = (*ldata.start_cells)[day];
     for (int h : dvec) {
         if (h < hour) continue;
         if (h > hour) break;
@@ -546,16 +552,13 @@ bool BasicConstraints::test_place(LessonData &ldata, int day, int hour)
     return false;
 }
 
-// Find slots (day, hour) where the given lesson can be placed.
 // The basic array of potentially available slots is passed by reference as
 // start_slots. Note that this can be modified, so it should normally not be
 // the start_cells array of the lesson. It could be a copy.
-// The resulting list of slots is returned in the member variable found_slots.
-// This is in order to avoid unnecessary memory management.
-void BasicConstraints::find_slots(
+void BasicConstraints::filter_day_slots(
     std::vector<std::vector<int>> &start_slots,
     int lesson_index)
-{    
+{
     found_slots.clear(); // doesn't reduce the capacity
     LessonData &ldata = lessons[lesson_index];
     // Filter days using day-constraints. This cannot be handled entirely by
@@ -585,6 +588,22 @@ void BasicConstraints::find_slots(
             }
         }
     }
+}
+
+
+// Find slots (day, hour) where the given lesson can be placed.
+// The basic array of potentially available slots is passed by reference as
+// start_slots.
+// The resulting list of slots is returned in the member variable found_slots.
+// This is in order to avoid unnecessary memory management.
+
+//TODO
+void BasicConstraints::find_slots(
+    std::vector<std::vector<int>> &start_slots,
+    int lesson_index)
+{    
+    found_slots.clear(); // doesn't reduce the capacity
+    LessonData &ldata = lessons[lesson_index];
     // Now test the possible slots
     for (int d = 0; d < ndays; ++d) {
         std::vector<int> &ssd = start_slots[d];
