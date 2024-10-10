@@ -3,6 +3,9 @@
 
 #include "database.h"
 
+// Vector has one list per day of available slots
+typedef std::vector<std::vector<int>> slot_constraint;
+
 struct TTSlot {
     int day, hour;
 };
@@ -17,7 +20,7 @@ struct ActivitySelectionSlots {
     int sid;
     int l;
     // This has a list for each day containing the allowed times
-    std::vector<std::vector<int>> ttslots;
+    slot_constraint ttslots;
 
     bool isHard() { return is_hard(weight); }
 };
@@ -26,7 +29,7 @@ struct ActivitySelectionSlots {
 // on activities.
 struct time_constraints {
     // Collect groups of hard-parallel lessons for later processing
-    std::vector<std::vector<int>> parallel_lessons;
+    slot_constraint parallel_lessons;
     // From constraint Activities have preferred starting times
     std::vector<ActivitySelectionSlots> activities_starting_times;
     // From constraint Activities have preferred slots
@@ -70,7 +73,7 @@ public:
     SoftActivityTimes(BasicConstraints *constraint_data,
         int weight,
         // For each day a list of allowed time slots
-        std::vector<std::vector<int>> &ttslots,
+        slot_constraint &ttslots,
         // The times can refer to starting times or permissible
         // slots, true for slots
         bool allslots // false for starting times, true for slots
@@ -103,10 +106,11 @@ struct LessonData{
     QStringList tags;
     int length;
     bool fixed{false};
-    // This has an array of possible starting hours for each day,
-    // irrelevant when "fixed". For parallel lessons it is shared.
-    // The vector is owned by the BasicConstraints object.
-    std::vector<std::vector<int>> *start_cells;
+    // This indexes the structure start_cells_list in the BasicConstraints
+    // object. The indexed item contains a list of possible starting hours for
+    // each day, irrelevant when "fixed". For parallel lessons it is shared.
+//    slot_constraint *start_cells;
+    int slot_constraint_index{0};
 
     int day{-1}; // -1 indicates unplaced lesson
     int hour;
@@ -133,15 +137,16 @@ public:
         for (const auto &p : local_hard_constraints) delete p;
     }
 
+    void set_start_cells_id(int lesson_id, slot_constraint &week_slots);
     // Use the hard day constraints with the currently placed lessons
     // to reduce the available slots. The array passed as reference in
     // start_slots may be modified.
     void filter_day_slots(
-        std::vector<std::vector<int>> &start_slots,
+        slot_constraint &start_slots,
         int lesson_index);
     // Returns a list of possible starting slots in found_slots.
     void find_slots(
-        std::vector<std::vector<int>> &start_slots,
+        slot_constraint &start_slots,
         int lesson_index);
     std::vector<TTSlot> found_slots;
 
@@ -163,26 +168,24 @@ public:
     // week-block index -> atomic subgroup:
     QList<QString> i_sg;
     // week-blocks for atomic subgroups:
-    std::vector<std::vector<std::vector<int>>> sg_weeks;
+    std::vector<slot_constraint> sg_weeks;
     // teacher id -> week-block index:
     QHash<int, int> t2i;
     // week-block index -> teacher id:
     QList<int> i_t;
     // week-blocks for teachers:
-    std::vector<std::vector<std::vector<int>>> t_weeks;
+    std::vector<slot_constraint> t_weeks;
     // room id -> week-block index:
     QHash<int, int> r2i;
     // week-block index -> room id:
     QList<int> i_r;
     // week-blocks for rooms:
-    std::vector<std::vector<std::vector<int>>> r_weeks;
+    std::vector<slot_constraint> r_weeks;
 
     std::unordered_map<int, int> lid2lix;
     std::vector<LessonData> lessons;
     std::vector<Constraint *> general_constraints;
     std::vector<Constraint *> local_hard_constraints;
-
-    void set_start_cells_array(int lid, std::vector<std::vector<int>> &days);
 
 private:
     void place_fixed_lesson(int lesson_index);
@@ -191,15 +194,14 @@ private:
         bool allslots // false for starting times, true for slots
     );
     void slot_blockers();
-    // The actual object referenced by the return pointer is owned by
-    // start_cells_arrays:
-    std::vector<std::vector<int>> * defaultStartCells(int lesson_index);
-    void setup_parallels(std::vector<std::vector<int>> &parallels);
-    // start_cells_arrays is primarily provided to manage the memory for
-    // the start_cells arrays of the lessons. It is a mapping because of the
-    // way it is built and used during construction.
-    // The keys are lesson indexes (in the lessons vector).
-    std::unordered_map<int, std::vector<std::vector<int>>> start_cells_arrays;
+    int set_start_cells(LessonData &ldata, slot_constraint &week_slots);
+    void merge_slot_constraints(
+        LessonData &ldata, const slot_constraint &newslots);
+    void setup_parallels(slot_constraint &parallels);
+    // start_cells_list contains the slot_constraint objects for the lessons.
+    // Indexing is by index. The first entry is a default entry which blocks
+    // and shouldn't be changed.
+    std::vector<slot_constraint> start_cells_list;
 };
 
 /*#DOC

@@ -146,7 +146,7 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         qDebug() << "START-CELLS:" << ldata.start_cells;
 
 //TODO: Use a member variable for slot_array?
-        std::vector<std::vector<int>> slot_array{*ldata.start_cells};
+        slot_constraint slot_array{*ldata.start_cells};
         basic_constraints->find_slots(slot_array, lix);
         //qDebug() << "  -> free:" << basic_constraints->found_slots;
         for (const auto [d, h] : basic_constraints->found_slots) {

@@ -13,7 +13,7 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
         auto ntype = node.value("CTYPE");
         if (node.contains("SLOTS")) {
             //NOTE: I assume the times are sorted in the SLOTS list.
-            std::vector<std::vector<int>> days(basic_constraints->ndays);
+            slot_constraint days(basic_constraints->ndays);
             const auto &ttslots = node.value("SLOTS").toArray();
             for (auto ttslot : ttslots) {
                 auto dhslot = ttslot.toArray();
@@ -24,7 +24,7 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             if (ntype == "PREFERRED_STARTING_TIMES") {
                 int lid = node.value("LESSON").toInt();
                 if (is_hard(w)) {
-                    basic_constraints->set_start_cells_array(lid, days);
+                    basic_constraints->set_start_cells_id(lid, days);
                 } else  {
                     auto sat = new SoftActivityTimes(
                         basic_constraints, w, days, false);
