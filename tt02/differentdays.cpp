@@ -72,6 +72,10 @@ int DifferentDays::evaluate(BasicConstraints *constraint_data)
     return penalties;
 }
 
+
+//TODO--  No longer used as hard constraint! In fact, I think test and textx
+// may well be totally redundant now ...
+
 // This test is for hard constraints only. The lesson may already be placed,
 // in which case, its current day should not be checked.
 bool DifferentDays::test(BasicConstraints *constraint_data, int l_ix, int day)

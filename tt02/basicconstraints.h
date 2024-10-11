@@ -44,6 +44,8 @@ public:
     virtual ~Constraint() = default;
 
     virtual int evaluate(BasicConstraints *constraint_data) = 0;
+
+//TODO--: Are these redundant now?
     virtual bool test(BasicConstraints *constraint_data, int l_ix, int day)
         { return false; }
     virtual bool testx(
@@ -92,7 +94,7 @@ public:
 };
 
 struct LessonData{
-    // Only 100%-constraints are handled here.
+    // Only hard constraints are handled here.
     int lesson_id;
 
     // The contained values (int) are the indexes into the week-blocks
@@ -106,26 +108,19 @@ struct LessonData{
     QStringList tags;
     int length;
     bool fixed{false};
-    // This indexes the structure start_cells_list in the BasicConstraints
-    // object. The indexed item contains a list of possible starting hours for
-    // each day, irrelevant when "fixed". For parallel lessons it is shared.
-//    slot_constraint *start_cells;
-    int slot_constraint_index{0};
 
     int day{-1}; // -1 indicates unplaced lesson
     int hour;
     int flexible_room{-1};
 
-    std::vector<int> parallel_lessons;  // indexes of hard-parallel lessons
-
-    // Certain hard constraints are relevant for placement of the lesson, in
-    // particular when other lessons should have the same starting time
-    // or be on distinct days. These constraints are accessible via the
-    // references in day_constraints. For "fixed" lessons these are not
-    // relevant.
-    // The referenced constraints are owned by BasicConstraints, so no
-    // destructor is needed here.
-    std::vector<Constraint *> day_constraints;
+    // This indexes the structure start_cells_list in the BasicConstraints
+    // object. The indexed item contains a list of possible starting hours for
+    // each day, irrelevant when "fixed". For parallel lessons it is shared.
+    int slot_constraint_index{0};
+    // Indexes of lessons which may not be on the same day:
+    std::vector<int> different_days;
+    // Indexes of hard-parallel lessons:
+    std::vector<int> parallel_lessons;
 };
 
 class BasicConstraints
@@ -134,21 +129,10 @@ public:
     BasicConstraints(DBData *dbdata);
     ~BasicConstraints() {
         for (const auto &p : general_constraints) delete p;
-        for (const auto &p : local_hard_constraints) delete p;
     }
 
     void set_start_cells_id(int lesson_id, slot_constraint &week_slots);
-    // Use the hard day constraints with the currently placed lessons
-    // to reduce the available slots. The array passed as reference in
-    // start_slots may be modified.
-    void filter_day_slots(
-        slot_constraint &start_slots,
-        int lesson_index);
-    // Returns a list of possible starting slots in found_slots.
-    void find_slots(
-        slot_constraint &start_slots,
-        int lesson_index);
-    std::vector<TTSlot> found_slots;
+    void set_different_days(std::vector<int> &lesson_ids);
 
 //TODO: All needed?
     bool test_possible_place(LessonData &ldata, int day, int hour);
@@ -185,7 +169,6 @@ public:
     std::unordered_map<int, int> lid2lix;
     std::vector<LessonData> lessons;
     std::vector<Constraint *> general_constraints;
-    std::vector<Constraint *> local_hard_constraints;
 
 private:
     void place_fixed_lesson(int lesson_index);
@@ -202,6 +185,12 @@ private:
     // Indexing is by index. The first entry is a default entry which blocks
     // and shouldn't be changed.
     std::vector<slot_constraint> start_cells_list;
+
+    // Return a list of possible starting slots in found_slots.
+    void find_slots(int lesson_index);
+    std::vector<TTSlot> found_slots;
+    std::vector<bool> blocked_days; // used internally by find_slots
+    bool test_slot(int lesson_index, int day, int hour);
 };
 
 /*#DOC

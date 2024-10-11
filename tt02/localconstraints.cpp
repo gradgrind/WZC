@@ -57,14 +57,15 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
                 }
             }
         } else if (ntype == "DAYS_BETWEEN") {
-            DifferentDays * dd = new DifferentDays(basic_constraints, node);
-            if (dd->isHard()) {
-                basic_constraints->local_hard_constraints.push_back(dd);
-                for (int lix : dd->lesson_indexes) {
-                    basic_constraints->lessons.at(lix)
-                        .day_constraints.push_back(dd);
+            if (is_hard(w) && node.value("NDAYS") == 1) {
+                const auto llist = node.value("LESSONS").toArray();
+                std::vector<int> lids(llist.size());
+                for (int i = 0; i < llist.size(); ++i) {
+                    lids[i] = llist[i].toInt();
                 }
+                basic_constraints->set_different_days(lids);
             } else {
+                DifferentDays * dd = new DifferentDays(basic_constraints, node);
                 basic_constraints->general_constraints.push_back(dd);
             }
         } else if (ntype == "SAME_STARTING_TIME") {
