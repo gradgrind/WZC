@@ -1,6 +1,39 @@
 #include "basicconstraints.h"
 #include <QJsonArray>
 
+QString BasicConstraints::pr_lesson(int lix)
+{
+    auto &ldata = lessons.at(lix);
+    auto lnode = db_data->Nodes.value(ldata.lesson_id);
+    int cid = lnode.value("COURSE").toInt();
+    auto cnode = db_data->Nodes.value(cid);
+    //auto sid = cnode.value("SUBJECT").toInt();
+    auto sbj = db_data->get_tag(ldata.subject);
+
+    QStringList t;
+    for (int tix : ldata.teachers) {
+        t.append(db_data->get_tag(i_t.at(tix)));
+        //qDebug() << "$$?" << tix << t2i.value(tix)
+        //         << db_data->get_tag(t2i.value(tix));
+    }
+    auto tlist = t.join(",");
+
+    QStringList g;
+    auto groups = cnode.value("GROUPS").toArray();
+    for (auto g0 : groups) {
+        int gid = g0.toInt();
+        auto gnode = db_data->Nodes.value(gid);
+        int clid = gnode.value("CLASS").toInt();
+        auto gtag = db_data->get_tag(gid);
+        if (gtag.isEmpty()) g.append(db_data->get_tag(clid));
+        else g.append(QString("%1.%2").arg(db_data->get_tag(clid), gtag));
+    }
+    auto glist = g.join(",");
+
+    return QString("%1(%2):%3/%4").arg(
+        sbj, QString::number(ldata.length), glist, tlist);
+}
+
 // Apply a filter to the set of permitted slots belonging to a lesson.
 // The filter array is of the same form as the original structure, a
 // slot_constraint item – a vector of integer-vectors containing the
@@ -479,11 +512,12 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 
         int h = ldata.hour;
         // Test placement before actually doing it
+//TODO: Bug?: I'm getting lots of these warnings
         if (!test_slot(lix, d, h)) {
-            qWarning() << "Couldn't place lesson" << ldata.lesson_id
-                       << "@ Slot" << d << h;
             ldata.day = -1;
             ldata.flexible_room = -1;
+            qWarning() << "Couldn't place lesson" << ldata.lesson_id
+                       << "@ Slot" << d << h << "\n" << pr_lesson(lix);
             continue;
         }
         // Now do the placement
@@ -537,23 +571,6 @@ bool BasicConstraints::test_possible_place(
     }
     return true;
 }
-
-/*
-//TODO--??
-
-// Test whether the given lesson can be placed at the given time, taking
-// the permissible start times for the lesson into account.
-bool BasicConstraints::test_place(LessonData &ldata, int day, int hour)
-{
-    const auto & dvec = (*ldata.start_cells)[day];
-    for (int h : dvec) {
-        if (h < hour) continue;
-        if (h > hour) break;
-        return test_possible_place(ldata, day, hour);
-    }
-    return false;
-}
-*/
 
 // Find slots (day, hour) where the given lesson can be placed.
 // The resulting list of slots is returned in the member variable found_slots.
@@ -637,6 +654,15 @@ bool BasicConstraints::test_slot(int lesson_index, int day, int hour)
     return false;
 }
 
+std::vector<TTSlot> BasicConstraints::available_slots(int lesson_index)
+// A version of find_slots for more straightforward use.
+{
+    LessonData &ldata = lessons[lesson_index];
+    qDebug() << "START-CELLS:"
+             << start_cells_list.at(ldata.slot_constraint_index);
+    find_slots(lesson_index);
+    return found_slots;
+}
 
 
 

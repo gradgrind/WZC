@@ -131,25 +131,17 @@ void ViewHandler::onClick(int day, int hour, Tile *tile) {
         //TODO: parallel lessons
         //grid->clearCellOK();
 
-        if (!ldata.start_cells) {
-            // This should be a "fixed" lesson
-            if (ldata.fixed) {
-                qDebug() << "FIXED";
-                return;
-            }
-
-            // Go through all cells
-//TODO: Actually, shouldn't ALL non-fixed cells have a start_cells list?
+        if (ldata.fixed) {
+            qDebug() << "FIXED";
             return;
         }
 
-        qDebug() << "START-CELLS:" << ldata.start_cells;
-
-//TODO: Use a member variable for slot_array?
-        slot_constraint slot_array{*ldata.start_cells};
-        basic_constraints->find_slots(slot_array, lix);
-        //qDebug() << "  -> free:" << basic_constraints->found_slots;
-        for (const auto [d, h] : basic_constraints->found_slots) {
+        auto freeslots = basic_constraints->available_slots(lix);
+        QString out{"  -> free:"};
+        for (auto fs : freeslots) out += QString(" %1.%2")
+            .arg(fs.day).arg(fs.hour);
+        qDebug() << out;
+        for (const auto [d, h] : freeslots) {
             grid->setCellOK(d, h);
         }
     } else {

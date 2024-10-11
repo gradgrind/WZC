@@ -45,15 +45,6 @@ public:
 
     virtual int evaluate(BasicConstraints *constraint_data) = 0;
 
-//TODO--: Are these redundant now?
-    virtual bool test(BasicConstraints *constraint_data, int l_ix, int day)
-        { return false; }
-    virtual bool testx(
-            BasicConstraints *constraint_data, int l_ix, int day,
-            std::vector<int> &conflicts)
-        { return false; }
-    bool isHard() { return is_hard(penalty); }
-
 protected:
     int penalty;
 };
@@ -131,12 +122,11 @@ public:
         for (const auto &p : general_constraints) delete p;
     }
 
+    QString pr_lesson(int lix);
+
     void set_start_cells_id(int lesson_id, slot_constraint &week_slots);
     void set_different_days(std::vector<int> &lesson_ids);
-
-//TODO: All needed?
     bool test_possible_place(LessonData &ldata, int day, int hour);
-    bool test_place(LessonData &ldata, int day, int hour);
     void initial_place_lessons();
     void initial_place_lessons2(time_constraints &tconstraints);
     bool test_single_slot(LessonData &ldata, int day, int hour);
@@ -170,6 +160,8 @@ public:
     std::vector<LessonData> lessons;
     std::vector<Constraint *> general_constraints;
 
+    std::vector<TTSlot> available_slots(int lesson_index);
+
 private:
     void place_fixed_lesson(int lesson_index);
     void multi_slot_constraints(
@@ -186,10 +178,11 @@ private:
     // and shouldn't be changed.
     std::vector<slot_constraint> start_cells_list;
 
-    // Return a list of possible starting slots in found_slots.
+    // Return a list of possible starting slots in found_slots:
     void find_slots(int lesson_index);
     std::vector<TTSlot> found_slots;
     std::vector<bool> blocked_days; // used internally by find_slots
+    // Test the given slot:
     bool test_slot(int lesson_index, int day, int hour);
 };
 

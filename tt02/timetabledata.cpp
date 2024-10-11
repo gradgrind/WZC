@@ -1,8 +1,8 @@
 #include "timetabledata.h"
 #include <QJsonArray>
 
-// p_class_divs is only used for testing purposes.
-QString p_class_divs(class_divs cdivs)
+// pr_class_divs is only used for testing purposes.
+QString pr_class_divs(class_divs cdivs)
 {
     QStringList qsl0;
     for (const auto & dl : cdivs) {
@@ -107,7 +107,7 @@ QHash<int, class_divs> TimetableData::class_divisions()
             }
             divs.append(divlist);
         }
-        //qDebug() << "CLASS" << cdata["TAG"].toString() << p_class_divs(divs);
+        //qDebug() << "CLASS" << cdata["TAG"].toString() << pr_class_divs(divs);
         class_groups[c] = divs;
     }
     return class_groups;

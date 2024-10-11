@@ -12,10 +12,6 @@ public:
     //~DifferentDays() { qDebug() << "~DifferentDays"; }
 
     int evaluate(BasicConstraints *constraint_data) override;
-    bool test(BasicConstraints *constraint_data, int l_ix, int day) override;
-    bool testx(
-        BasicConstraints *constraint_data, int l_ix, int day,
-        std::vector<int> &conflicts) override;
 
     std::vector<int> lesson_indexes; // no fixed lessons
 private:
