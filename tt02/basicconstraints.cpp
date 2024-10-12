@@ -533,24 +533,27 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 bool BasicConstraints::test_single_slot(
     LessonData &ldata, int day, int hour)
 {
-    qDebug() << "  test_single_slot" << pr_lesson(lid2lix[ldata.lesson_id]);
+    //qDebug() << "  test_single_slot" << pr_lesson(lid2lix[ldata.lesson_id]);
     for (int i : ldata.atomic_groups) {
         if (sg_weeks[i][day][hour]) {
+            /*
             int lixk = sg_weeks[i][day][hour];
+            if (lixk >= 0)
             qDebug() << "AG:" << hour << i_sg.at(i)
                      << lixk << pr_lesson(lixk);
+            */
             return false;
         }
     }
     for (int i : ldata.teachers) {
         if (t_weeks[i][day][hour]) {
-            qDebug() << "T:" << hour << i;
+            //qDebug() << "T:" << hour << i;
             return false;
         }
     }
     for (int i : ldata.fixed_rooms) {
         if (r_weeks[i][day][hour]) {
-            qDebug() << "R:" << hour << i;
+            //qDebug() << "R:" << hour << i;
             return false;
         }
     }
@@ -563,7 +566,7 @@ bool BasicConstraints::test_single_slot(
 bool BasicConstraints::test_possible_place(
     LessonData &ldata, int day, int hour)
 {
-    qDebug() << "  test_possible_place" << pr_lesson(lid2lix[ldata.lesson_id]);
+    //qDebug() << "  test_possible_place" << pr_lesson(lid2lix[ldata.lesson_id]);
     for (int lx = 0; lx < ldata.length; ++lx) {
         if (!test_single_slot(ldata, day, hour+lx)) return false;
     }
@@ -622,7 +625,7 @@ bool BasicConstraints::test_slot(int lesson_index, int day, int hour)
     for (const auto lix2 : ldata.different_days) {
         auto &l2 = lessons.at(lix2);
         if (l2.day == day) {
-            qDebug() << "DIFFDAYS:" << pr_lesson(lix2);
+            //qDebug() << "DIFFDAYS:" << pr_lesson(lix2);
             return false;
         }
     }
@@ -641,7 +644,7 @@ bool BasicConstraints::test_slot(int lesson_index, int day, int hour)
     for (int h : ssd) {
         if (h < hour) continue;
         if (h == hour) {
-            qDebug() << "  test_slot" << pr_lesson(lid2lix[ldata.lesson_id]);
+            //qDebug() << "  test_slot" << pr_lesson(lid2lix[ldata.lesson_id]);
             if (test_possible_place(ldata, day, hour)) {
                 // Test parallel lessons
                 for (int lixp : ldata.parallel_lessons) {
