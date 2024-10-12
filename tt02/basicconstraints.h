@@ -93,6 +93,8 @@ public:
     }
 
     QString pr_lesson(int lix);
+    QString pr_week_block_sg(int ix);
+
     void update_db_field(int id, QString field, QJsonValue val);
     void remove_db_field(int id, QString field);
 

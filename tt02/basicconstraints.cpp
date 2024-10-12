@@ -1,5 +1,6 @@
 #include "basicconstraints.h"
 #include <QJsonArray>
+#include <unordered_set>
 
 void BasicConstraints::update_db_field(int id, QString field, QJsonValue val)
 {
@@ -43,12 +44,27 @@ QString BasicConstraints::pr_lesson(int lix)
     auto glist = g.join(",");
 
     QString timeslot;
-    if (ldata.day >= 0) timeslot = QString("@%1.%2").arg(
-        db_data->get_tag(db_data->dix_id[ldata.day]),
-        db_data->get_tag(db_data->hix_id[ldata.hour]));
+    if (ldata.day >= 0) timeslot = QString("@%1.%2")
+        .arg(ldata.day).arg(ldata.hour);
 
     return QString("%1(%2):%3/%4%5").arg(
         sbj, QString::number(ldata.length), glist, tlist, timeslot);
+}
+
+QString BasicConstraints::pr_week_block_sg(int ix)
+{
+    QStringList dlist{QString("AG %1::\n").arg(i_sg[ix])};
+    auto &block = sg_weeks[ix];
+    for (int d = 0; d < ndays; ++d) {
+        dlist.append(QString("  Day %1:\n").arg(d));
+        for (int h = 0; h < nhours; ++h) {
+            int lix = block[d][h];
+            if (lix < 0) dlist.append("    XX\n");
+            else if (lix == 0) dlist.append("    --\n");
+            else dlist.append(QString("    %1\n").arg(pr_lesson(lix)));
+        }
+    }
+    return dlist.join("");
 }
 
 // Apply a filter to the set of permitted slots belonging to a lesson.
@@ -330,6 +346,7 @@ void BasicConstraints::initial_place_lessons()
     }
 }
 
+#include <iostream>
 void BasicConstraints::place_lesson(int lesson_index)
 {
     auto &ldp = lessons[lesson_index];
@@ -434,6 +451,7 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
     }
 
     // Place the non-fixed lessons with a placement time.
+    std::unordered_set<int> done_parallel;
     for (int lix = 1; lix < lessons.size(); ++lix) {
         auto &ldata = lessons.at(lix);
         if (ldata.fixed) continue;
@@ -442,21 +460,43 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         int d = ldata.day;
         if (d < 0) continue;
 
+        // Check if it has been placed already as a parallel lesson
+        if (done_parallel.contains(lix)) continue;
+
         int h = ldata.hour;
         // Test placement before actually doing it
 
 //TODO: Bug?: I'm getting lots of these warnings
         if (!test_slot(lix, d, h)) {
+
+
+
+//TODO--
+            //qDebug() << "\nLESSON" << lesson_index;
+            std::cout << "\n §place_lesson " << pr_lesson(lix).toStdString()
+                        << "\n";
+            std::cout << pr_week_block_sg(ldata.atomic_groups[0]).toStdString();
+            std::flush(std::cout);
+
             ldata.day = -1;
             qFatal() << "Couldn't place lesson" << ldata.lesson_id
                        << "@ Slot" << d << h << "\n" << pr_lesson(lix);
             continue;
         }
+
         // Now do the placement
         if (ldata.flexible_room >= 0) {
             flexirooms.push_back({lix, ldata.flexible_room});
         }
         place_lesson(lix);
+        for (int lixp : ldata.parallel_lessons) {
+            auto &ldp = lessons.at(lixp);
+            if (ldp.flexible_room >= 0) {
+                flexirooms.push_back({lixp, ldp.flexible_room});
+            }
+            place_lesson(lixp);
+            done_parallel.insert(lixp);
+        }
     }
 
 
@@ -493,6 +533,7 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 bool BasicConstraints::test_single_slot(
     LessonData &ldata, int day, int hour)
 {
+    qDebug() << "  test_single_slot" << pr_lesson(lid2lix[ldata.lesson_id]);
     for (int i : ldata.atomic_groups) {
         if (sg_weeks[i][day][hour]) {
             int lixk = sg_weeks[i][day][hour];
@@ -522,6 +563,7 @@ bool BasicConstraints::test_single_slot(
 bool BasicConstraints::test_possible_place(
     LessonData &ldata, int day, int hour)
 {
+    qDebug() << "  test_possible_place" << pr_lesson(lid2lix[ldata.lesson_id]);
     for (int lx = 0; lx < ldata.length; ++lx) {
         if (!test_single_slot(ldata, day, hour+lx)) return false;
     }
@@ -599,6 +641,7 @@ bool BasicConstraints::test_slot(int lesson_index, int day, int hour)
     for (int h : ssd) {
         if (h < hour) continue;
         if (h == hour) {
+            qDebug() << "  test_slot" << pr_lesson(lid2lix[ldata.lesson_id]);
             if (test_possible_place(ldata, day, hour)) {
                 // Test parallel lessons
                 for (int lixp : ldata.parallel_lessons) {
