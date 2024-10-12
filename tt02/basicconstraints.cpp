@@ -1,6 +1,18 @@
 #include "basicconstraints.h"
 #include <QJsonArray>
 
+void BasicConstraints::update_db_field(int id, QString field, QJsonValue val)
+{
+    auto &lnode = db_data->Nodes[id];
+    lnode[field] = val;
+}
+
+void BasicConstraints::remove_db_field(int id, QString field)
+{
+    auto &lnode = db_data->Nodes[id];
+    lnode.remove(field);
+}
+
 QString BasicConstraints::pr_lesson(int lix)
 {
     auto &ldata = lessons.at(lix);
@@ -30,8 +42,13 @@ QString BasicConstraints::pr_lesson(int lix)
     }
     auto glist = g.join(",");
 
-    return QString("%1(%2):%3/%4").arg(
-        sbj, QString::number(ldata.length), glist, tlist);
+    QString timeslot;
+    if (ldata.day >= 0) timeslot = QString("@%1.%2").arg(
+        db_data->get_tag(db_data->dix_id[ldata.day]),
+        db_data->get_tag(db_data->hix_id[ldata.hour]));
+
+    return QString("%1(%2):%3/%4%5").arg(
+        sbj, QString::number(ldata.length), glist, tlist, timeslot);
 }
 
 // Apply a filter to the set of permitted slots belonging to a lesson.
@@ -394,20 +411,10 @@ void BasicConstraints::initial_place_lessons()
     }
 }
 
-void BasicConstraints::place_fixed_lesson(int lesson_index)
+void BasicConstraints::place_lesson(int lesson_index)
 {
-    // To modify the lesson, a reference must now be used.
     auto &ldp = lessons[lesson_index];
-    ldp.fixed = true;
-    // Test placement before actually doing it. This only checks the
-    // most basic criteria, i.e. clashes. Other hard constraints are
-    // ignored for fixed placements.
-    if (!test_possible_place(ldp, ldp.day, ldp.hour)) {
-        qFatal() << "Couldn't place lesson" << ldp.lesson_id
-                 << "@ Slot" << ldp.day << ldp.hour;
-    }
-    // Now do the placement
-    for (int i = 0; i < ldp.length; i++) {
+    for (int i = 0; i < ldp.length; ++i) {
         int hh = ldp.hour + i;
         for (int t : ldp.teachers) {
             t_weeks.at(t).at(ldp.day).at(hh) = lesson_index;
@@ -418,11 +425,26 @@ void BasicConstraints::place_fixed_lesson(int lesson_index)
         for (int r : ldp.fixed_rooms) {
             r_weeks.at(r).at(ldp.day).at(hh) = lesson_index;
         }
-        if (ldp.flexible_room >= 0) {
-            r_weeks.at(ldp.flexible_room).at(ldp.day).at(hh) = lesson_index;
-        }
     }
+    ldp.flexible_room = -1; // allocate later
+}
 
+void BasicConstraints::place_fixed_lesson(int lesson_index)
+{
+    auto &ldp = lessons[lesson_index];
+    // Test placement before actually doing it. This only checks the
+    // most basic criteria, i.e. clashes. Other hard constraints are
+    // ignored for fixed placements.
+    if (!test_possible_place(ldp, ldp.day, ldp.hour)) {
+        qFatal() << "Couldn't place fixed lesson" << ldp.lesson_id
+                 << "@ Slot" << ldp.day << ldp.hour;
+    }
+    ldp.fixed = true;
+    // Now do the placement
+    if (ldp.flexible_room >= 0) {
+        flexirooms.push_back({lesson_index, ldp.flexible_room});
+    }
+    place_lesson(lesson_index);
 }
 
 void BasicConstraints::setup_parallels(slot_constraint &parallels)
@@ -488,6 +510,9 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         auto &ldata = lessons.at(lix);
         if (ldata.fixed) continue;
 
+//TODO--
+        continue;
+
         // Find available time-slots. This will be repeated unnecessarily
         // for parallel lessons, but that should be harmless.
         find_slots(lix);
@@ -512,33 +537,46 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 
         int h = ldata.hour;
         // Test placement before actually doing it
+
 //TODO: Bug?: I'm getting lots of these warnings
         if (!test_slot(lix, d, h)) {
             ldata.day = -1;
-            ldata.flexible_room = -1;
-            qWarning() << "Couldn't place lesson" << ldata.lesson_id
+            qFatal() << "Couldn't place lesson" << ldata.lesson_id
                        << "@ Slot" << d << h << "\n" << pr_lesson(lix);
             continue;
         }
         // Now do the placement
+        if (ldata.flexible_room >= 0) {
+            flexirooms.push_back({lix, ldata.flexible_room});
+        }
+        place_lesson(lix);
+    }
 
-//TODO: What about parallel rooms?! Is this still relevant?
 
-        for (int i = 0; i < ldata.length; i++) {
-            int hh = h + i;
-            for (int t : ldata.teachers) {
-                t_weeks.at(t).at(d).at(hh) = lix;
-            }
-            for (int sg : ldata.atomic_groups) {
-                sg_weeks.at(sg).at(d).at(hh) = lix;
-            }
-            for (int r : ldata.fixed_rooms) {
-                r_weeks.at(r).at(d).at(hh) = lix;
-            }
-            if (ldata.flexible_room >= 0) {
-                r_weeks.at(ldata.flexible_room).at(d).at(hh) = lix;
+
+//TODO: Move this somewhere else?
+    // Now deal with the flexible rooms
+    for (auto [lix, rix] : flexirooms) {
+        auto &ldp = lessons[lix];
+        auto &rdp = r_weeks.at(rix).at(ldp.day);
+        for (int i = 0; i < ldp.length; ++i) {
+            int hh = ldp.hour + i;
+            if (rdp.at(hh) != 0) {
+//TODO: expand message
+                qWarning() << "Couldn't allocate flexible room"
+                           << db_data->get_tag(i_r[rix])
+                           << "for lesson" << pr_lesson(lix);
+                // Need to update database entry for lesson
+                remove_db_field(ldp.lesson_id, "FLEXIBLE_ROOM");
+                goto fail;
             }
         }
+        for (int i = 0; i < ldp.length; ++i) {
+            int hh = ldp.hour + i;
+            rdp.at(hh) = lix;
+        }
+        ldp.flexible_room = rix;
+    fail:;
     }
 }
 
@@ -549,13 +587,24 @@ bool BasicConstraints::test_single_slot(
     LessonData &ldata, int day, int hour)
 {
     for (int i : ldata.atomic_groups) {
-        if (sg_weeks[i][day][hour]) return false;
+        if (sg_weeks[i][day][hour]) {
+            int lixk = sg_weeks[i][day][hour];
+            qDebug() << "AG:" << hour << i_sg.at(i)
+                     << lixk << pr_lesson(lixk);
+            return false;
+        }
     }
     for (int i : ldata.teachers) {
-        if (t_weeks[i][day][hour]) return false;
+        if (t_weeks[i][day][hour]) {
+            qDebug() << "T:" << hour << i;
+            return false;
+        }
     }
     for (int i : ldata.fixed_rooms) {
-        if (r_weeks[i][day][hour]) return false;
+        if (r_weeks[i][day][hour]) {
+            qDebug() << "R:" << hour << i;
+            return false;
+        }
     }
     return true;
 }
@@ -623,7 +672,10 @@ bool BasicConstraints::test_slot(int lesson_index, int day, int hour)
     // Get days blocked by different-days constraints.
     for (const auto lix2 : ldata.different_days) {
         auto &l2 = lessons.at(lix2);
-        if (l2.day == day) return false;
+        if (l2.day == day) {
+            qDebug() << "DIFFDAYS:" << pr_lesson(lix2);
+            return false;
+        }
     }
     // Now the parallel lessons, if any.
     for (int lixp : ldata.parallel_lessons) {
@@ -702,17 +754,6 @@ std::vector<int> BasicConstraints::find_clashes(
     return clashes;
 }
 
-
-SameStartingTime::SameStartingTime(std::vector<int> &l_indexes, int weight)
-{
-    penalty = weight;
-    lesson_indexes = l_indexes;
-//TODO--
-//    qDebug() << "SameStartingTime" << penalty << lesson_indexes;
-}
-
-//TODO
-int SameStartingTime::evaluate(BasicConstraints *constraint_data) { return 0; }
 
 SoftActivityTimes::SoftActivityTimes(
     BasicConstraints *constraint_data,

@@ -49,17 +49,6 @@ protected:
     int penalty;
 };
 
-class SameStartingTime : public Constraint
-{
-public:
-    SameStartingTime(std::vector<int> &lesson_indexes, int weight);
-    //~SameStartingTime() { qDebug() << "~SameStartingTime"; }
-
-    int evaluate(BasicConstraints *constraint_data) override;
-
-    std::vector<int> lesson_indexes;
-};
-
 class SoftActivityTimes : public Constraint
 {
 public:
@@ -101,8 +90,8 @@ struct LessonData{
     bool fixed{false};
 
     int day{-1}; // -1 indicates unplaced lesson
-    int hour;
-    int flexible_room{-1};
+    int hour;           // only valid when day >= 0
+    int flexible_room;  // only valid when day >= 0
 
     // This indexes the structure start_cells_list in the BasicConstraints
     // object. The indexed item contains a list of possible starting hours for
@@ -114,6 +103,11 @@ struct LessonData{
     std::vector<int> parallel_lessons;
 };
 
+struct FlexiRoom {
+    int lesson_index;
+    int room_index;
+};
+
 class BasicConstraints
 {
 public:
@@ -123,6 +117,8 @@ public:
     }
 
     QString pr_lesson(int lix);
+    void update_db_field(int id, QString field, QJsonValue val);
+    void remove_db_field(int id, QString field);
 
     void set_start_cells_id(int lesson_id, slot_constraint &week_slots);
     void set_different_days(std::vector<int> &lesson_ids);
@@ -163,6 +159,7 @@ public:
     std::vector<TTSlot> available_slots(int lesson_index);
 
 private:
+    void place_lesson(int lesson_index);
     void place_fixed_lesson(int lesson_index);
     void multi_slot_constraints(
         std::vector<ActivitySelectionSlots> &alist,
@@ -178,6 +175,7 @@ private:
     // and shouldn't be changed.
     std::vector<slot_constraint> start_cells_list;
 
+    std::vector<FlexiRoom> flexirooms; // used internally for pending rooms
     // Return a list of possible starting slots in found_slots:
     void find_slots(int lesson_index);
     std::vector<TTSlot> found_slots;

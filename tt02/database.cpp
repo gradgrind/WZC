@@ -18,14 +18,22 @@ DBData::DBData(QMap<int, QJsonObject> node_map) : Nodes {node_map}
 void DBData::reload()
 {
     // days: mapping, day's database-id -> 0-based day index
+    const auto dlist = Tables.value("DAYS");
     days.clear();
-    for (int d : Tables.value("DAYS")) {
-        days[d] = Nodes.value(d).value("X").toInt();
+    dix_id.resize(dlist.size());
+    for (int d : dlist) {
+        int dix = Nodes.value(d).value("X").toInt();
+        days[d] = dix;
+        dix_id[dix] = d;
     }
     // hours: mapping, hour's database-id -> 0-based hour index
+    const auto hlist = Tables.value("HOURS");
     hours.clear();
-    for (int h : Tables.value("HOURS")) {
-        hours[h] = Nodes.value(h).value("X").toInt();
+    hix_id.resize(hlist.size());
+    for (int h : hlist) {
+        int hix = Nodes.value(h).value("X").toInt();
+        hours[h] = hix;
+        hix_id[hix] = h;
     }
     // Make lesson lists for the courses (values are lesson database-ids).
     course_lessons.clear();

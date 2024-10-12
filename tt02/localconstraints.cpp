@@ -1,6 +1,7 @@
 #include <qjsonarray.h>
 #include "localconstraints.h"
 #include "differentdays.h"
+#include "samestartingtime.h"
 
 // Collect Activity slot constraints
 time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)

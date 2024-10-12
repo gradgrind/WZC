@@ -28,7 +28,7 @@ The database contains all the necessary information about the timetable. While w
 
 ### The Week-Blocks
 
-I call teachers, student groups and rooms primary resources. I assume that each of the individual elements of these categories can only be associated with a single lesson in any time-slot. This assumption is taken as a very hard constraint, so that no lesson may be placed at a particular time when that would result in one of these elements being "double-booked". To give automatic timetable generation a chance, checking these constraints needs to be very fast. This could be done in a number of ways, but for the present I have chosen the week-blocks.
+Teachers, student groups and rooms are "primary" resources in that each of the individual elements of these categories can only be associated with a single lesson in any time-slot. This assumption is taken as a very hard constraint, so that no lesson may be placed at a particular time when that would result in one of these elements being "double-booked". To give automatic timetable generation a chance, checking these constraints needs to be very fast. This could be done in a number of ways, but for the present I have chosen the week-blocks.
 
 Each element (teacher, ["atomic" student group](atomic_groups.md#atomic-student-groups) and room) has an array of cells, each cell representing a time-slot, with days and hours (teaching periods) as axes. The arrays are organized contiguously in memory, forming, in effect, 3-D arrays. There is a separate such array for each of the categories. The first index is the element, the second the day, the third the hour. In these week-blocks, 0 is a valid index, referring to the first entry in the array.
 

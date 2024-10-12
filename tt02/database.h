@@ -40,7 +40,9 @@ public:
     QMap<int, QJsonObject> Nodes; // use QMap rather then QHash, for sorted keys
     QHash<QString, QList<int>> Tables;
     QHash<int, int> days;   // db-index -> absolute index
+    QList<int> dix_id;      // dix_id[day index] -> day's db-index
     QHash<int, int> hours;  // db-index -> absolute index
+    QList<int> hix_id;      // hix_id[hour index] -> hour's db-index
     QHash<int, QList<int>> course_lessons;
 
     DBData(QMap<int, QJsonObject> node_map);

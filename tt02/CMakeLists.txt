@@ -30,6 +30,7 @@ set(PROJECT_SOURCES
         basicconstraints.h  basicconstraints.cpp
         localconstraints.h  localconstraints.cpp
         differentdays.h differentdays.cpp
+        samestartingtime.h samestartingtime.cpp
         placelesson.h   placelesson.cpp
         statecache.h    statecache.cpp
 )
@@ -39,7 +40,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         randomnumbers.h
-
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET tt02 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
