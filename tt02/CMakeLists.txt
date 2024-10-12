@@ -30,7 +30,9 @@ set(PROJECT_SOURCES
         basicconstraints.h  basicconstraints.cpp
         localconstraints.h  localconstraints.cpp
         differentdays.h differentdays.cpp
-        samestartingtime.h samestartingtime.cpp
+        samestartingtime.h  samestartingtime.cpp
+        softactivitytimes.h softactivitytimes.cpp
+
         placelesson.h   placelesson.cpp
         statecache.h    statecache.cpp
 )

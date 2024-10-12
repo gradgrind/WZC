@@ -49,30 +49,6 @@ protected:
     int penalty;
 };
 
-class SoftActivityTimes : public Constraint
-{
-public:
-    SoftActivityTimes(BasicConstraints *constraint_data,
-        int weight,
-        // For each day a list of allowed time slots
-        slot_constraint &ttslots,
-        // The times can refer to starting times or permissible
-        // slots, true for slots
-        bool allslots // false for starting times, true for slots
-    );
-    //~SoftActivityTimes() { qDebug() << "~SoftActivityTimes"; }
-
-    void add_lesson_id(
-        BasicConstraints *constraint_data, int lesson_id);
-    int evaluate(BasicConstraints *constraint_data) override;
-
-    std::vector<int> lesson_indexes;
-    // This should have a full week of slots containing true for
-    // permitted slots
-    std::vector<std::vector<bool>> week_slots;
-    const bool all_slots;
-};
-
 struct LessonData{
     // Only hard constraints are handled here.
     int lesson_id;
@@ -157,19 +133,15 @@ public:
     std::vector<Constraint *> general_constraints;
 
     std::vector<TTSlot> available_slots(int lesson_index);
+    void merge_slot_constraints(
+        LessonData &ldata, const slot_constraint &newslots);
+    void setup_parallels(slot_constraint &parallels);
 
 private:
     void place_lesson(int lesson_index);
     void place_fixed_lesson(int lesson_index);
-    void multi_slot_constraints(
-        std::vector<ActivitySelectionSlots> &alist,
-        bool allslots // false for starting times, true for slots
-    );
     void slot_blockers();
     int set_start_cells(LessonData &ldata, slot_constraint &week_slots);
-    void merge_slot_constraints(
-        LessonData &ldata, const slot_constraint &newslots);
-    void setup_parallels(slot_constraint &parallels);
     // start_cells_list contains the slot_constraint objects for the lessons.
     // Indexing is by index. The first entry is a default entry which blocks
     // and shouldn't be changed.

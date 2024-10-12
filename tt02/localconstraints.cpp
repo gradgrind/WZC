@@ -2,6 +2,7 @@
 #include "localconstraints.h"
 #include "differentdays.h"
 #include "samestartingtime.h"
+#include "softactivitytimes.h"
 
 // Collect Activity slot constraints
 time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
@@ -99,10 +100,24 @@ void localConstraints(BasicConstraints *basic_constraints)
     // starting times for individual lessons or lessons fulfilling
     // certain conditions. Also the lesson lengths are taken into account.
     time_constraints tconstraints = activity_slot_constraints(basic_constraints);
-    // Place the (unfixed) lessons which have their starting times specified.
-    // Also set up the start_cells field (for unfixed lessons). This field
+    // Set up the slot_constraints field (for unfixed lessons). This field
     // specifies which slots can potentially be used for the lesson – assuming
     // no basic clashes.
+    // Parallel lessons need to share slot_constraints.
+    basic_constraints->setup_parallels(tconstraints.parallel_lessons);
+    // Include further restrictions on starting times, from constraints
+    // concerning multiple activities
+    multi_slot_constraints(
+        basic_constraints,
+        tconstraints.activities_starting_times,
+        false
+    );
+    multi_slot_constraints(
+        basic_constraints,
+        tconstraints.activities_slots,
+        true
+    );
+    // Place the (unfixed) lessons which have their starting times specified.
     basic_constraints->initial_place_lessons2(tconstraints);
 }
 
