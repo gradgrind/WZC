@@ -423,6 +423,7 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 {
     // Find all possible placements taking blocked cells and already
     // placed (fixed) lessons into account.
+    repeatfor:
     for (int lix = 1; lix < lessons.size(); ++lix) {
         auto &ldata = lessons.at(lix);
         if (ldata.fixed) continue;
@@ -431,6 +432,29 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         if (found_slots.empty())
             qFatal() << "No timeslots are available for lesson"
                      << ldata.lesson_id;
+        if (found_slots.size() == 1) {
+            auto [d, h] = found_slots[0];
+            // Check that the available slot is the desired one.
+            if (ldata.day < 0 || (ldata.day == d && ldata.hour == h)) {
+                qWarning() << "Lesson has only one available time-slot:"
+                           << pr_lesson(lix) << " ... fixing it";
+                ldata.fixed = true;
+                // Now do the placement
+                ldata.day = d;
+                ldata.hour = h;
+                place_lesson(lix);
+                // Also any parallel lessons
+                for (int lixp : ldata.parallel_lessons) {
+                    auto &ldp = lessons.at(lixp);
+                    ldp.fixed = true;
+                    // Now do the placement
+                    ldp.day = d;
+                    ldp.hour = h;
+                    place_lesson(lixp);
+                }
+                goto repeatfor;
+            }
+        }
         slot_constraint newsc(ndays);
         for (auto dh : found_slots) {
             newsc[dh.day].push_back(dh.hour);
