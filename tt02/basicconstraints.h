@@ -104,7 +104,8 @@ public:
     void initial_place_lessons();
     void initial_place_lessons2(time_constraints &tconstraints);
     bool test_single_slot(LessonData &ldata, int day, int hour);
-    std::vector<int> find_clashes(LessonData *ldata, int day, int hour);
+    std::map<int, std::string> find_clashes(
+        int lesson_index, int day, int hour);
 
     DBData * db_data;
     int ndays;
@@ -140,6 +141,9 @@ public:
     void setup_parallels(slot_constraint &parallels);
 
 private:
+    void find_clashes2(
+        std::map<int, std::string> &clashmap,
+        LessonData &ldata, int day, int hour);
     void place_lesson(int lesson_index);
     void place_fixed_lesson(int lesson_index);
     void slot_blockers();
@@ -157,30 +161,5 @@ private:
     // Test the given slot:
     bool test_slot(int lesson_index, int day, int hour);
 };
-
-/*#DOC
-
-## Idea for handling hard constraints.
-
-When looking for slots in which to place a lesson tile there can be
-constraints which limit the available days (like the different-days
-constraints). If I run one of these before doing any other searches, it
-could return a list of possible days, which can then restrict the range
-of subsequent tests.
-
-Initially I have the generally possible slots organized as a list of
-day-lists, these latter being lists of possible hours. The day-restricting
-constraints can reduce these slots.
-
-Then the basic tests can be run on the lesson (groups, teachers, rooms),
-but only testing the subset of slots. The result will be a still more
-restricted subset.
-
-There can also be (hard-)parallel lessons. These also need to be tested,
-possibly leading to even smaller slot subsets.
-
-Actually, it might be sensible to run the parallel lessons through their
-own day-restricting constraints at the beginning of the procedure.
-*/
 
 #endif // BASICCONSTRAINTS_H

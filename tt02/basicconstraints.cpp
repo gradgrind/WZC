@@ -627,46 +627,68 @@ std::vector<TTSlot> BasicConstraints::available_slots(int lesson_index)
 // A version of find_slots for more straightforward use.
 {
     LessonData &ldata = lessons[lesson_index];
-    qDebug() << "START-CELLS:"
-             << start_cells_list.at(ldata.slot_constraint_index);
+    //qDebug() << "START-CELLS:"
+    //         << start_cells_list.at(ldata.slot_constraint_index);
     find_slots(lesson_index);
     return found_slots;
 }
 
+// Test the possibility of placing the given lesson in the geiven time-slot,
+// returning some details of the conflicts. For each conflicting lesson
+// there is an entry in the returned mapping. If there is a conflict with
+// a blocked time, the lesson index is -1.
 
-
-
-//TODO?: Add a test which returns details of the clashes, at least the
-// lessons/courses, maybe also the associated groups/teachers/rooms ...
-// That could be triggered by shift-click (which would place if ok?).
-
-// Return a list of clashing-lesson-ids.
-// This seems to take 10-20 times as long as the simple test above!
-// So use it only when the details are needed.
-std::vector<int> BasicConstraints::find_clashes(
-    LessonData *ldata, int day, int hour)
+// For automatic placement, only statically available slots shoudl be tested,
+// to avoid fixed lessons and otherwise blocked slots. Also, it may be
+// possible to construct a somewhat faster version, as only the lessons –
+// no details – are needed. Perhaps using a single result mapping (passing
+// as reference) might help.
+std::map<int, std::string> BasicConstraints::find_clashes(
+    int lesson_index, int day, int hour)
 {
-    std::vector<int> clashes;
-    for (int i : ldata->atomic_groups) {
-        int lix = sg_weeks[i][day][hour];
-        if (lix && std::find(
-                clashes.begin(), clashes.end(), lix) == clashes.end()) {
-            clashes.push_back(lix);
+    LessonData &ldata = lessons[lesson_index];
+    std::map<int, std::string> clashmap;
+    // Get days blocked by different-days constraints.
+    for (const auto lix2 : ldata.different_days) {
+        auto &l2 = lessons.at(lix2);
+        if (l2.day == day) clashmap[lix2] = "DIFFERENT_DAYS";
+    }
+    // Now the parallel lessons, if any.
+    for (int lixp : ldata.parallel_lessons) {
+        LessonData &lp = lessons[lixp];
+        for (const auto lix2 : lp.different_days) {
+            auto &l2 = lessons.at(lix2);
+            if (l2.day == day) clashmap[lix2] =
+                std::string("DIFFERENT_DAYS//") + std::to_string(lixp);
         }
     }
-    for (int i : ldata->teachers) {
-        int lix = t_weeks[i][day][hour];
-        if (lix && std::find(
-                clashes.begin(), clashes.end(), lix) == clashes.end()) {
-            clashes.push_back(lix);
+    // Now test the slot
+    find_clashes2(clashmap, ldata, day, hour);
+    // and thet parallel lessons
+    for (int lixp : ldata.parallel_lessons) {
+        LessonData &ldp = lessons[lixp];
+        find_clashes2(clashmap, ldata, day, hour);
+    }
+    return clashmap;
+}
+
+void BasicConstraints::find_clashes2(
+    std::map<int, std::string> &clashmap,
+    LessonData &ldata, int day, int hour)
+{
+    for (int lx = 0; lx < ldata.length; ++lx) {
+        int h = hour + lx;
+        for (int i : ldata.atomic_groups) {
+            int lixk = sg_weeks[i][day][h];
+            if (lixk != 0) clashmap[lixk] = "GROUP";
+        }
+        for (int i : ldata.teachers) {
+            int lixk = t_weeks[i][day][h];
+            if (lixk != 0) clashmap[lixk] = "TEACHER";
+        }
+        for (int i : ldata.fixed_rooms) {
+            int lixk = r_weeks[i][day][h];
+            if (lixk != 0) clashmap[lixk] = "ROOM";
         }
     }
-    for (int i : ldata->fixed_rooms) {
-        int lix = r_weeks[i][day][hour];
-        if (lix && std::find(
-                clashes.begin(), clashes.end(), lix) == clashes.end()) {
-            clashes.push_back(lix);
-        }
-    }
-    return clashes;
 }
