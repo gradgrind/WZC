@@ -74,7 +74,6 @@ QString BasicConstraints::pr_week_block_sg(int ix)
 // The original is modified in-place if its slot_constraints index is
 // non-zero, otherwise a new entry is made for the lesson with the values
 // as in the modifier.
-// Return the slot_constraints index.
 void BasicConstraints::merge_slot_constraints(
     LessonData &ldata, const slot_constraint &newslots)
 {
@@ -93,21 +92,20 @@ void BasicConstraints::merge_slot_constraints(
             int i = 0; // source write index
             int h0 = dayslots[0];
             for (int h : newslots[d]) {
-                if (h < 0) continue;    // allow "dummy" entries
-                if (h >= h0) {
-                    if (h == h0) {
-                        if (i != x) dayslots[i] = h;
-                        ++i;
-                    }
-                    ++x;
-                    if (x < dayslots.size()) {
-                        h0 = dayslots[x];
-                    } else {
-                        // No more source hours
-                        break;
-                    }
+            rpt:;
+                if (h < h0) continue;
+                if (h == h0) {
+                    if (i != x) dayslots[i] = h;
+                    ++i;
                 }
-                // else (h < h0) -> next h
+                ++x;
+                if (x < dayslots.size()) {
+                    h0 = dayslots[x];
+                    goto rpt;
+                } else {
+                    // No more source hours
+                    break;
+                }
             }
             dayslots.resize(i);
         }
@@ -333,9 +331,8 @@ void BasicConstraints::initial_place_lessons()
             int h = db_data->hours.value(lnode.value("HOUR").toInt());
             ld.hour = h;
             QJsonValue cr = lnode.value("FLEXIBLE_ROOM");
-            if (!cr.isUndefined()) {
-                ld.flexible_room = r2i.value(cr.toInt());
-            }
+            if (!cr.isUndefined())
+                flexirooms.push_back({lix, r2i.value(cr.toInt())});
             // I need to place the fixed lessons first, in order to build
             // available-slot lists for each (non-fixed) lesson.
             lessons.push_back(ld);
@@ -346,7 +343,6 @@ void BasicConstraints::initial_place_lessons()
     }
 }
 
-#include <iostream>
 void BasicConstraints::place_lesson(int lesson_index)
 {
     auto &ldp = lessons[lesson_index];
@@ -362,7 +358,7 @@ void BasicConstraints::place_lesson(int lesson_index)
             r_weeks.at(r).at(ldp.day).at(hh) = lesson_index;
         }
     }
-    ldp.flexible_room = -1; // allocate later
+    ldp.flexible_room = -1; // allocate later, from flexirooms list
 }
 
 void BasicConstraints::place_fixed_lesson(int lesson_index)
@@ -377,9 +373,6 @@ void BasicConstraints::place_fixed_lesson(int lesson_index)
     }
     ldp.fixed = true;
     // Now do the placement
-    if (ldp.flexible_room >= 0) {
-        flexirooms.push_back({lesson_index, ldp.flexible_room});
-    }
     place_lesson(lesson_index);
 }
 
@@ -434,11 +427,6 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         auto &ldata = lessons.at(lix);
         if (ldata.fixed) continue;
 
-//TODO--
-        continue;
-
-        // Find available time-slots. This will be repeated unnecessarily
-        // for parallel lessons, but that should be harmless.
         find_slots(lix);
         if (found_slots.empty())
             qFatal() << "No timeslots are available for lesson"
@@ -465,43 +453,20 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 
         int h = ldata.hour;
         // Test placement before actually doing it
-
-//TODO: Bug?: I'm getting lots of these warnings
         if (!test_slot(lix, d, h)) {
-
-
-
-//TODO--
-            //qDebug() << "\nLESSON" << lesson_index;
-            std::cout << "\n §place_lesson " << pr_lesson(lix).toStdString()
-                        << "\n";
-            std::cout << pr_week_block_sg(ldata.atomic_groups[0]).toStdString();
-            std::flush(std::cout);
-
             ldata.day = -1;
             qFatal() << "Couldn't place lesson" << ldata.lesson_id
                        << "@ Slot" << d << h << "\n" << pr_lesson(lix);
             continue;
         }
 
-        // Now do the placement
-        if (ldata.flexible_room >= 0) {
-            flexirooms.push_back({lix, ldata.flexible_room});
-        }
         place_lesson(lix);
         for (int lixp : ldata.parallel_lessons) {
-            auto &ldp = lessons.at(lixp);
-            if (ldp.flexible_room >= 0) {
-                flexirooms.push_back({lixp, ldp.flexible_room});
-            }
             place_lesson(lixp);
             done_parallel.insert(lixp);
         }
     }
 
-
-
-//TODO: Move this somewhere else?
     // Now deal with the flexible rooms
     for (auto [lix, rix] : flexirooms) {
         auto &ldp = lessons[lix];
@@ -509,7 +474,6 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         for (int i = 0; i < ldp.length; ++i) {
             int hh = ldp.hour + i;
             if (rdp.at(hh) != 0) {
-//TODO: expand message
                 qWarning() << "Couldn't allocate flexible room"
                            << db_data->get_tag(i_r[rix])
                            << "for lesson" << pr_lesson(lix);
