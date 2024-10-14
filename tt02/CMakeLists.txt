@@ -21,7 +21,7 @@ set(PROJECT_SOURCES
         fetdata.h       fetdata.cpp
         readtimeconstraints.cpp  readtimeconstraints.h
         readspaceconstraints.h   readspaceconstraints.cpp
-        lessontiles.h   lessontiles.cpp
+        timetabledata.h   timetabledata.cpp
         database.h      database.cpp
         showclass.h     showclass.cpp
         showteacher.h   showteacher.cpp
@@ -30,6 +30,9 @@ set(PROJECT_SOURCES
         basicconstraints.h  basicconstraints.cpp
         localconstraints.h  localconstraints.cpp
         differentdays.h differentdays.cpp
+        samestartingtime.h  samestartingtime.cpp
+        softactivitytimes.h softactivitytimes.cpp
+
         placelesson.h   placelesson.cpp
         statecache.h    statecache.cpp
 )
@@ -38,6 +41,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(tt02
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        randomnumbers.h
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET tt02 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

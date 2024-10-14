@@ -370,8 +370,9 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
                     if (gid) {
                         glist.append(gid);
                     } else {
-                        qFatal() << "Activity" << m.value("Id")
+                        qWarning() << "Activity" << m.value("Id")
                         << "has unknown group:" << g;
+                        goto skip;
                     }
                 }
                 fet_info.nodes.append({
@@ -400,6 +401,7 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
             });
             fet_info.activity_lesson[m.value("Id")] = lid;
         }
+    skip:;
     }
 }
 

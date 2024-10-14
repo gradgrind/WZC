@@ -1,18 +1,8 @@
-#include "lessontiles.h"
+#include "timetabledata.h"
 #include <QJsonArray>
 
-// Given a list of group indexes.
-// Divide them into classes.
-// Determine which division is used.
-// Produce the fractional data, and potentially more than one tile per class.
-
-// To assist, build subgroup sets for all classes,
-// for each division a list of mappings: group -> subgroup-set.
-// Each class should also have a set of all its subgroups, here as
-// first division.
-
-// p_class_divs is only used for testing purposes.
-QString p_class_divs(class_divs cdivs)
+// pr_class_divs is only used for testing purposes.
+QString pr_class_divs(class_divs cdivs)
 {
     QStringList qsl0;
     for (const auto & dl : cdivs) {
@@ -28,7 +18,72 @@ QString p_class_divs(class_divs cdivs)
     return qsl0.join("|");
 }
 
-void class_divisions(DBData *db_data)
+
+TimetableData::TimetableData(DBData * dbdata) : db_data{dbdata}
+{
+    // Make course lists for all classes and teachers.
+
+    // Start with an analysis of the divisions and their groups/subgroups
+    // for all classes. The results of this are used by the calls to
+    // course_divisions.
+    class_subgroup_divisions = class_divisions();
+
+    // Collect the group tile information for each course,
+    // add the course-ids to the lists for the classes and teachers.
+    for (int course_id : dbdata->Tables["COURSES"]) {
+        auto cdata = dbdata->Nodes[course_id];
+        auto groups = cdata["GROUPS"].toArray();
+        auto llist = course_divisions(groups);
+
+        course_tileinfo[course_id] = llist;
+        auto tlist = cdata.value("TEACHERS").toArray();
+        for (const auto &t : tlist) {
+            int tid = t.toInt();
+            teacher_courses[tid].append(course_id);
+        }
+        for (auto iter = llist.cbegin(), end = llist.cend();
+             iter != end; ++iter) {
+            int cl = iter.key();
+            class_courses[cl].append(course_id);
+        }
+
+        /*
+        // Print the item
+        QStringList ll;
+        for (auto iter = llist.cbegin(), end = llist.cend();
+                iter != end; ++iter) {
+            int cl = iter.key();
+            for (const auto &llf : iter.value()) {
+                ll.append(QString("%1(%2:%3:%4:%5)")
+                              .arg(cl)
+                              .arg(llf.offset)
+                              .arg(llf.fraction)
+                              .arg(llf.total)
+                              .arg(llf.groups.join(",")));
+            }
+        }
+        QString subject = dbdata->get_tag(cdata.value("SUBJECT").toInt());
+        QStringList teachers;
+        for (const auto &t : tlist) {
+            teachers.append(dbdata->get_tag(t.toInt()));
+        }
+        qDebug() << "COURSE TILES" << subject << teachers.join(",")
+                 << groups << "->" << ll.join(",");
+        */
+    }
+}
+
+// Given a list of group indexes.
+// Divide them into classes.
+// Determine which division is used.
+// Produce the fractional data, and potentially more than one tile per class.
+
+// To assist, build subgroup sets for all classes,
+// for each division a list of mappings: group -> subgroup-set.
+// Each class should also have a set of all its subgroups, here as
+// first division.
+
+QHash<int, class_divs> TimetableData::class_divisions()
 {
     // The division list contains lists of pairs: {gid, subgroup-set}.
     // The first division contains a single pair, for the whole class.
@@ -52,14 +107,14 @@ void class_divisions(DBData *db_data)
             }
             divs.append(divlist);
         }
-        //qDebug() << "CLASS" << cdata["TAG"].toString() << p_class_divs(divs);
+        //qDebug() << "CLASS" << cdata["TAG"].toString() << pr_class_divs(divs);
         class_groups[c] = divs;
     }
-    db_data->class_subgroup_divisions = class_groups;
+    return class_groups;
 }
 
-QMap<int, QList<TileFraction>> course_divisions(
-    DBData *db_data, QJsonArray groups)
+QMap<int, QList<TileFraction>> TimetableData::course_divisions(
+    const QJsonArray groups)
 {
     // For the results
     QMap<int, QList<TileFraction>> results;
@@ -78,7 +133,7 @@ QMap<int, QList<TileFraction>> course_divisions(
             iter != end; ++iter) {
         int cl = iter.key();
         auto cgset = iter.value();
-        auto sgdivs = db_data->class_subgroup_divisions.value(cl);
+        auto sgdivs = class_subgroup_divisions.value(cl);
         for (const auto &sgdiv : sgdivs) {
             int offset = 0;
             int frac = 0;

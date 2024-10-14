@@ -3,7 +3,7 @@
 
 #include <QJsonObject>
 #include "readxml.h"
-#include "database.h"
+//#include "database.h"
 
 QMultiMap<QString, QString> readSimpleItems(XMLNode node);
 
@@ -15,7 +15,7 @@ struct FetInfo{
     QHash<QString, int> rooms;
     QList<int> class_list;
     QHash<QString, int> groups;
-    QHash<int, class_divs> class_subgroup_divisions;
+//    QHash<int, class_divs> class_subgroup_divisions;
     QList<int> course_list;
     QHash<QString, int> activity_lesson;
     QMap<int, QJsonObject> nodes;

@@ -4,6 +4,8 @@ The basis for the timetable is the database. This is essentially a collection of
 
 A convenient way to store the database is as a simple table ("NODES") in an SQLite database, the table having just two fields, "Id" for the key and "DATA" for the JSON object. However, as the key is also present in the "DATA" objects it could all be stored as a JSON array.
 
+When the raw database is loaded into the program a data structure is created which does some processing of the raw data to provide more convenient access. See [The DBData Structure](dbdata.md#the-dbdata-structure).
+
 ## Object types
 
 Apart from its main content each object has an "Id" field, which is just the object's key, and a "TYPE" field, which serves to group similar objects together. The currently supported types are listed below:

@@ -1,6 +1,8 @@
 #include <qjsonarray.h>
 #include "localconstraints.h"
 #include "differentdays.h"
+#include "samestartingtime.h"
+#include "softactivitytimes.h"
 
 // Collect Activity slot constraints
 time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
@@ -13,7 +15,7 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
         auto ntype = node.value("CTYPE");
         if (node.contains("SLOTS")) {
             //NOTE: I assume the times are sorted in the SLOTS list.
-            std::vector<std::vector<int>> days(basic_constraints->ndays);
+            slot_constraint days(basic_constraints->ndays);
             const auto &ttslots = node.value("SLOTS").toArray();
             for (auto ttslot : ttslots) {
                 auto dhslot = ttslot.toArray();
@@ -23,8 +25,14 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             }
             if (ntype == "PREFERRED_STARTING_TIMES") {
                 int lid = node.value("LESSON").toInt();
-                constraints.lesson_starting_times[lid] = {
-                    .weight = w, .ttslots = days};
+                if (is_hard(w)) {
+                    basic_constraints->set_start_cells_id(lid, days);
+                } else  {
+                    auto sat = new SoftActivityTimes(
+                        basic_constraints, w, days, false);
+                    sat->add_lesson_id(basic_constraints, lid);
+                    basic_constraints->general_constraints.push_back(sat);
+                }
             } else {
                 if (ntype == "ACTIVITIES_PREFERRED_STARTING_TIMES") {
                     constraints.activities_starting_times.push_back({
@@ -51,33 +59,33 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
                 }
             }
         } else if (ntype == "DAYS_BETWEEN") {
-            DifferentDays * dd = new DifferentDays(basic_constraints, node);
-            if (dd->isHard()) {
-                basic_constraints->local_hard_constraints.push_back(dd);
-                for (int lix : dd->lesson_indexes) {
-                    basic_constraints->lessons.at(lix)
-                        .day_constraints.push_back(dd);
+            if (is_hard(w) && node.value("NDAYS") == 1) {
+                const auto llist = node.value("LESSONS").toArray();
+                std::vector<int> lids(llist.size());
+                for (int i = 0; i < llist.size(); ++i) {
+                    lids[i] = llist[i].toInt();
                 }
+                basic_constraints->set_different_days(lids);
             } else {
+                DifferentDays * dd = new DifferentDays(basic_constraints, node);
                 basic_constraints->general_constraints.push_back(dd);
             }
         } else if (ntype == "SAME_STARTING_TIME") {
-            SameStartingTime * sst = new SameStartingTime(
-                basic_constraints, node);
-            if (sst->isHard()) {
-                basic_constraints->local_hard_constraints.push_back(sst);
-                for (int lid : sst->lesson_indexes) {
-                    auto l = &basic_constraints->lessons[lid];
-                    if (l->parallel) {
-                        qDebug() << "Lesson" << l->lesson_id
-                                 << "has multiple 'SameStartingTime' constraints";
-                        continue;
-                    }
-                    l->parallel = sst;
-                }
-            } else {
-                basic_constraints->general_constraints.push_back(sst);
+            auto llist = node.value("LESSONS").toArray();
+            int n = llist.size();
+            std::vector<int> lesson_indexes(n);
+            for (int i = 0; i < n; ++i) {
+                lesson_indexes[i] = basic_constraints->lid2lix[llist[i].toInt()];
             }
+            int weight = node.value("WEIGHT").toInt();
+            if (is_hard(weight)) {
+                constraints.parallel_lessons.push_back(lesson_indexes);
+            } else {
+                basic_constraints->general_constraints.push_back(
+                    new SameStartingTime(lesson_indexes, weight));
+            }
+        } else {
+            qFatal() << "Unexpected constraint:" << ntype;
         }
     }
     return constraints;
@@ -87,15 +95,29 @@ void localConstraints(BasicConstraints *basic_constraints)
 {
     // Build the BasicConstraints::lessons list, placing the fixed lessons
     // and returning a list of the unfixed ones.
-    auto unplaced = basic_constraints->initial_place_lessons();
+    basic_constraints->initial_place_lessons();
     // Collect the hard local constraints which specify possible
     // starting times for individual lessons or lessons fulfilling
     // certain conditions. Also the lesson lengths are taken into account.
     time_constraints tconstraints = activity_slot_constraints(basic_constraints);
-    // Place the (unfixed) lessons which have their starting times specified.
-    // Also set up the start_cells field (for unfixed lessons). This field
+    // Set up the slot_constraints field (for unfixed lessons). This field
     // specifies which slots can potentially be used for the lesson – assuming
     // no basic clashes.
-    basic_constraints->initial_place_lessons2(unplaced, tconstraints);
+    // Parallel lessons need to share slot_constraints.
+    basic_constraints->setup_parallels(tconstraints.parallel_lessons);
+    // Include further restrictions on starting times, from constraints
+    // concerning multiple activities
+    multi_slot_constraints(
+        basic_constraints,
+        tconstraints.activities_starting_times,
+        false
+    );
+    multi_slot_constraints(
+        basic_constraints,
+        tconstraints.activities_slots,
+        true
+    );
+    // Place the (unfixed) lessons which have their starting times specified.
+    basic_constraints->initial_place_lessons2(tconstraints);
 }
 

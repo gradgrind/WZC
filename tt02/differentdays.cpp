@@ -22,63 +22,52 @@
  */
 DifferentDays::DifferentDays(
     BasicConstraints *constraint_data,
-    QJsonObject node) : Constraint()
+    QJsonObject node)
 {
     penalty = node.value("WEIGHT").toInt();
     gap = node.value("NDAYS").toInt();
-    auto llist = node.value("LESSONS").toArray();
-    int n = llist.size();
-    lesson_indexes.resize(n);
-    for (int i = 0; i < n; ++i) {
-        lesson_indexes[i] = constraint_data->lid2lix[llist[i].toInt()];
+    // Flag days occupied by fixed lessons,
+    // add non-fixed lessons to "lesson_indexes".
+    fixed.resize(constraint_data->ndays, false);
+    const auto llist = node.value("LESSONS").toArray();
+    for (const auto &i : llist) {
+        int lix = constraint_data->lid2lix[i.toInt()];
+        const LessonData &ld{constraint_data->lessons[lix]};
+        if (ld.fixed) {
+            fixed[ld.day] = true;
+        } else {
+            lesson_indexes.push_back(lix);
+        }
     }
-//TODO--
-//    qDebug() << "DifferentDays" << penalty << lesson_indexes;
 }
 
-// Handle constraints "different days" and "days between".
+// Count the lessons not meeting the criterion, summing the penalties.
 int DifferentDays::evaluate(BasicConstraints *constraint_data)
 {
-    std::vector<int> dlist;
-    dlist.reserve(lesson_indexes.size());
-    for (int lid : lesson_indexes) {
-        int d = constraint_data->lessons[lid].day;
+    std::vector<bool> dmap{fixed};
+    int penalties{0};
+    for (int lix : lesson_indexes) {
+        int d = constraint_data->lessons[lix].day;
         if (d < 0) continue; // unplaced lesson
-        for (int dd : dlist) {
-            //TODO: It is perhaps possible that more than two lessons share a day.
-            // Should this increase the penalty?
-            if (dd == d) return penalty; // "different days" only
-            if (abs(dd - d) < gap) return penalty; // any gap
-        }
-        dlist.push_back(d);
-    }
-    return 0;
-}
-
-//TODO: I'm not sure about this one. If it is used for a lessons which is
-// currently placed, that placement would block a placement on the same day!
-// This method would be called by the allocation algorithm, before all
-// lessons are placed. As such it would only be used for hard constraints,
-// so the penalty value is irrelevant. Also, any included lessons will
-// already satisfy the constraint. It is a test to discover whether a new
-// lesson placement also satisfies the constraint. But the lesson to be
-// tested can already have a placement.
-// I don't really want to change the lesson data before the new placement is
-// done, so maybe I would need, for example, the lesson-id too. There may,
-// however, be a better way of doing it ...
-bool DifferentDays::test(BasicConstraints *constraint_data, int l_id, int day)
-{
-    for (int lid : lesson_indexes) {
-        int d = constraint_data->lessons[lid].day;
-        if (d < 0) continue; // unplaced lesson
-        if (lid == l_id) {
-            if (d == day) return true;
+        if (dmap[d]) {
+            penalties += penalty;
             continue;
         }
-        if (d == day) {
-            return false; // "different days" only
+        if (gap > 1) {
+            for (int gg = 1; gg < gap; ++gg) {
+                int dd = d - gg;
+                if (dd >= 0 && dmap[dd]) {
+                    penalties += penalty;
+                    break;
+                }
+                dd = d + gg;
+                if (dd < constraint_data->ndays && dmap[dd]) {
+                    penalties += penalty;
+                    break;
+                }
+            }
         }
-        if (abs(day - d) < gap) return false; // any gap
+        dmap[d] = true;
     }
-    return true;
+    return penalties;
 }

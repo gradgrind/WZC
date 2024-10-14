@@ -1,6 +1,6 @@
 # Local Constraints
 
-These are constraints which are concerned with local properties of lessons: preferred time slots, relationships to other lessons which can be tested without the whole timetable being complete.
+These are constraints which are concerned with local properties of lessons: preferred time slots, relationships to other lessons which can be tested without the whole timetable being complete. The hard versions of these constraints may be treated as "very hard", meaning that it would be impossible to generate a complete timetable which broke one of these constraints.
 
 ## SAME_STARTING_TIME
 
@@ -22,4 +22,4 @@ This is very similar to ACTIVITIES_PREFERRED_STARTING_TIMES, but  for lessons wi
 
 ## DAYS_BETWEEN
 
-This specifies a list of lessons which should not be on the same day. The desired distance can be specified as a number of days (1 means simply not on the same day). It can be hard or soft.
+This specifies a list of lessons which should not be on the same day. The desired distance can be specified as a number of days (1 means simply not on the same day). It can be hard or soft, but only the hard version with distance 1 may be treated as "very hard".
