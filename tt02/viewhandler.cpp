@@ -10,6 +10,7 @@
 #include <QListWidget>
 #include <QFileDialog>
 #include <QJsonArray>
+#include <QMessageBox>
 
 const int BREAK_MINS = 10;
 
@@ -112,43 +113,98 @@ void ViewHandler::new_timetable_data()
     if (basic_constraints) delete basic_constraints;
     basic_constraints = new BasicConstraints(dbdata);
     localConstraints(basic_constraints);
-    grid->setClickHandler([this](int d, int h, Tile *t){
-        onClick(d, h, t);
+    grid->setClickHandler([this](int d, int h, Tile *t, int km){
+        onClick(d, h, t, km);
     });
 }
 
-void ViewHandler::onClick(int day, int hour, Tile *tile) {
-    if (tile) {
-        int lid = tile->lid;
-        int lix = basic_constraints->lid2lix[lid];
-        auto &ldata = basic_constraints->lessons[lix];
-        qDebug() << "TILE CLICKED:" << day << hour
-                 << QString("[%1|%2]").arg(tile->ref).arg(lid);
-        grid->clearCellOK();
-        // Select tile
-        grid->select_tile(tile);
-        // Seek possible placements
-        //TODO: parallel lessons
-        //grid->clearCellOK();
+void ViewHandler::onClick(int day, int hour, Tile *tile, int keymod)
+{
+    if (keymod == 0) {
+        if (tile) {
+            qDebug() << "TILE CLICKED:" << day << hour
+                     << QString("[%1|%2]").arg(tile->ref).arg(tile->lid);
+            selected_lid = tile->lid;
+            show_available(tile);
+        } else {
+            qDebug() << "CELL CLICKED:" << day << hour;
+            // Unselect tile
+            selected_lid = 0;
+            grid->select_tile(nullptr);
+            grid->clearCellOK();
+        }
+    } else if (keymod == 1) {
+        qDebug() << "$$$ keymod =" << keymod;
+        // If there is a selected lesson, try to place it.
+        // If there are conflicts, show the conflicts and offer to replace
+        // them?
+        // It would be good to handle the case where the only clash is with
+        // a flexible room differently – this should need no replacement.
+        if (selected_lid != 0) {
+            int lix = basic_constraints->lid2lix.at(selected_lid);
+            auto clashes = basic_constraints->find_clashes(lix, day, hour);
+            if (clashes.empty()) {
+                qDebug() << "PLACE:"
+                         << basic_constraints->pr_lesson(lix);
+            } else {
+                qDebug() << "CLASHES:" << basic_constraints->pr_lesson(lix);
+                qDebug() << "   ..." << clashes;
+                QMessageBox msgBox;
+                msgBox.setText("Conflicting Lessons. Do you want to remove them?");
+                QStringList qsl;
+                for (const auto &clash : clashes) {
+                    QString mstr = QString::fromStdString(clash.second) + ": ";
+                    if (clash.first < 0) mstr += "*BLOCKED LESSON*";
+                    else mstr += basic_constraints->pr_lesson(clash.first);
+                    qsl.append(mstr);
+                }
+                msgBox.setInformativeText(qsl.join("\n"));
+                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                msgBox.setDefaultButton(QMessageBox::Yes);
+                msgBox.setIcon(QMessageBox::Warning);
+                int ret = msgBox.exec();
 
-        if (ldata.fixed) {
-            qDebug() << "FIXED";
-            return;
+
+            }
         }
 
-        auto freeslots = basic_constraints->available_slots(lix);
-        QString out{"  -> free:"};
-        for (auto fs : freeslots) out += QString(" %1.%2")
-            .arg(fs.day).arg(fs.hour);
-        qDebug() << out;
-        for (const auto [d, h] : freeslots) {
-            grid->setCellOK(d, h);
-        }
-    } else {
-        qDebug() << "CELL CLICKED:" << day << hour;
-        // Unselect tile
-        grid->select_tile(nullptr);
-        grid->clearCellOK();
+
+        // After a change, update the database. Either update the internal
+        // data structures (if that is not too complicated) or reload them
+        // from the modified database. In the case of these simple placement
+        // and removal operations it may well be possible to avoid a complete
+        // reloading.
+
+        // Reset grid selection (somehow).
+
+        // If there is no selected lesson, do nothing (maybe report it).
+    } else qDebug() << "$$$ keymod =" << keymod;
+}
+
+void ViewHandler::show_available(Tile *tile)
+{
+    int lid = tile->lid;
+    int lix = basic_constraints->lid2lix[lid];
+    auto &ldata = basic_constraints->lessons[lix];
+    grid->clearCellOK();
+    // Select tile
+    grid->select_tile(tile);
+    // Seek possible placements
+    //TODO: parallel lessons
+    //grid->clearCellOK();
+
+    if (ldata.fixed) {
+        qDebug() << "FIXED";
+        return;
+    }
+
+    auto freeslots = basic_constraints->available_slots(lix);
+    QString out{"  -> free:"};
+    for (auto fs : freeslots) out += QString(" %1.%2")
+                   .arg(fs.day).arg(fs.hour);
+    qDebug() << out;
+    for (const auto [d, h] : freeslots) {
+        grid->setCellOK(d, h);
     }
 }
 

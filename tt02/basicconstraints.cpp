@@ -43,12 +43,22 @@ QString BasicConstraints::pr_lesson(int lix)
     }
     auto glist = g.join(",");
 
-    QString timeslot;
-    if (ldata.day >= 0) timeslot = QString("@%1.%2")
-        .arg(ldata.day).arg(ldata.hour);
+    QStringList r;
+    auto rooms = cnode.value("FIXED_ROOMS").toArray();
+    for (auto r0 : rooms) {
+        r.append(db_data->get_tag(r0.toInt()));
+    }
+    auto rlist = r.join(",");
 
-    return QString("[%1]%2(%3):%4/%5%6").arg(ldata.lesson_id).arg(
-        sbj, QString::number(ldata.length), glist, tlist, timeslot);
+    QString timeslot;
+    if (ldata.day >= 0) {
+        if (ldata.flexible_room >= 0) rlist += "/"
+                     + db_data->get_tag(i_r.at(ldata.flexible_room));
+        timeslot = QString("@%1.%2").arg(ldata.day).arg(ldata.hour);
+    }
+
+    return QString("[%1]%2(%3):%4/%5%6{%7}").arg(ldata.lesson_id).arg(
+        sbj, QString::number(ldata.length), glist, tlist, timeslot, rlist);
 }
 
 QString BasicConstraints::pr_week_block_sg(int ix)

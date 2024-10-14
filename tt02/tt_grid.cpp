@@ -49,7 +49,7 @@ void TT_Grid::handle_click(QList<QGraphicsItem *> items, int keymod)
     }
 
     //TODO: What to do with keymod?
-    if (click_handler) click_handler(cellx, celly, tile);
+    if (click_handler) click_handler(cellx, celly, tile, keymod);
 }
 
 void TT_Grid::handle_context_menu(QList<QGraphicsItem *> items)
@@ -192,7 +192,7 @@ void TT_Grid::place_tile(Tile *tile, int col, int row)
 }
 
 void TT_Grid::setClickHandler(
-    std::function<void (int day, int hour, Tile *tile)> handler)
+    std::function<void (int day, int hour, Tile *tile, int keymode)> handler)
 {
     click_handler = handler;
 }

@@ -37,8 +37,7 @@ public:
 
     void setup_grid();
     void place_tile(Tile *tile, int col, int row);
-    void setClickHandler(
-        std::function<void (int day, int hour, Tile *tile)> handler);
+    void setClickHandler(std::function<void (int, int, Tile *, int)> handler);
     void select_tile(Tile *tile);
     void setCellOK(int day, int hour);
     void clearCellOK();
@@ -71,7 +70,8 @@ private:
     void handle_click(QList<QGraphicsItem *> items, int keymod);
     void handle_context_menu(QList<QGraphicsItem *> items);
     void handle_hover(HoverRectItem*, bool);
-    std::function<void (int day, int hour, Tile *tile)> click_handler;
+    std::function<void (int day, int hour, Tile *tile, int keymode)>
+        click_handler;
     QGraphicsRectItem *selection_rect = nullptr;
     QList<Cell*> ok_cells;
 };

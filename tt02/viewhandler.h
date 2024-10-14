@@ -36,6 +36,7 @@ private:
     QGraphicsView *view;
     TT_Grid *grid = nullptr;
     BasicConstraints *basic_constraints = nullptr;
+    int selected_lid{0};
 
 private slots:
     void handle_load_file();
@@ -44,7 +45,8 @@ private slots:
     void handle_rb_teacher();
     void handle_rb_room();
     void handle_item_chosen(int index);
-    void onClick(int day, int hour, Tile *tile);
+    void onClick(int day, int hour, Tile *tile, int keymod);
+    void show_available(Tile *tile);
 };
 
 #endif // VIEWHANDLERS_H
