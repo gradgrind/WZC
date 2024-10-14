@@ -148,10 +148,6 @@ private:
     void place_fixed_lesson(int lesson_index);
     void slot_blockers();
     int set_start_cells(LessonData &ldata, slot_constraint &week_slots);
-    // start_cells_list contains the slot_constraint objects for the lessons.
-    // Indexing is by index. The first entry is a default entry which blocks
-    // and shouldn't be changed.
-    std::vector<slot_constraint> start_cells_list;
 
     std::vector<FlexiRoom> flexirooms; // used internally for pending rooms
     // Return a list of possible starting slots in found_slots:
@@ -160,6 +156,10 @@ private:
     std::vector<bool> blocked_days; // used internally by find_slots
     // Test the given slot:
     bool test_slot(int lesson_index, int day, int hour);
+    // start_cells_list contains the slot_constraint objects for the lessons.
+    // Indexing is by index. The first entry is a default entry which blocks
+    // and shouldn't be changed.
+    std::vector<slot_constraint> start_cells_list;
 };
 
 #endif // BASICCONSTRAINTS_H

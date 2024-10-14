@@ -52,8 +52,9 @@ QString BasicConstraints::pr_lesson(int lix)
 
     QString timeslot;
     if (ldata.day >= 0) {
-        if (ldata.flexible_room >= 0) rlist += "/"
-                     + db_data->get_tag(i_r.at(ldata.flexible_room));
+        if (ldata.flexible_room >= 0) {
+            rlist += "/" + db_data->get_tag(i_r.at(ldata.flexible_room));
+        }
         timeslot = QString("@%1.%2").arg(ldata.day).arg(ldata.hour);
     }
 
@@ -340,6 +341,7 @@ void BasicConstraints::initial_place_lessons()
             ld.day = d;
             int h = db_data->hours.value(lnode.value("HOUR").toInt());
             ld.hour = h;
+            ld.flexible_room = -1;
             QJsonValue cr = lnode.value("FLEXIBLE_ROOM");
             if (!cr.isUndefined())
                 flexirooms.push_back({lix, r2i.value(cr.toInt())});
@@ -437,7 +439,6 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
     for (int lix = 1; lix < lessons.size(); ++lix) {
         auto &ldata = lessons.at(lix);
         if (ldata.fixed) continue;
-
         find_slots(lix, false);
         if (found_slots.empty())
             qFatal() << "No timeslots are available for lesson"
@@ -533,29 +534,14 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 bool BasicConstraints::test_single_slot(
     LessonData &ldata, int day, int hour)
 {
-    //qDebug() << "  test_single_slot" << pr_lesson(lid2lix[ldata.lesson_id]);
     for (int i : ldata.atomic_groups) {
-        if (sg_weeks[i][day][hour]) {
-            /*
-            int lixk = sg_weeks[i][day][hour];
-            if (lixk >= 0)
-            qDebug() << "AG:" << hour << i_sg.at(i)
-                     << lixk << pr_lesson(lixk);
-            */
-            return false;
-        }
+        if (sg_weeks[i][day][hour]) return false;
     }
     for (int i : ldata.teachers) {
-        if (t_weeks[i][day][hour]) {
-            //qDebug() << "T:" << hour << i;
-            return false;
-        }
+        if (t_weeks[i][day][hour]) return false;
     }
     for (int i : ldata.fixed_rooms) {
-        if (r_weeks[i][day][hour]) {
-            //qDebug() << "R:" << hour << i;
-            return false;
-        }
+        if (r_weeks[i][day][hour]) return false;
     }
     return true;
 }
@@ -566,7 +552,6 @@ bool BasicConstraints::test_single_slot(
 bool BasicConstraints::test_possible_place(
     LessonData &ldata, int day, int hour)
 {
-    //qDebug() << "  test_possible_place" << pr_lesson(lid2lix[ldata.lesson_id]);
     for (int lx = 0; lx < ldata.length; ++lx) {
         if (!test_single_slot(ldata, day, hour+lx)) return false;
     }
@@ -712,10 +697,10 @@ std::map<int, std::string> BasicConstraints::find_clashes(
     }
     // Now test the slot
     find_clashes2(clashmap, ldata, day, hour);
-    // and thet parallel lessons
+    // and the parallel lessons
     for (int lixp : ldata.parallel_lessons) {
         LessonData &ldp = lessons[lixp];
-        find_clashes2(clashmap, ldata, day, hour);
+        find_clashes2(clashmap, ldp, day, hour);
     }
     return clashmap;
 }
@@ -728,7 +713,9 @@ void BasicConstraints::find_clashes2(
         int h = hour + lx;
         for (int i : ldata.atomic_groups) {
             int lixk = sg_weeks[i][day][h];
-            if (lixk != 0) clashmap[lixk] = "GROUP";
+            if (lixk != 0) {
+                clashmap[lixk] = "GROUP";
+            }
         }
         for (int i : ldata.teachers) {
             int lixk = t_weeks[i][day][h];

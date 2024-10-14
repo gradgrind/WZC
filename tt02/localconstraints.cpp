@@ -72,6 +72,7 @@ time_constraints activity_slot_constraints(BasicConstraints *basic_constraints)
             }
         } else if (ntype == "SAME_STARTING_TIME") {
             auto llist = node.value("LESSONS").toArray();
+            //qDebug() << "$$$ SAME_STARTING_TIME:" << llist;
             int n = llist.size();
             std::vector<int> lesson_indexes(n);
             for (int i = 0; i < n; ++i) {
