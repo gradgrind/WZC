@@ -47,7 +47,7 @@ QString BasicConstraints::pr_lesson(int lix)
     if (ldata.day >= 0) timeslot = QString("@%1.%2")
         .arg(ldata.day).arg(ldata.hour);
 
-    return QString("%1(%2):%3/%4%5").arg(
+    return QString("[%1]%2(%3):%4/%5%6").arg(ldata.lesson_id).arg(
         sbj, QString::number(ldata.length), glist, tlist, timeslot);
 }
 
@@ -428,7 +428,7 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         auto &ldata = lessons.at(lix);
         if (ldata.fixed) continue;
 
-        find_slots(lix);
+        find_slots(lix, false);
         if (found_slots.empty())
             qFatal() << "No timeslots are available for lesson"
                      << ldata.lesson_id;
@@ -437,7 +437,9 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
             // Check that the available slot is the desired one.
             if (ldata.day < 0 || (ldata.day == d && ldata.hour == h)) {
                 qWarning() << "Lesson has only one available time-slot:"
-                           << pr_lesson(lix) << " ... fixing it";
+                           << pr_lesson(lix) << " ... making it \"fixed\"";
+                //qDebug() << "§§§ slot_constraints:" << start_cells_list.at(
+                //    ldata.slot_constraint_index);
                 ldata.fixed = true;
                 // Now do the placement
                 ldata.day = d;
@@ -564,7 +566,10 @@ bool BasicConstraints::test_possible_place(
 // Find slots (day, hour) where the given lesson can be placed.
 // The resulting list of slots is returned in the member variable found_slots.
 // This is in order to avoid unnecessary memory management.
-void BasicConstraints::find_slots(int lesson_index)
+// If parameter "full" is not true, the relationships to other lessons
+// will only be checked with "fixed" lessons (this is needed in the
+// initialization process).
+void BasicConstraints::find_slots(int lesson_index, bool full)
 {
     LessonData &ldata = lessons[lesson_index];
     found_slots.clear(); // doesn't reduce the capacity
@@ -573,16 +578,20 @@ void BasicConstraints::find_slots(int lesson_index)
     for (int d = 0; d < ndays; ++d) blocked_days[d] = false;
     for (const auto lix2 : ldata.different_days) {
         auto &l2 = lessons.at(lix2);
-        int d2 = l2.day;
-        if (d2 >= 0) blocked_days[d2] = true;
+        if (full || l2.fixed) {
+            int d2 = l2.day;
+            if (d2 >= 0) blocked_days[d2] = true;
+        }
     }
     // Now the parallel lessons, if any.
     for (int lixp : ldata.parallel_lessons) {
         LessonData &lp = lessons[lixp];
         for (const auto lix2 : lp.different_days) {
             auto &l2 = lessons.at(lix2);
-            int d2 = l2.day;
-            if (d2 >= 0) blocked_days[d2] = true;
+            if (full || l2.fixed) {
+                int d2 = l2.day;
+                if (d2 >= 0) blocked_days[d2] = true;
+            }
         }
     }
 
@@ -657,16 +666,21 @@ std::vector<TTSlot> BasicConstraints::available_slots(int lesson_index)
     return found_slots;
 }
 
+//TODO: Still some tweaking to do
+
 // Test the possibility of placing the given lesson in the geiven time-slot,
 // returning some details of the conflicts. For each conflicting lesson
 // there is an entry in the returned mapping. If there is a conflict with
 // a blocked time, the lesson index is -1.
 
-// For automatic placement, only statically available slots shoudl be tested,
+// For automatic placement, only statically available slots should be tested,
 // to avoid fixed lessons and otherwise blocked slots. Also, it may be
 // possible to construct a somewhat faster version, as only the lessons –
 // no details – are needed. Perhaps using a single result mapping (passing
 // as reference) might help.
+
+// For manual placement, the room check should perhaps not count clashes with
+// flexible rooms (which can be replaced if the new lesson is placed there).
 std::map<int, std::string> BasicConstraints::find_clashes(
     int lesson_index, int day, int hour)
 {

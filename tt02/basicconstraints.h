@@ -155,7 +155,7 @@ private:
 
     std::vector<FlexiRoom> flexirooms; // used internally for pending rooms
     // Return a list of possible starting slots in found_slots:
-    void find_slots(int lesson_index);
+    void find_slots(int lesson_index, bool full = true);
     std::vector<TTSlot> found_slots;
     std::vector<bool> blocked_days; // used internally by find_slots
     // Test the given slot:
