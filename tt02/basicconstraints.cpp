@@ -341,7 +341,6 @@ void BasicConstraints::initial_place_lessons()
             ld.day = d;
             int h = db_data->hours.value(lnode.value("HOUR").toInt());
             ld.hour = h;
-            ld.flexible_room = -1;
             QJsonValue cr = lnode.value("FLEXIBLE_ROOM");
             if (!cr.isUndefined())
                 flexirooms.push_back({lix, r2i.value(cr.toInt())});
@@ -370,7 +369,6 @@ void BasicConstraints::place_lesson(int lesson_index)
             r_weeks.at(r).at(ldp.day).at(hh) = lesson_index;
         }
     }
-    ldp.flexible_room = -1; // allocate later, from flexirooms list
 }
 
 void BasicConstraints::place_fixed_lesson(int lesson_index)
@@ -535,13 +533,13 @@ bool BasicConstraints::test_single_slot(
     LessonData &ldata, int day, int hour)
 {
     for (int i : ldata.atomic_groups) {
-        if (sg_weeks[i][day][hour]) return false;
+        if (sg_weeks[i][day][hour] != 0) return false;
     }
     for (int i : ldata.teachers) {
-        if (t_weeks[i][day][hour]) return false;
+        if (t_weeks[i][day][hour] != 0) return false;
     }
     for (int i : ldata.fixed_rooms) {
-        if (r_weeks[i][day][hour]) return false;
+        if (r_weeks[i][day][hour] != 0) return false;
     }
     return true;
 }
@@ -651,79 +649,97 @@ bool BasicConstraints::test_slot(int lesson_index, int day, int hour)
     return false;
 }
 
-std::vector<TTSlot> BasicConstraints::available_slots(int lesson_index)
-// A version of find_slots for more straightforward use.
+
+//TODO: Adapt this to use find_clashes – it is then only for manual use.
+// The result should distinguish between slots that are completely blocked
+// (unavailable resource or clash with fixed lesson), those that can be
+// occupied by replacing one or more lessons, those where the blockage is
+// only caused by flexible rooms, and those without a blockage.
+std::map<TTSlot, std::set<ClashItem>>
+    BasicConstraints::available_slots(int lesson_index)
 {
     LessonData &ldata = lessons[lesson_index];
-    //qDebug() << "START-CELLS:"
-    //         << start_cells_list.at(ldata.slot_constraint_index);
-    find_slots(lesson_index);
-    return found_slots;
+    std::map<TTSlot, std::set<ClashItem>> result;
+    // Test the possible slots
+    auto &start_slots = start_cells_list[ldata.slot_constraint_index];
+    for (int d = 0; d < ndays; ++d) {
+        std::vector<int> &ssd = start_slots[d];
+        for (int h : ssd) {
+            auto clashes = find_clashes(lesson_index, d, h);
+            // Test parallel lessons
+            for (int lixp : ldata.parallel_lessons) {
+                clashes.merge(find_clashes(lixp, d, h));
+            }
+            result[{d, h}] = clashes;
+        }
+    }
+    return result;
 }
-
-//TODO: Still some tweaking to do
 
 // Test the possibility of placing the given lesson in the geiven time-slot,
 // returning some details of the conflicts. For each conflicting lesson
 // there is an entry in the returned mapping. If there is a conflict with
 // a blocked time, the lesson index is -1.
 
-// For automatic placement, only statically available slots should be tested,
-// to avoid fixed lessons and otherwise blocked slots. Also, it may be
-// possible to construct a somewhat faster version, as only the lessons –
-// no details – are needed. Perhaps using a single result mapping (passing
-// as reference) might help.
+// This function is designed for manual checking. The room check has a special
+// value for clashes with flexible rooms (which can be replaced if the new
+// lesson is placed there).
 
-// For manual placement, the room check should perhaps not count clashes with
-// flexible rooms (which can be replaced if the new lesson is placed there).
-std::map<int, std::string> BasicConstraints::find_clashes(
+//TODO: Special version for automatic replacements. Only statically available
+// slots should be tested, to avoid fixed lessons and otherwise blocked slots.
+// Also, only seek the blocking lessons (no details).
+// Don't regard flexible rooms as special cases?
+std::set<ClashItem> BasicConstraints::find_clashes(
     int lesson_index, int day, int hour)
 {
     LessonData &ldata = lessons[lesson_index];
-    std::map<int, std::string> clashmap;
+    std::set<ClashItem> clashset;
     // Get days blocked by different-days constraints.
     for (const auto lix2 : ldata.different_days) {
         auto &l2 = lessons.at(lix2);
-        if (l2.day == day) clashmap[lix2] = "DIFFERENT_DAYS";
+        if (l2.day == day) clashset.insert({lix2, DIFFERENT_DAYS});
     }
     // Now the parallel lessons, if any.
     for (int lixp : ldata.parallel_lessons) {
         LessonData &lp = lessons[lixp];
         for (const auto lix2 : lp.different_days) {
             auto &l2 = lessons.at(lix2);
-            if (l2.day == day) clashmap[lix2] =
-                std::string("DIFFERENT_DAYS//") + std::to_string(lixp);
+            if (l2.day == day) clashset.insert({lix2, DIFFERENT_DAYS});
         }
     }
     // Now test the slot
-    find_clashes2(clashmap, ldata, day, hour);
+    find_clashes2(clashset, ldata, day, hour);
     // and the parallel lessons
     for (int lixp : ldata.parallel_lessons) {
         LessonData &ldp = lessons[lixp];
-        find_clashes2(clashmap, ldp, day, hour);
+        find_clashes2(clashset, ldp, day, hour);
     }
-    return clashmap;
+    return clashset;
 }
 
 void BasicConstraints::find_clashes2(
-    std::map<int, std::string> &clashmap,
+    std::set<ClashItem> &clashset,
     LessonData &ldata, int day, int hour)
 {
     for (int lx = 0; lx < ldata.length; ++lx) {
         int h = hour + lx;
+        for (int i : ldata.fixed_rooms) {
+            int lixk = r_weeks[i][day][h];
+            if (lixk != 0) {
+                // Check whether it is only a flexible-room clash.
+                // If so, add it only if it is the first clash for this lesson.
+                auto &lk = lessons[lixk];
+                if (lk.flexible_room == i) clashset.insert({lixk, FLEXIROOM});
+                else clashset.insert({lixk, ROOM});
+            }
+        }
         for (int i : ldata.atomic_groups) {
             int lixk = sg_weeks[i][day][h];
-            if (lixk != 0) {
-                clashmap[lixk] = "GROUP";
-            }
+            if (lixk != 0) clashset.insert({lixk, GROUP});
         }
         for (int i : ldata.teachers) {
             int lixk = t_weeks[i][day][h];
-            if (lixk != 0) clashmap[lixk] = "TEACHER";
-        }
-        for (int i : ldata.fixed_rooms) {
-            int lixk = r_weeks[i][day][h];
-            if (lixk != 0) clashmap[lixk] = "ROOM";
+            if (lixk != 0) clashset.insert({lixk, TEACHER});
         }
     }
 }

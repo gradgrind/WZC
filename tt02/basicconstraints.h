@@ -2,12 +2,19 @@
 #define BASICCONSTRAINTS_H
 
 #include "database.h"
+#include <set>
 
 // Vector has one list per day of available slots
 typedef std::vector<std::vector<int>> slot_constraint;
 
 struct TTSlot {
     int day, hour;
+
+    bool operator< (const TTSlot& other) const{
+        return day < other.day
+               || (day == other.day
+                   && hour < other.hour);
+    }
 };
 
 inline bool is_hard(int w) { return (w == 10); };
@@ -66,8 +73,8 @@ struct LessonData{
     bool fixed{false};
 
     int day{-1}; // -1 indicates unplaced lesson
-    int hour;           // only valid when day >= 0
-    int flexible_room;  // only valid when day >= 0
+    int hour;           // field only valid when day >= 0
+    int flexible_room{-1};  // no room, field only valid when day >= 0
 
     // This indexes the structure start_cells_list in the BasicConstraints
     // object. The indexed item contains a list of possible starting hours for
@@ -82,6 +89,31 @@ struct LessonData{
 struct FlexiRoom {
     int lesson_index;
     int room_index;
+};
+
+const int CLASH_FLEXIROOM = -1;
+const int CLASH_ROOM = 1;
+const int CLASH_TEACHER = 2;
+const int CLASH_GROUP = 3;
+const int CLASH_DIFFERENT_DAYS = 100;
+
+enum ClashType {
+    FLEXIROOM = -1,
+    ROOM = 1,
+    TEACHER,
+    GROUP,
+    DIFFERENT_DAYS,
+};
+
+struct ClashItem {
+    int lesson_index;
+    ClashType ctype;
+
+    bool operator< (const ClashItem& other) const{
+        return lesson_index < other.lesson_index
+               || (lesson_index == other.lesson_index
+                       && ctype < other.ctype);
+    }
 };
 
 class BasicConstraints
@@ -104,8 +136,7 @@ public:
     void initial_place_lessons();
     void initial_place_lessons2(time_constraints &tconstraints);
     bool test_single_slot(LessonData &ldata, int day, int hour);
-    std::map<int, std::string> find_clashes(
-        int lesson_index, int day, int hour);
+    std::set<ClashItem> find_clashes(int lesson_index, int day, int hour);
 
     DBData * db_data;
     int ndays;
@@ -135,15 +166,14 @@ public:
     std::vector<LessonData> lessons;
     std::vector<Constraint *> general_constraints;
 
-    std::vector<TTSlot> available_slots(int lesson_index);
+    std::map<TTSlot, std::set<ClashItem>> available_slots(int lesson_index);
     void merge_slot_constraints(
         LessonData &ldata, const slot_constraint &newslots);
     void setup_parallels(slot_constraint &parallels);
 
 private:
-    void find_clashes2(
-        std::map<int, std::string> &clashmap,
-        LessonData &ldata, int day, int hour);
+    void find_clashes2(std::set<ClashItem> &clashset,
+                       LessonData &ldata, int day, int hour);
     void place_lesson(int lesson_index);
     void place_fixed_lesson(int lesson_index);
     void slot_blockers();

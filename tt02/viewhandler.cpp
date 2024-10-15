@@ -120,10 +120,10 @@ void ViewHandler::new_timetable_data()
 
 void ViewHandler::onClick(int day, int hour, Tile *tile, int keymod)
 {
+    // It would be good to handle the case where the only clash is with
+    // a flexible room differently – this should need no replacement.
     if (keymod == 0) {
         if (tile) {
-            qDebug() << "TILE CLICKED:" << day << hour
-                     << QString("[%1|%2]").arg(tile->ref).arg(tile->lid);
             selected_lid = tile->lid;
             show_available(tile);
         } else {
@@ -133,39 +133,53 @@ void ViewHandler::onClick(int day, int hour, Tile *tile, int keymod)
             grid->select_tile(nullptr);
             grid->clearCellOK();
         }
-    } else if (keymod == 1) {
-        qDebug() << "$$$ keymod =" << keymod;
-        // If there is a selected lesson, try to place it.
-        // If there are conflicts, show the conflicts and offer to replace
-        // them?
-        // It would be good to handle the case where the only clash is with
-        // a flexible room differently – this should need no replacement.
+        return;
+    }
+    if (keymod == 1) {
         if (selected_lid != 0) {
+            // There is a selected lesson, try to place it.
             int lix = basic_constraints->lid2lix.at(selected_lid);
             auto clashes = basic_constraints->find_clashes(lix, day, hour);
             if (clashes.empty()) {
                 qDebug() << "PLACE:"
                          << basic_constraints->pr_lesson(lix);
             } else {
-                qDebug() << "CLASHES:" << basic_constraints->pr_lesson(lix);
-                qDebug() << "   ..." << clashes;
-                QMessageBox msgBox;
-                msgBox.setText("Conflicting Lessons. Do you want to remove them?");
-                QStringList qsl;
+                // There are conflicts. Display them and offer to replace them.
                 for (const auto &clash : clashes) {
-                    QString mstr = QString::fromStdString(clash.second) + ": ";
-                    if (clash.first < 0) mstr += "*BLOCKED LESSON*";
-                    else mstr += basic_constraints->pr_lesson(clash.first);
-                    qsl.append(mstr);
+                    if (clash.ctype != FLEXIROOM) goto blocked;
                 }
-                msgBox.setInformativeText(qsl.join("\n"));
-                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-                msgBox.setDefaultButton(QMessageBox::Yes);
-                msgBox.setIcon(QMessageBox::Warning);
-                int ret = msgBox.exec();
-
-
+                qDebug() << "PLACE (CLEAR FLEXIROOM):"
+                         << basic_constraints->pr_lesson(lix);
             }
+            return;
+
+        blocked:
+
+            QMessageBox msgBox;
+            msgBox.setText("Conflicting Lessons. Do you want to remove them?");
+//TODO? Reorganize the display?
+// The DetailedText can have scroll-bars, but is initially hidden.
+            msgBox.setDetailedText(
+                QString("Place ") + basic_constraints->pr_lesson(lix));
+            QStringList qsl;
+            for (const auto &clash : clashes) {
+                QString mstr = QString::number(clash.ctype) + ": ";
+                if (clash.lesson_index < 0) mstr += "*BLOCKED LESSON*";
+                else mstr += basic_constraints
+                                ->pr_lesson(clash.lesson_index);
+                qsl.append(mstr);
+            }
+            msgBox.setInformativeText(qsl.join("\n"));
+            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            msgBox.setDefaultButton(QMessageBox::Yes);
+            msgBox.setIcon(QMessageBox::Warning);
+            int ret = msgBox.exec();
+
+
+
+        } else {
+            QMessageBox::information(
+                this, "Place Lesson", "No Lesson is Selected.");
         }
 
 
@@ -198,13 +212,30 @@ void ViewHandler::show_available(Tile *tile)
         return;
     }
 
+    //TODO: Maybe each lesson cell in the grid could have an overlay
+    // "highlight" rectangle, just inside the border, perhaps not opaque,
+    // which can be shown in various colours?
+
     auto freeslots = basic_constraints->available_slots(lix);
     QString out{"  -> free:"};
-    for (auto fs : freeslots) out += QString(" %1.%2")
-                   .arg(fs.day).arg(fs.hour);
-    qDebug() << out;
-    for (const auto [d, h] : freeslots) {
-        grid->setCellOK(d, h);
+
+    for (auto const& [ttslot, clashes] : freeslots)
+    {
+        out += QString(" %1.%2").arg(ttslot.day).arg(ttslot.hour);
+
+        if (clashes.empty()) {
+            grid->setCellOK(ttslot.day, ttslot.hour);
+            out += "(G)";
+            continue;
+        }
+        for (const auto &clash : clashes) {
+            if (clash.ctype != FLEXIROOM) goto blocked;
+        }
+        grid->setCellOK(ttslot.day, ttslot.hour);
+        out += "(B)";
+        continue;
+    blocked:
+        out += "(R)";
     }
 }
 
@@ -251,6 +282,7 @@ void ViewHandler::handle_rb_room()
 
 void ViewHandler::handle_item_chosen(int index)
 {
+    selected_lid = 0;
     grid->scene->clear();
     grid->setup_grid();
     // Which type of item is being handled?
