@@ -529,6 +529,10 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
 // This is a primitive test for a placement. It returns only true or false,
 // according to whether the placement is possible. It doesn't change
 // anything.
+// It doesn't check whether a package is clashing with itself. This is a
+// reasonable way to behave in most situations, as the lesson being tested
+// will generally not have a time-slot yet. This function should probably not
+// be used for lessons which do have a time-slot.
 bool BasicConstraints::test_single_slot(
     LessonData &ldata, int day, int hour)
 {

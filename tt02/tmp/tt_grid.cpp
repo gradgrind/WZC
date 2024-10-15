@@ -4,7 +4,26 @@ Cell::Cell(int x, int y)
     : Chip()
     , cellx{x}
     , celly{y}
-{}
+{
+    highlight = new QGraphicsRectItem();
+    highlight->hide();
+}
+
+//TODO: Don't override, set up the highlight completely separately from
+// the cell, as a new method, when the main grid tiles are made. Though the
+// question remains: if they are children of the Cells, can they be above
+// the Tiles?
+void Cell::set_size(qreal width, qreal height)
+{
+    Chip::set_size(width, height);
+    scene()->addItem(highlight);
+    highlight->setRect(2, 2, width - 4, height - 4);
+    auto pen = QPen(QColor("#a0ff00ff"));
+    pen.setWidth(3);
+    highlight->setPen(pen);
+    highlight->show();
+    highlight->setZValue(20);
+}
 
 TT_Grid::TT_Grid(
     QGraphicsView *view,
@@ -119,7 +138,6 @@ void TT_Grid::setup_grid()
         y += HOUR_HEIGHT;
         yi++;
     }
-    highlights.resize(daylist.size());
     cols.append(hheaders);
     qreal x = 0.0;
     int xi = 0;
@@ -134,8 +152,6 @@ void TT_Grid::setup_grid()
         rows.append(c);
         c->setPos(x, -HHEADERHEIGHT);
         int yi = 0;
-        auto &hlist = highlights[xi];
-        hlist.resize(hourlist.size());
         for(const QString &hour : std::as_const(hourlist)) {
             c = new Cell(xi, yi);
             c->set_size(DAY_WIDTH, HOUR_HEIGHT);
@@ -143,17 +159,6 @@ void TT_Grid::setup_grid()
             rows.append(c);
             scene->addItem(c);
             c->setPos(x, y);
-
-            auto highlight = new QGraphicsRectItem();
-            hlist[yi] = highlight;
-            scene->addItem(highlight);
-            highlight->setRect(0, 0, DAY_WIDTH - 4, HOUR_HEIGHT - 4);
-            highlight->setPos(x + 2, y + 2);
-            highlight->hide();
-            highlight->setZValue(10);
-            //TODO:
-            setHighlight(xi, yi, QColor("#80ffaa00"));
-
             y += HOUR_HEIGHT;
             yi++;
         }
@@ -178,7 +183,7 @@ void TT_Grid::setup_grid()
     selection_rect->setPen(
         QPen(QBrush(QColor("#FF" + SELECTIONCOLOUR)), GRIDLINEWIDTH));
     scene->addItem(selection_rect);
-    selection_rect->setZValue(20);
+    selection_rect->setZValue(50);
     selection_rect->hide();
 }
 
@@ -241,16 +246,6 @@ void TT_Grid::clearCellOK()
     ok_cells.clear();
 }
 
-void TT_Grid::setHighlight(int day, int hour, QColor colour)
-{
-    auto pen = QPen(colour);
-    pen.setWidth(2);
-    auto &highlight = highlights[day][hour];
-    highlight->setPen(pen);
-    colour.setAlpha(12);
-    highlight->setBrush(colour);
-    highlight->show();
-}
 
 Tile::Tile(
     TT_Grid *grid,

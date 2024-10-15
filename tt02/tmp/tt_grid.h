@@ -21,6 +21,9 @@ public:
 
     int cellx;
     int celly;
+
+    QGraphicsRectItem *highlight;
+    void set_size(qreal width, qreal height) override;
 };
 
 class Tile; // forward declaration
@@ -41,7 +44,6 @@ public:
     void select_tile(Tile *tile);
     void setCellOK(int day, int hour);
     void clearCellOK();
-    void setHighlight(int day, int hour, QColor colour);
 
     Canvas *canvas;
     Scene *scene;
@@ -75,7 +77,6 @@ private:
         click_handler;
     QGraphicsRectItem *selection_rect = nullptr;
     QList<Cell*> ok_cells;
-    QList<QList<QGraphicsRectItem *>> highlights;
 };
 
 class Tile : public Chip
