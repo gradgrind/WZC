@@ -91,12 +91,6 @@ struct FlexiRoom {
     int room_index;
 };
 
-const int CLASH_FLEXIROOM = -1;
-const int CLASH_ROOM = 1;
-const int CLASH_TEACHER = 2;
-const int CLASH_GROUP = 3;
-const int CLASH_DIFFERENT_DAYS = 100;
-
 enum ClashType {
     FLEXIROOM = -1,
     ROOM = 1,
@@ -173,7 +167,7 @@ public:
 
 private:
     void find_clashes2(std::set<ClashItem> &clashset,
-                       LessonData &ldata, int day, int hour);
+                       int lix, int day, int hour);
     void place_lesson(int lesson_index);
     void place_fixed_lesson(int lesson_index);
     void slot_blockers();

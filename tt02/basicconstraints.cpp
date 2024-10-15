@@ -684,11 +684,6 @@ std::map<TTSlot, std::set<ClashItem>>
 // This function is designed for manual checking. The room check has a special
 // value for clashes with flexible rooms (which can be replaced if the new
 // lesson is placed there).
-
-//TODO: Special version for automatic replacements. Only statically available
-// slots should be tested, to avoid fixed lessons and otherwise blocked slots.
-// Also, only seek the blocking lessons (no details).
-// Don't regard flexible rooms as special cases?
 std::set<ClashItem> BasicConstraints::find_clashes(
     int lesson_index, int day, int hour)
 {
@@ -708,24 +703,30 @@ std::set<ClashItem> BasicConstraints::find_clashes(
         }
     }
     // Now test the slot
-    find_clashes2(clashset, ldata, day, hour);
+    find_clashes2(clashset, lesson_index, day, hour);
     // and the parallel lessons
     for (int lixp : ldata.parallel_lessons) {
         LessonData &ldp = lessons[lixp];
-        find_clashes2(clashset, ldp, day, hour);
+        find_clashes2(clashset, lixp, day, hour);
     }
     return clashset;
 }
 
+//TODO: Special version for automatic replacements. Only statically available
+// slots should be tested, to avoid fixed lessons and otherwise blocked slots.
+// Also, only seek the blocking lessons (no details).
+// Don't regard flexible rooms as special cases?
+
 void BasicConstraints::find_clashes2(
-    std::set<ClashItem> &clashset,
-    LessonData &ldata, int day, int hour)
+    std::set<ClashItem> &clashset, int lix, int day, int hour)
+//    LessonData &ldata, int day, int hour)
 {
-    for (int lx = 0; lx < ldata.length; ++lx) {
-        int h = hour + lx;
+    LessonData &ldata = lessons[lix];
+    for (int ln = 0; ln < ldata.length; ++ln) {
+        int h = hour + ln;
         for (int i : ldata.fixed_rooms) {
             int lixk = r_weeks[i][day][h];
-            if (lixk != 0) {
+            if (lixk != 0 && lixk != lix) {
                 // Check whether it is only a flexible-room clash.
                 // If so, add it only if it is the first clash for this lesson.
                 auto &lk = lessons[lixk];
@@ -735,11 +736,11 @@ void BasicConstraints::find_clashes2(
         }
         for (int i : ldata.atomic_groups) {
             int lixk = sg_weeks[i][day][h];
-            if (lixk != 0) clashset.insert({lixk, GROUP});
+            if (lixk != 0 && lixk != lix) clashset.insert({lixk, GROUP});
         }
         for (int i : ldata.teachers) {
             int lixk = t_weeks[i][day][h];
-            if (lixk != 0) clashset.insert({lixk, TEACHER});
+            if (lixk != 0 && lixk != lix) clashset.insert({lixk, TEACHER});
         }
     }
 }
