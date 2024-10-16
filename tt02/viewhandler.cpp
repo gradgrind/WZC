@@ -164,7 +164,10 @@ void ViewHandler::onClick(int day, int hour, Tile *tile, int keymod)
             QStringList qsl;
             for (const auto &clash : clashes) {
                 QString mstr = QString::number(clash.ctype) + ": ";
-                if (clash.lesson_index < 0) mstr += "*BLOCKED LESSON*";
+
+                //TODO: If blocked, a replacement won't help!
+                if (clash.lesson_index < 0)
+                    mstr += "*BLOCKED LESSON*";
                 else mstr += basic_constraints
                                 ->pr_lesson(clash.lesson_index);
                 qsl.append(mstr);
@@ -174,14 +177,36 @@ void ViewHandler::onClick(int day, int hour, Tile *tile, int keymod)
             msgBox.setDefaultButton(QMessageBox::Yes);
             msgBox.setIcon(QMessageBox::Warning);
             int ret = msgBox.exec();
+            if (ret == QMessageBox::Yes) {
+                qDebug() << "REPLACE";
+                // Remove listed lessons (and anything hard-parallel)
+                for (const auto &clash : clashes) {
+                    int lixr = clash.lesson_index;
+                    if (clash.ctype == FLEXIROOM) {
+                        //TODO: Just remove flexiroom
 
+                        continue;
+                    }
+                    //TODO--?
+                    if (lixr < 0)
+                        qFatal() << "Blocked lesson";
 
+                    std::vector<int> lids = basic_constraints
+                                                ->unplace_lesson_full(lixr);
+                    for (int lid : lids) {
+                        auto tile = grid->lid2tile.value(lid, nullptr);
+                        if (tile)
+                            tile->hide();
+                    }
+                }
+
+                //TODO: Place the new lesson
+            }
 
         } else {
             QMessageBox::information(
                 this, "Place Lesson", "No Lesson is Selected.");
         }
-
 
         // After a change, update the database. Either update the internal
         // data structures (if that is not too complicated) or reload them
