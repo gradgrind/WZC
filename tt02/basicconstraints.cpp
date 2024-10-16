@@ -78,12 +78,22 @@ QString BasicConstraints::pr_week_block_sg(int ix)
     return dlist.join("");
 }
 
+int BasicConstraints::unplace_flexible_room(int lesson_index)
+{
+    auto &ldata = lessons[lesson_index];
+    for (int i = 0; i < ldata.length; ++i) {
+        r_weeks.at(ldata.flexible_room).at(ldata.day).at(ldata.hour + i) = 0;
+    }
+    remove_db_field(ldata.lesson_id, "FLEXIBLE_ROOM");
+    return ldata.lesson_id;
+}
+
 std::vector<int> BasicConstraints::unplace_lesson_full(int lesson_index)
 {
     std::vector<int> result;
     auto &ldata = lessons[lesson_index];
     int d = ldata.day;
-    if (d < 0)
+    if (d < 0) // to skip parallel lessons which have already been handled
         return result;
     // Repeat for parallel lessons.
     int pix = 0;

@@ -131,6 +131,7 @@ public:
     void initial_place_lessons2(time_constraints &tconstraints);
     bool test_single_slot(LessonData &ldata, int day, int hour);
     std::set<ClashItem> find_clashes(int lesson_index, int day, int hour);
+    int unplace_flexible_room(int lesson_index);
     std::vector<int> unplace_lesson_full(int lesson_index);
 
     DBData *db_data;

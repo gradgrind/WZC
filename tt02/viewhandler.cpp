@@ -146,62 +146,18 @@ void ViewHandler::onClick(int day, int hour, Tile *tile, int keymod)
             } else {
                 // There are conflicts. Display them and offer to replace them.
                 for (const auto &clash : clashes) {
-                    if (clash.ctype != FLEXIROOM) goto blocked;
+                    if (clash.ctype != FLEXIROOM) {
+                        if (insertion_unblocked(lix, clashes)) {
+                            qDebug() << "CAN NOW PLACE:"
+                                     << basic_constraints->pr_lesson(lix);
+                        }
+                        return;
+                    }
                 }
                 qDebug() << "PLACE (CLEAR FLEXIROOM):"
                          << basic_constraints->pr_lesson(lix);
             }
             return;
-
-        blocked:
-
-            QMessageBox msgBox;
-            msgBox.setText("Conflicting Lessons. Do you want to remove them?");
-//TODO? Reorganize the display?
-// The DetailedText can have scroll-bars, but is initially hidden.
-            msgBox.setDetailedText(
-                QString("Place ") + basic_constraints->pr_lesson(lix));
-            QStringList qsl;
-            for (const auto &clash : clashes) {
-                QString mstr = QString::number(clash.ctype) + ": ";
-
-                //TODO: If blocked, a replacement won't help!
-                if (clash.lesson_index < 0)
-                    mstr += "*BLOCKED LESSON*";
-                else mstr += basic_constraints
-                                ->pr_lesson(clash.lesson_index);
-                qsl.append(mstr);
-            }
-            msgBox.setInformativeText(qsl.join("\n"));
-            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-            msgBox.setDefaultButton(QMessageBox::Yes);
-            msgBox.setIcon(QMessageBox::Warning);
-            int ret = msgBox.exec();
-            if (ret == QMessageBox::Yes) {
-                qDebug() << "REPLACE";
-                // Remove listed lessons (and anything hard-parallel)
-                for (const auto &clash : clashes) {
-                    int lixr = clash.lesson_index;
-                    if (clash.ctype == FLEXIROOM) {
-                        //TODO: Just remove flexiroom
-
-                        continue;
-                    }
-                    //TODO--?
-                    if (lixr < 0)
-                        qFatal() << "Blocked lesson";
-
-                    std::vector<int> lids = basic_constraints
-                                                ->unplace_lesson_full(lixr);
-                    for (int lid : lids) {
-                        auto tile = grid->lid2tile.value(lid, nullptr);
-                        if (tile)
-                            tile->hide();
-                    }
-                }
-
-                //TODO: Place the new lesson
-            }
 
         } else {
             QMessageBox::information(
@@ -218,6 +174,82 @@ void ViewHandler::onClick(int day, int hour, Tile *tile, int keymod)
 
         // If there is no selected lesson, do nothing (maybe report it).
     } else qDebug() << "$$$ keymod =" << keymod;
+}
+
+bool ViewHandler::insertion_unblocked(int lesson_index,
+                                      std::set<ClashItem> clashes)
+{
+    QStringList qsl;
+    bool possible = true;
+    for (const auto &clash : clashes) {
+        QString mstr = QString::number(clash.ctype) + ": ";
+
+        // If blocked, a replacement won't help!
+        if (clash.lesson_index < 0) {
+            mstr += "*BLOCKED LESSON*";
+            possible = false;
+        } else
+            mstr += basic_constraints->pr_lesson(clash.lesson_index);
+        qsl.append(mstr);
+    }
+    if (!possible) {
+        QMessageBox msgBox;
+        msgBox.setText("Conflicting lessons and blocking constraints");
+        //TODO? Reorganize the display?
+        // The DetailedText can have scroll-bars, but is initially hidden.
+        msgBox.setDetailedText(QString("Place ")
+                               + basic_constraints->pr_lesson(lesson_index));
+        //TODO: Also parallel lessons?
+        msgBox.setInformativeText(qsl.join("\n"));
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.exec();
+        return false; // placement not possible
+    }
+    // Placement is possible if the conflicting lessons are removed.
+    QMessageBox msgBox;
+    msgBox.setText("Conflicting lessons. Do you want to remove them?");
+    //TODO? Reorganize the display?
+    // The DetailedText can have scroll-bars, but is initially hidden.
+    msgBox.setDetailedText(QString("Place ")
+                           + basic_constraints->pr_lesson(lesson_index));
+    //TODO: Also parallel lessons?
+    msgBox.setInformativeText(qsl.join("\n"));
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::Yes);
+    msgBox.setIcon(QMessageBox::Warning);
+    int ret = msgBox.exec();
+    if (ret != QMessageBox::Yes)
+        return false; // chose not to place the new lesson
+
+    //TODO--
+    qDebug() << "REPLACE";
+
+    // Remove listed lessons (and anything hard-parallel)
+    for (const auto &clash : clashes) {
+        int lixr = clash.lesson_index;
+        if (clash.ctype == FLEXIROOM) {
+            // Just remove flexiroom
+            int lid = basic_constraints->unplace_flexible_room(lixr);
+            auto tile = grid->lid2tile.value(lid, nullptr);
+            if (tile) {
+                //TODO: Redisplay tile
+            }
+            continue;
+        }
+        //TODO--?
+        if (lixr < 0)
+            qFatal() << "Blocked lesson";
+
+        std::vector<int> lids = basic_constraints->unplace_lesson_full(lixr);
+        for (int lid : lids) {
+            auto tile = grid->lid2tile.value(lid, nullptr);
+            if (tile)
+                tile->hide();
+        }
+    }
+    return true; // OK to place the new lesson
 }
 
 void ViewHandler::show_available(Tile *tile)
