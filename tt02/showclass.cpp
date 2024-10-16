@@ -26,7 +26,11 @@ ShowClass::ShowClass(TT_Grid *grid, TimetableData *tt_data, int class_id)
             // Add possible chosen room
             QStringList roomlist(rooms);
             auto fr{ldata.value("FLEXIBLE_ROOM")};
-            if (!fr.isUndefined()) roomlist.append(db_data->get_tag(fr.toInt()));
+            if (fr.isUndefined()) {
+                if (course.contains("ROOM_CHOICE"))
+                    roomlist.append("?");
+            } else
+                roomlist.append(db_data->get_tag(fr.toInt()));
             int d0 = ldata.value("DAY").toInt();
             if (d0 == 0) {
 //TODO: Collect unplaced lessons
