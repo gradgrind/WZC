@@ -131,7 +131,7 @@ void ViewHandler::onClick(int day, int hour, Tile *tile, int keymod)
             // Unselect tile
             selected_lid = 0;
             grid->select_tile(nullptr);
-            grid->clearCellOK();
+            grid->clearHighlights();
         }
         return;
     }
@@ -200,7 +200,7 @@ void ViewHandler::show_available(Tile *tile)
     int lid = tile->lid;
     int lix = basic_constraints->lid2lix[lid];
     auto &ldata = basic_constraints->lessons[lix];
-    grid->clearCellOK();
+    grid->clearHighlights();
     // Select tile
     grid->select_tile(tile);
     // Seek possible placements
@@ -221,21 +221,21 @@ void ViewHandler::show_available(Tile *tile)
 
     for (auto const& [ttslot, clashes] : freeslots)
     {
-        out += QString(" %1.%2").arg(ttslot.day).arg(ttslot.hour);
-
         if (clashes.empty()) {
-            grid->setCellOK(ttslot.day, ttslot.hour);
-            out += "(G)";
+            grid->setHighlight(ttslot.day, ttslot.hour, NOCLASH);
             continue;
         }
         for (const auto &clash : clashes) {
             if (clash.ctype != FLEXIROOM) goto blocked;
         }
-        grid->setCellOK(ttslot.day, ttslot.hour);
-        out += "(B)";
+        grid->setHighlight(ttslot.day, ttslot.hour, ONLY_FLEXIROOM);
         continue;
     blocked:
-        out += "(R)";
+        //TODO: Remove testing code
+        if (ttslot.day % 2 == 0)
+            grid->setHighlight(ttslot.day, ttslot.hour, REPLACEABLE);
+        else
+            grid->setHighlight(ttslot.day, ttslot.hour, ONLY_FLEXIROOM);
     }
 }
 

@@ -25,6 +25,8 @@ public:
 
 class Tile; // forward declaration
 
+enum HighlightColour { NOCLASH = 0, ONLY_FLEXIROOM, REPLACEABLE };
+
 class TT_Grid
 {
 public:
@@ -39,9 +41,8 @@ public:
     void place_tile(Tile *tile, int col, int row);
     void setClickHandler(std::function<void (int, int, Tile *, int)> handler);
     void select_tile(Tile *tile);
-    void setCellOK(int day, int hour);
-    void clearCellOK();
-    void setHighlight(int day, int hour, QColor colour);
+    void clearHighlights();
+    void setHighlight(int day, int hour, HighlightColour colour);
 
     Canvas *canvas;
     Scene *scene;
@@ -51,17 +52,17 @@ public:
 
     QList<QList<Cell *>> cols;
 
-    qreal DAY_WIDTH = 140.0;
-    qreal HOUR_HEIGHT = 60.0;
-    qreal VHEADERWIDTH = 80.0;
-    qreal HHEADERHEIGHT = 40.0;
-    qreal GRIDLINEWIDTH = 2.0;
-    QString GRIDLINECOLOUR = "EDAB9A";
-    QString BREAKLINECOLOUR = "404080";
-    qreal FONT_CENTRE_SIZE = 12.0;
-    qreal FONT_CORNER_SIZE = 8.0;
-    QString SELECTIONCOLOUR = "FF0000";
-    QBrush OKBRUSH = QColor("#FFDFFF99");
+    const qreal DAY_WIDTH = 140.0;
+    const qreal HOUR_HEIGHT = 60.0;
+    const qreal VHEADERWIDTH = 80.0;
+    const qreal HHEADERHEIGHT = 40.0;
+    const qreal GRIDLINEWIDTH = 2.0;
+    const QString GRIDLINECOLOUR = "EDAB9A";
+    const QString BREAKLINECOLOUR = "404080";
+    const qreal FONT_CENTRE_SIZE = 12.0;
+    const qreal FONT_CORNER_SIZE = 8.0;
+    const QString SELECTIONCOLOUR = "FF0000";
+    const QBrush OKBRUSH = QColor(255, 223, 255, 255);
 
     QJsonObject settings;
 
@@ -76,6 +77,10 @@ private:
     QGraphicsRectItem *selection_rect = nullptr;
     QList<Cell*> ok_cells;
     QList<QList<QGraphicsRectItem *>> highlights;
+
+    const QList<QColor> HighlightColours{QColor(11, 255, 39, 128),
+                                         QColor(99, 148, 255, 128),
+                                         QColor(255, 80, 29, 128)};
 };
 
 class Tile : public Chip

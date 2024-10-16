@@ -103,7 +103,7 @@ void TT_Grid::setup_grid()
     qreal y = 0.0;
     Cell *c = new Cell(-1, -1);
     c->set_size(VHEADERWIDTH, HHEADERHEIGHT);
-    c->set_border(2.0, GRIDLINECOLOUR);
+    c->set_border(GRIDLINEWIDTH, GRIDLINECOLOUR);
     hheaders.append(c);
     scene->addItem(c);
     c->setPos(-VHEADERWIDTH, -HHEADERHEIGHT);
@@ -111,7 +111,7 @@ void TT_Grid::setup_grid()
     for(const QString &hour : std::as_const(hourlist)) {
         Cell *c = new Cell(-1, yi);
         c->set_size(VHEADERWIDTH, HOUR_HEIGHT);
-        c->set_border(2.0, GRIDLINECOLOUR);
+        c->set_border(GRIDLINEWIDTH, GRIDLINECOLOUR);
         c->set_text(hour);
         hheaders.append(c);
         scene->addItem(c);
@@ -128,7 +128,7 @@ void TT_Grid::setup_grid()
         y = 0.0;
         Cell *c = new Cell(xi, -1);
         c->set_size(DAY_WIDTH, HHEADERHEIGHT);
-        c->set_border(2.0, GRIDLINECOLOUR);
+        c->set_border(GRIDLINEWIDTH, GRIDLINECOLOUR);
         scene->addItem(c);
         c->set_text(day);
         rows.append(c);
@@ -139,7 +139,7 @@ void TT_Grid::setup_grid()
         for(const QString &hour : std::as_const(hourlist)) {
             c = new Cell(xi, yi);
             c->set_size(DAY_WIDTH, HOUR_HEIGHT);
-            c->set_border(2.0, GRIDLINECOLOUR);
+            c->set_border(GRIDLINEWIDTH, GRIDLINECOLOUR);
             rows.append(c);
             scene->addItem(c);
             c->setPos(x, y);
@@ -147,12 +147,13 @@ void TT_Grid::setup_grid()
             auto highlight = new QGraphicsRectItem();
             hlist[yi] = highlight;
             scene->addItem(highlight);
-            highlight->setRect(0, 0, DAY_WIDTH - 4, HOUR_HEIGHT - 4);
-            highlight->setPos(x + 2, y + 2);
+            highlight->setRect(0,
+                               0,
+                               DAY_WIDTH - 2 * GRIDLINEWIDTH,
+                               HOUR_HEIGHT - 2 * GRIDLINEWIDTH);
+            highlight->setPos(x + GRIDLINEWIDTH, y + GRIDLINEWIDTH);
             highlight->hide();
             highlight->setZValue(10);
-            //TODO:
-            setHighlight(xi, yi, QColor("#80ffaa00"));
 
             y += HOUR_HEIGHT;
             yi++;
@@ -225,31 +226,25 @@ void TT_Grid::select_tile(Tile *tile) {
     }
 }
 
-void TT_Grid::setCellOK(int day, int hour)
+void TT_Grid::setHighlight(int day, int hour, HighlightColour colour)
 {
-    auto cell = cols[day+1][hour+1];
-    cell->setBrush(OKBRUSH);
-    ok_cells.append(cell);
-}
-
-void TT_Grid::clearCellOK()
-{
-    QBrush b;
-    for (const auto &cell : ok_cells) {
-        cell->setBrush(b);
-    }
-    ok_cells.clear();
-}
-
-void TT_Grid::setHighlight(int day, int hour, QColor colour)
-{
-    auto pen = QPen(colour);
-    pen.setWidth(2);
+    QColor clr{HighlightColours.at(colour)};
+    auto pen = QPen(clr);
+    pen.setWidth(GRIDLINEWIDTH);
     auto &highlight = highlights[day][hour];
     highlight->setPen(pen);
-    colour.setAlpha(12);
-    highlight->setBrush(colour);
+    clr.setAlpha(12);
+    highlight->setBrush(clr);
     highlight->show();
+}
+
+void TT_Grid::clearHighlights()
+{
+    for (int d = 0; d < daylist.size(); ++d) {
+        for (int h = 0; h < hourlist.size(); ++h) {
+            highlights[d][h]->hide();
+        }
+    }
 }
 
 Tile::Tile(
