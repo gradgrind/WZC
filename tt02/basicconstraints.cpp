@@ -542,8 +542,9 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         // Test placement before actually doing it
         if (!test_slot(lix, d, h)) {
             ldata.day = -1;
-            qFatal() << "Couldn't place lesson" << ldata.lesson_id
-                       << "@ Slot" << d << h << "\n" << pr_lesson(lix);
+            qWarning() << "Couldn't place lesson" << ldata.lesson_id << "@ Slot"
+                       << d << h << "\n"
+                       << pr_lesson(lix);
             continue;
         }
 
@@ -557,6 +558,8 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
     // Now deal with the flexible rooms
     for (auto [lix, rix] : flexirooms) {
         auto &ldp = lessons[lix];
+        if (ldp.day < 0)
+            continue;
         auto &rdp = r_weeks.at(rix).at(ldp.day);
         for (int i = 0; i < ldp.length; ++i) {
             int hh = ldp.hour + i;
