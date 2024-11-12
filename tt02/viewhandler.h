@@ -38,6 +38,8 @@ private:
     BasicConstraints *basic_constraints = nullptr;
     int selected_lid{0};
 
+    bool insertion_unblocked(int lesson_index, std::set<ClashItem> clashes);
+
 private slots:
     void handle_load_file();
     void new_timetable_data();

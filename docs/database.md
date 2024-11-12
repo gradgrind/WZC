@@ -23,6 +23,8 @@ Apart from its main content each object has an "Id" field, which is just the obj
 
 The database objects are used to build the internal structures necessary for displaying, editing and constructing the timetable.
 
+**TODO:** Make the type names singular.
+
 ### DAYS
 
  - X (int): The 0-based index of the day within the school week.
@@ -56,8 +58,10 @@ The database objects are used to build the internal structures necessary for dis
  - TAG (string): The short name (abbreviation) for the room, its primary identifier.
  - NAME (string): The full name for the room (not used for timetable processing, can be empty).
  - NOT_AVAILABLE: An Array of pairs, each pair containing a day and hour in which the room is not available. The day and hour members are keys to the node table.
- - ROOMS_NEEDED: An optional Array of ROOMS keys. When present it defines the room as a room group, specifying that it is not a real room itself, but requires multiple real rooms.
- - $REF (string, optional): Where the data is imported from another program, this can be used as to reference a room (or room group) in the other program.
+ - ROOM_CHOICE: An optional Array of ROOMS keys. When present it defines this "room" is not "real". One of the real rooms in the list is required. This "room" cannot be a hard requirement for a course/lesson, it will be specified as a soft constraint.
+ - $REF (string, optional): Where the data is imported from another program, this can be used to reference a room in the other program.
+
+**TODO:** Add *type* ROOM_CHOICE to cover lists of possible rooms (thus removing the field ROOM_CHOICE from the ROOM type). The references to the (real) rooms could be in field ROOMS.
 
 ### CLASSES
 
@@ -88,7 +92,9 @@ Note that entries of this type need not be courses in the classical sense, but t
  - SUBJECT (int): SUBJECTS key, the course subject.
  - TEACHERS: An Array of TEACHERS keys, the teachers involved.
  - GROUPS: An Array of GROUPS keys, the student groups involved.
- - ROOMSPEC: An Array of ROOMS keys. **TODO**: Currently this is a bit complicated, I might rework it. It is probably a bit of a compromise, allowing a compulsory room (which can be a room group, thus multiple compulsory rooms) and/or (?) a single choice from a list of possible rooms (not room groups).
+ - ROOMSPEC: An Array of ROOMS keys.
+
+**TODO:** Type COURSE should only be for "normal" courses. Special courses comprising a collection of other courses ("Epochen" or other blocks) should have the type SUPERCOURSE. This would itself have no teachers, groups or rooms, these being supplied by the component courses. The component courses would have the type SUBCOURSE. These would have no lessons referencing them (as they don't have their own places in the timetable).
 
 ### LESSONS
 
@@ -101,7 +107,7 @@ Note that the entries of this type need not be lessons in the classical sense, b
  - HOUR (int) 0-based index of the hour/period within the school day, undefined if the lesson is unplaced.
  - ROOMS: An Array of ROOMS keys, the rooms occupied by the lesson. The entries must be real rooms (not room groups) and are only relevant when the lesson is placed (DAY >= 0).
  - ACTIVITY_TAG0S: An Array of strings used to build groups of lessons.
- - $REF (string, optional): Where the data is imported from another program, this can be used as to reference a lesson in the other program.
+ - $REF (string, optional): Where the data is imported from another program, this can be used to reference a lesson in the other program.
 
 ### LOCAL_CONSTRAINTS
 

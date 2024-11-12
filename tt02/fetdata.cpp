@@ -406,8 +406,8 @@ void readActivities(FetInfo &fet_info, QList<QVariant> item_list)
                     if (gid) {
                         glist.append(gid);
                     } else {
-                        qFatal() << "Activity" << m.value("Id")
-                        << "has unknown group:" << g;
+                        qCritical() << "Activity" << m.value("Id")
+                                    << "has unknown group:" << g;
                     }
                 }
                 id = fet_info.next_index();
@@ -455,7 +455,9 @@ FetInfo fetData(XMLNode xmlin)
         auto n = v.value<XMLNode>();
         fet_top[n.name] = n.children;
     }
-    qDebug() << fet_top["Institution_Name"][0].toString();
+    auto iname = fet_top["Institution_Name"];
+    if (iname.size() != 0)
+        qDebug() << fet_top["Institution_Name"][0].toString();
 
     FetInfo fetdata;
     readDays(fetdata, fet_top["Days_List"]);

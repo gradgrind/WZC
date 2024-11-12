@@ -78,6 +78,58 @@ QString BasicConstraints::pr_week_block_sg(int ix)
     return dlist.join("");
 }
 
+int BasicConstraints::unplace_flexible_room(int lesson_index)
+{
+    auto &ldata = lessons[lesson_index];
+    for (int i = 0; i < ldata.length; ++i) {
+        r_weeks.at(ldata.flexible_room).at(ldata.day).at(ldata.hour + i) = 0;
+    }
+    remove_db_field(ldata.lesson_id, "FLEXIBLE_ROOM");
+    return ldata.lesson_id;
+}
+
+std::vector<int> BasicConstraints::unplace_lesson_full(int lesson_index)
+{
+    std::vector<int> result;
+    auto &ldata = lessons[lesson_index];
+    int d = ldata.day;
+    if (d < 0) // to skip parallel lessons which have already been handled
+        return result;
+    // Repeat for parallel lessons.
+    int pix = 0;
+    auto &plist = ldata.parallel_lessons;
+    while (true) {
+        int lid = ldata.lesson_id;
+        result.push_back(lid);
+        ldata.day = -1;
+        for (int i = 0; i < ldata.length; ++i) {
+            int hh = ldata.hour + i;
+            for (int t : ldata.teachers) {
+                t_weeks.at(t).at(d).at(hh) = 0;
+            }
+            for (int sg : ldata.atomic_groups) {
+                sg_weeks.at(sg).at(d).at(hh) = 0;
+            }
+            for (int r : ldata.fixed_rooms) {
+                r_weeks.at(r).at(d).at(hh) = 0;
+            }
+            if (ldata.flexible_room >= 0) {
+                r_weeks.at(ldata.flexible_room).at(d).at(hh) = 0;
+            }
+        }
+
+        remove_db_field(lid, "DAY");
+        remove_db_field(lid, "HOUR");
+        remove_db_field(lid, "FLEXIBLE_ROOM");
+
+        if (pix >= plist.size())
+            break;
+        ldata = lessons[plist[pix]];
+        ++pix;
+    }
+    return result;
+}
+
 // Apply a filter to the set of permitted slots belonging to a lesson.
 // The filter array is of the same form as the original structure, a
 // slot_constraint item – a vector of integer-vectors containing the
@@ -490,8 +542,9 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
         // Test placement before actually doing it
         if (!test_slot(lix, d, h)) {
             ldata.day = -1;
-            qFatal() << "Couldn't place lesson" << ldata.lesson_id
-                       << "@ Slot" << d << h << "\n" << pr_lesson(lix);
+            qWarning() << "Couldn't place lesson" << ldata.lesson_id << "@ Slot"
+                       << d << h << "\n"
+                       << pr_lesson(lix);
             continue;
         }
 
@@ -505,6 +558,8 @@ void BasicConstraints::initial_place_lessons2(time_constraints &tconstraints)
     // Now deal with the flexible rooms
     for (auto [lix, rix] : flexirooms) {
         auto &ldp = lessons[lix];
+        if (ldp.day < 0)
+            continue;
         auto &rdp = r_weeks.at(rix).at(ldp.day);
         for (int i = 0; i < ldp.length; ++i) {
             int hh = ldp.hour + i;

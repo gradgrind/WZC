@@ -68,6 +68,8 @@ public:
 
     std::function<void (HoverRectItem*, bool)> hover_handler;
 
+    QHash<int, Tile *> lid2tile;
+
 private:
     void handle_click(QList<QGraphicsItem *> items, int keymod);
     void handle_context_menu(QList<QGraphicsItem *> items);
