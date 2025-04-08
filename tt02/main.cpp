@@ -9,6 +9,7 @@ int main(int argc, char *argv[])
 {
     //qDebug() << QStyleFactory::keys();
     //QApplication::setStyle("fusion");
+    //QApplication::setDesktopSettingsAware(false);
     QApplication a(argc, argv);
     QWidget mainwindow;
     QHBoxLayout hb(&mainwindow);
