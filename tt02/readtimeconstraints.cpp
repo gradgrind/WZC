@@ -130,10 +130,16 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 auto nt = vt.value<XMLNode>();
                 if (nt.name == "Preferred_Starting_Time") {
                     auto ntdata = readSimpleItems(nt);
-                    int d = fet_info.days.value(
-                        ntdata.value("Preferred_Starting_Day"));
-                    int h = fet_info.hours.value(
-                        ntdata.value("Preferred_Starting_Hour"));
+                    QString hour;
+                    auto day = ntdata.value("Day");
+                    if (day.isEmpty()) {
+                        day = ntdata.value("Preferred_Starting_Day");
+                        hour = ntdata.value("Preferred_Starting_Hour");
+                    } else {
+                        hour = ntdata.value("Hour");
+                    }
+                    int d = fet_info.days.value(day);
+                    int h = fet_info.hours.value(hour);
                     times.append(QJsonArray{d, h});
                 }
             }
@@ -160,11 +166,17 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
             for (const auto &vt : n.children) {
                 auto nt = vt.value<XMLNode>();
                 if (nt.name == "Preferred_Starting_Time") {
-                    auto ntdata = readSimpleItems(nt);
-                    int d = fet_info.days.value(
-                        ntdata.value("Preferred_Starting_Day"));
-                    int h = fet_info.hours.value(
-                        ntdata.value("Preferred_Starting_Hour"));
+                    auto ntdata = readSimpleItems(nt);                    
+                    QString hour;
+                    auto day = ntdata.value("Day");
+                    if (day.isEmpty()) {
+                        day = ntdata.value("Preferred_Starting_Day");
+                        hour = ntdata.value("Preferred_Starting_Hour");
+                    } else {
+                        hour = ntdata.value("Hour");
+                    }
+                    int d = fet_info.days.value(day);
+                    int h = fet_info.hours.value(hour);
                     times.append(QJsonArray{d, h});
                 }
             }
@@ -196,10 +208,16 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
                 auto nt = vt.value<XMLNode>();
                 if (nt.name == "Preferred_Time_Slot") {
                     auto ntdata = readSimpleItems(nt);
-                    int d = fet_info.days.value(
-                        ntdata.value("Preferred_Day"));
-                    int h = fet_info.hours.value(
-                        ntdata.value("Preferred_Hour"));
+                    QString hour;
+                    auto day = ntdata.value("Day");
+                    if (day.isEmpty()) {
+                        day = ntdata.value("Preferred_Day");
+                        hour = ntdata.value("Preferred_Hour");
+                    } else {
+                        hour = ntdata.value("Hour");
+                    }
+                    int d = fet_info.days.value(day);
+                    int h = fet_info.hours.value(hour);
                     times.append(QJsonArray{d, h});
                 }
             }
