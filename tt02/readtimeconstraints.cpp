@@ -86,8 +86,14 @@ void readTimeConstraints(FetInfo &fet_info, QList<QVariant> item_list)
         } else if (n.name == "ConstraintActivityPreferredStartingTime") {
             auto m = readSimpleItems(n);
             auto aid = m.value("Activity_Id");
-            auto day = m.value("Preferred_Day");
-            auto hour = m.value("Preferred_Hour");
+            QString hour;
+            auto day = m.value("Day");
+            if (day.isEmpty()) {
+                day = m.value("Preferred_Day");
+                hour = m.value("Preferred_Hour");
+            } else {
+                hour = m.value("Hour");
+            }
             bool fixed = m.value("Permanently_Locked") == "true";
             int aix = fet_info.activity_lesson.value(aid);
             auto &anode = fet_info.nodes[aix];
